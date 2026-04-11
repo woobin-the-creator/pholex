@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from typing import Protocol
 from uuid import uuid4
@@ -98,4 +97,3 @@ def create_session_store(session_backend: str, redis_url: str) -> SessionStore:
     if session_backend == "memory":
         return InMemorySessionStore()
     return RedisSessionStore(redis_url)
-

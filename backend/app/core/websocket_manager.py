@@ -5,7 +5,6 @@ import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any
 
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import async_sessionmaker
