@@ -1,0 +1,155 @@
+:root {
+  color: rgba(0, 0, 0, 0.95);
+  background: #f6f5f4;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --color-bg-card: #ffffff;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-text-secondary: #615d59;
+  --color-critical: #e53e3e;
+  --color-accent: #0075de;
+  --shadow-card: rgba(0, 0, 0, 0.04) 0 4px 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f6f5f4;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.app-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.app-header__eyebrow {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.app-header__title {
+  margin: 0;
+  font-size: 32px;
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header__logout,
+.table-slot__refresh {
+  border: 0;
+  border-radius: 9999px;
+  padding: 10px 16px;
+  background: var(--color-accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.dashboard-placeholder,
+.table-slot {
+  min-height: 240px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.dashboard-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-placeholder__index {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.dashboard-placeholder__label {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.table-slot__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.table-slot__header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.table-slot__meta {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.table-slot__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-slot__table th,
+.table-slot__table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  text-align: left;
+}
+
+.table-slot__row--critical {
+  background: rgba(229, 62, 62, 0.12);
+  color: var(--color-critical);
+}
+
+.table-slot__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    padding: 20px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
