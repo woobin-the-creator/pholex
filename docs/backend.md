@@ -10,10 +10,12 @@
 
 | 키 패턴 | 용도 | TTL |
 |---------|------|-----|
-| `session:{user_id}` | 사용자 세션 정보 | 8h (교대 주기) |
+| `session:{uuid4}` | 인증 세션 (`pholex_sid` 쿠키와 매핑) | 2주 |
 | `active_users` | 실시간 접속 사용자 Set | - |
 | `cache:table:{table_id}:{filter_hash}` | 쿼리 결과 캐시 | 5~30s (갱신 주기) |
 | `ws:channel:{user_id}` | WebSocket pub/sub 채널 | - |
+
+> 세션 키/TTL은 `docs/auth.md`가 source of truth이며, MVP 구현은 위 규칙을 따른다.
 
 ### 4.2 PostgreSQL 스키마
 

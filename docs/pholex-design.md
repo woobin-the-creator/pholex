@@ -14,6 +14,7 @@
 | [backend.md](backend.md) | DB 설계(Redis/PostgreSQL), 백엔드 구조, 실시간 데이터 흐름, WebSocket 프로토콜 전체 | 4, 6, 7, 8 |
 | [frontend.md](frontend.md) | 프론트엔드 구조, Jotai atomFamily 패턴, WebSocket 클라이언트 메시지, 디자인 시스템 | 5, 8(client), 13 |
 | [infra.md](infra.md) | Docker Swarm 배포, Nginx WebSocket 설정, 환경 분리(Beta/Dev), 배포 스크립트 | 9, 14 |
+| [verification.md](verification.md) | MVP 테스트 전략, E2E/스모크 검증 순서, 관측성 이벤트 계약 | 검증 부록 |
 
 ---
 
@@ -22,4 +23,5 @@
 - **백엔드 기능 구현** → `backend.md`
 - **프론트엔드 컴포넌트 구현** → `frontend.md`
 - **인프라/배포 설정** → `infra.md`
+- **테스트 / E2E / 스모크 / 관측성 검증** → `verification.md`
 - **전체 맥락 파악 / 기술 스택 이유** → `overview.md`
