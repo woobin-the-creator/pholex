@@ -1,0 +1,8 @@
+{
+  "name": "pholex-verification-harness",
+  "private": true,
+  "scripts": {
+    "test:smoke": "bash scripts/test_smoke.sh",
+    "test:e2e": "playwright test e2e/pholex-mvp-slot1.spec.ts"
+  }
+}
