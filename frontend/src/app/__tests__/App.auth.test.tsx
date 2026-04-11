@@ -112,7 +112,7 @@ describe('App auth bootstrap', () => {
     )
 
     expect(await screen.findByText('홍길동')).toBeInTheDocument()
-    expect(screen.getByText('LOT-HOLD-001')).toBeInTheDocument()
+    expect(await screen.findByText('LOT-HOLD-001')).toBeInTheDocument()
 
     onOpen?.()
     expect(send).toHaveBeenCalledWith({ type: 'subscribe', payload: { tableId: 1 } })
