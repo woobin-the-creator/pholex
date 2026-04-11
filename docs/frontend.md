@@ -5,6 +5,7 @@
 ---
 
 ## 5. 프론트엔드 구조
+샘플 페이지 : https://github.com/woobin-the-creator/pholex_wireframe
 
 ### 5.1 레이아웃
 
