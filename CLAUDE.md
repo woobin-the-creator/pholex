@@ -9,8 +9,9 @@
 |-----------|---------------|
 | FastAPI 엔드포인트, DB 모델/쿼리, Redis 캐시, WebSocket 서버, 데이터 수집 | `docs/backend.md` |
 | React 컴포넌트, Jotai atom, TanStack Table, CSS/스타일, WebSocket 클라이언트 | `docs/frontend.md` |
-| Docker Compose/Swarm 설정, Nginx, 환경 분리, 배포 스크립트 | `docs/infra.md` |
+| Docker Compose/Swarm 설정, Nginx, 환경 분리, 배포 스크립트, 미러 레포 전략 | `docs/infra.md` |
 | 기술 스택 선택 이유, 시스템 구조, 수용 기준 | `docs/overview.md` |
+| 사내 서버 구축 절차, 미러 주소 설정, 이미지 확인, 트러블슈팅 | `docs/onprem-setup.md` |
 
 **왜 중요한가**: 이 프로젝트는 여러 번의 검토와 트레이드오프 결정이 반영된 설계를 따른다.
 예를 들어 상태 관리는 Zustand 대신 Jotai `atomFamily`를 사용하는 이유가 있고,
