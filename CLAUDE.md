@@ -8,6 +8,7 @@
 | 작업 영역 | 읽어야 할 문서 |
 |-----------|---------------|
 | FastAPI 엔드포인트, DB 모델/쿼리, Redis 캐시, WebSocket 서버, 데이터 수집 | `docs/backend.md` |
+| SSO 로그인 플로우, 세션 관리, 권한, 개발 환경 우회(DEV_SSO_BYPASS) | `docs/auth.md` |
 | React 컴포넌트, Jotai atom, TanStack Table, CSS/스타일, WebSocket 클라이언트 | `docs/frontend.md` |
 | Docker Compose/Swarm 설정, Nginx, 환경 분리, 배포 스크립트, 미러 레포 전략 | `docs/infra.md` |
 | 기술 스택 선택 이유, 시스템 구조, 수용 기준 | `docs/overview.md` |

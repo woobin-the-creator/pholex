@@ -84,8 +84,8 @@ backend/
 │   │   │   └── ws.py                # WebSocket 엔드포인트
 │   │   └── deps.py                  # 의존성 주입
 │   ├── core/
-│   │   ├── auth.py                  # LDAP/AD 인증 로직
-│   │   ├── security.py              # JWT 토큰 관리
+│   │   ├── auth.py                  # OIDC SSO 인증 로직 (python-jose RS256 검증)
+│   │   ├── session.py               # Redis 세션 관리 (2주 TTL)
 │   │   └── websocket_manager.py     # WebSocket 연결 관리 + Redis pub/sub
 │   ├── collectors/
 │   │   ├── base.py                  # 추상 데이터 수집기 (LotData 반환 인터페이스)

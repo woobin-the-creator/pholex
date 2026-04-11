@@ -139,9 +139,16 @@ scripts/deploy.sh --yes
 ```bash
 # SSL 인증서 설정 (사내 인증서 또는 Let's Encrypt)
 # docker/nginx/beta.conf 에 ssl_certificate 경로 지정
-
-# LDAP 화이트리스트에 베타 사용자 계정 등록
 ```
+
+**SSO 인증 관련 (사내 IdP 담당자 협조 필요)**
+
+- [ ] IdP에 redirect_uri 등록: `{SSO_BASE_URL}/api/auth/sso/callback`
+- [ ] `SSO_IDP_ENTITY_ID`, `SSO_CLIENT_ID` 확인 후 `.env.beta`에 입력
+- [ ] X.509 인증서 PEM → `SSO_CERT`에 입력 (개행은 `\n`으로 escape)
+- [ ] HTTPS 설정 완료 후 쿠키 `Secure` 플래그 동작 확인
+
+> 상세 인증 설계는 `docs/auth.md` 참고.
 
 ---
 
