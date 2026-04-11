@@ -150,6 +150,20 @@ scripts/deploy.sh --yes
 
 > 상세 인증 설계는 `docs/auth.md` 참고.
 
+**필드 매핑 확인 (MVP "내 lot hold" 테이블 동작에 필수)**
+
+"내 lot hold" 슬롯은 `hold_operator_id`(외부 소스)와 `employee_number`(SSO)를 사번으로 매칭한다.
+아래 항목의 실제 컬럼명/파라미터명을 사내에서 확인하고 코드에 반영해야 한다.
+
+- [ ] 외부 API/DB에서 hold 담당자를 나타내는 **컬럼명** 확인
+  - 현재 코드 placeholder: `hold_operator_id` (number type)
+  - 실제 컬럼명: ________________
+- [ ] SSO id_token 클레임에서 사번을 나타내는 **파라미터명** 확인
+  - 현재 코드 placeholder: `operator_id`
+  - 실제 파라미터명: ________________
+- [ ] 두 값의 타입이 일치하는지 확인 (둘 다 number, 또는 둘 다 string)
+- [ ] 확인 후 `backend/app/core/auth.py`(SSO 클레임 파싱)와 `backend/app/collectors/`(데이터 수집 매핑)에 실제 필드명 반영
+
 ---
 
 ## 문제 발생 시 확인 포인트

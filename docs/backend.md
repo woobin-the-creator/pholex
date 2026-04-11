@@ -37,7 +37,7 @@ CREATE TABLE lot_status (
     equipment VARCHAR(100),
     process_step VARCHAR(100),
     hold_comment TEXT,                -- hold 상태일 때 홀드 사유
-    hold_user_name VARCHAR(100),      -- hold 상태일 때 담당자
+    hold_operator_id BIGINT,          -- hold 담당자 사번 (number type, 실제 컬럼명은 사내 확인 필요)
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'
 );
