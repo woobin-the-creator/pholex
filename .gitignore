@@ -1,0 +1,10 @@
+.omx/
+
+# 환경 설정 파일 (실제 값 포함 — git 제외)
+.env.dev
+.env.beta
+.env.local
+
+# OMC 상태/세션 파일 (스펙은 포함)
+.omc/state/
+.omc/logs/

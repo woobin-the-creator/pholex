@@ -446,3 +446,97 @@ Phase 3 (대규모): 읽기 레플리카 + Redis Sentinel
   Postgres read replica 추가
   Redis Sentinel 구성
 ```
+
+---
+
+## 15. 사내 미러 레포지터리 전략
+
+> 사내 환경은 외부 인터넷이 제한되어 공식 레지스트리(Docker Hub, PyPI, npm, apt)에 직접 접근이 불가하다.
+> 모든 패키지/이미지 소스를 **환경변수로 추상화**하여 개발 컴퓨터(공식 레포)와 사내 환경(미러 레포)을 동일 코드베이스로 운영한다.
+
+### 15.1 관리 환경변수
+
+```bash
+# .env.example 미러 레포지터리 항목 (미설정 시 공식 레포 사용)
+DOCKER_REGISTRY=          # Docker 이미지 registry prefix. 예: registry.internal/
+                          # redis:7-alpine → ${DOCKER_REGISTRY}redis:7-alpine
+NPM_REGISTRY_URL=         # npm 레지스트리 URL. 예: https://npm.internal/
+PIP_INDEX_URL=            # PyPI 미러 URL. 예: https://pypi.internal/simple/
+PIP_TRUSTED_HOST=         # pip 미러 trusted host. 예: pypi.internal
+APT_MIRROR=               # apt 미러 baseURL. 예: http://apt.internal/ubuntu
+```
+
+**원칙**: 미설정(빈 문자열) = 공식 레포. 사내 환경은 `.env.beta` / `.env.dev`에 실제 미러 주소 입력.
+
+### 15.2 docker-compose.yml 이미지 처리
+
+```yaml
+services:
+  redis:
+    image: ${DOCKER_REGISTRY:-}redis:7-alpine
+  postgres:
+    image: ${DOCKER_REGISTRY:-}postgres:16-alpine
+  nginx:
+    image: ${DOCKER_REGISTRY:-}nginx:alpine
+  backend:
+    build:
+      context: ./backend
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
+        APT_MIRROR: ${APT_MIRROR:-}
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-}
+        NPM_REGISTRY_URL: ${NPM_REGISTRY_URL:-}
+```
+
+### 15.3 backend/Dockerfile (python:3.12-slim 기반)
+
+```dockerfile
+ARG DOCKER_REGISTRY=""
+FROM ${DOCKER_REGISTRY}python:3.12-slim
+
+# apt 미러 설정 (미설정 시 공식 deb.debian.org 사용)
+ARG APT_MIRROR
+RUN if [ -n "$APT_MIRROR" ]; then \
+      sed -i "s|http://deb.debian.org/debian|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+      sed -i "s|http://deb.debian.org/debian|$APT_MIRROR|g" /etc/apt/sources.list; \
+    fi && apt-get update && apt-get install -y --no-install-recommends \
+      libldap2-dev libsasl2-dev gcc && rm -rf /var/lib/apt/lists/*
+
+# pip 미러 설정 (미설정 시 PyPI 사용)
+ARG PIP_INDEX_URL
+ARG PIP_TRUSTED_HOST
+RUN pip install --upgrade pip \
+    ${PIP_INDEX_URL:+--index-url $PIP_INDEX_URL} \
+    ${PIP_TRUSTED_HOST:+--trusted-host $PIP_TRUSTED_HOST} && \
+    pip install -r requirements.txt \
+    ${PIP_INDEX_URL:+--index-url $PIP_INDEX_URL} \
+    ${PIP_TRUSTED_HOST:+--trusted-host $PIP_TRUSTED_HOST}
+```
+
+### 15.4 frontend/Dockerfile (node:20-alpine 기반)
+
+```dockerfile
+ARG DOCKER_REGISTRY=""
+FROM ${DOCKER_REGISTRY}node:20-alpine
+
+# npm 레지스트리 설정 (미설정 시 registry.npmjs.org 사용)
+ARG NPM_REGISTRY_URL
+RUN if [ -n "$NPM_REGISTRY_URL" ]; then npm config set registry "$NPM_REGISTRY_URL"; fi
+RUN npm ci
+```
+
+### 15.5 운용 절차
+
+| 환경 | 설정 방법 | Docker 이미지 예시 |
+|------|-----------|-----------------|
+| 개발 컴퓨터 (Claude) | 환경변수 미설정 | `redis:7-alpine` (Docker Hub) |
+| 사내 dev | `.env.dev`에 미러 주소 입력 | `registry.internal/redis:7-alpine` |
+| 사내 beta | `.env.beta`에 미러 주소 입력 | `registry.internal/redis:7-alpine` |
+
+> **주의**: `DOCKER_REGISTRY` 값 끝에 `/`를 포함해야 한다. 예: `registry.internal/` (O), `registry.internal` (X)
