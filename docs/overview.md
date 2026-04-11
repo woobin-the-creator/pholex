@@ -13,7 +13,7 @@
 ### 핵심 요구사항
 - 동시 접속: 중규모(10~50명) 시작 → 대규모(50~200명) 확장 가능
 - 데이터 갱신: 자동 폴링 30~60초 (백그라운드) + **테이블별 수동 리프레시 버튼** (즉시, < 1초) + WebSocket 변경분 푸시
-- 인증: 사내 SSO (LDAP/AD)
+- 인증: 사내 SSO (OIDC)
 - 알림: 대시보드 내 실시간 알림 (토스트, 행 하이라이트)
 - 데이터 소스: 복합/미정 → 추상화된 데이터 수집 레이어
 
@@ -31,7 +31,7 @@
 | **ORM** | SQLAlchemy 2.0 (async) | FastAPI와 최적 호환, 비동기 쿼리 |
 | **세션/캐시** | Redis | 실시간 사용자 세션, WebSocket pub/sub 브로커 |
 | **데이터 저장** | PostgreSQL | 랏 데이터, 사용자-랏 매핑, 필터 프리셋 |
-| **인증** | LDAP/AD via python-ldap | 사내 SSO 연동 |
+| **인증** | OIDC + `python-jose[cryptography]` | 사내 IdP 연동, JWT 검증/세션 관리 단순화 |
 | **배포** | Docker Swarm | 멀티 노드 오케스트레이션, rolling update |
 | **리버스 프록시** | Nginx / Traefik | WebSocket 프록시, SSL 터미네이션, 로드밸런싱 |
 
@@ -98,7 +98,7 @@
 | AC-1 | 테이블 데이터 초기 로드 < 1초 (p99) | 브라우저 Performance API |
 | AC-2 | WebSocket 데이터 푸시 지연 < 500ms (서버 감지 → 클라이언트 수신) | 서버/클라이언트 타임스탬프 비교 |
 | AC-3 | 동시 50명 접속 시 CPU < 70% | Docker stats 모니터링 |
-| AC-4 | SSO 로그인 < 3초 | LDAP 응답 시간 포함 |
+| AC-4 | SSO 로그인 < 3초 | IdP 리다이렉트 + 세션 생성 시간 포함 |
 | AC-5 | 필터 변경 후 테이블 업데이트 < 500ms | UI 인터랙션 측정 |
 | AC-6 | 24시간 무중단 운영 (메모리 누수 없음) | 장기 부하 테스트 |
 | AC-7 | 2x3 그리드 레이아웃 정상 렌더링 (1920x1080 기준) | E2E 스크린샷 테스트 |
@@ -114,7 +114,7 @@
 | WebSocket 연결 끊김 | 실시간 업데이트 중단 | 자동 재연결 (exponential backoff) + 재연결 시 full sync |
 | Redis 장애 | pub/sub 중단 → 실시간 업데이트 멈춤, 캐시 손실 | Docker Swarm 자동 재시작(통상 1분 이내 복구) + `appendonly yes`로 캐시 데이터 영속. JWT로 세션 보조. 허용 다운타임 5분 이내. Sentinel은 요구사항 상향 시 추후 도입 |
 | Docker Swarm 노드 장애 | 서비스 다운 | 레플리카 최소 2개, health check + 자동 재스케줄링 |
-| LDAP 서버 장애 | 로그인 불가 | JWT 토큰 만료 전까지 기존 세션 유지 (graceful degradation) |
+| IdP/SSO 인증 장애 | 신규 로그인 불가 | 기존 Redis 세션 유지 + 장애 원인(`SSO_*`, 인증서, nonce) 로그 확인 |
 
 ---
 
@@ -124,7 +124,7 @@
 - [ ] 프로젝트 스캐폴딩 (React + FastAPI + Docker Compose)
 - [ ] PostgreSQL 스키마 + Alembic 마이그레이션
 - [ ] Redis 연결 + 기본 캐시 레이어
-- [ ] SSO(LDAP) 인증 플로우
+- [ ] SSO(OIDC) 인증 플로우
 
 ### Phase 2: 코어 대시보드
 - [ ] 2x3 그리드 레이아웃 + 빈 슬롯 UI

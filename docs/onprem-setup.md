@@ -9,7 +9,7 @@
 
 - 사내 서버에 Docker + Docker Compose 설치됨
 - 사내 미러 레포지터리 주소를 알고 있음 (Docker, npm, pip, apt)
-- LDAP 서버 주소 및 접근 권한 확인됨
+- 사내 IdP 메타데이터(인증 URL, Client ID, X.509 인증서) 확인됨
 - 코드베이스가 서버에 전달됨 (`git clone` 또는 압축 전달)
 
 ---
@@ -60,22 +60,28 @@ APT_MIRROR=http://apt.internal/ubuntu
 ### 사내 인프라
 
 ```bash
-LDAP_SERVER=ldap://ldap.internal
 SECRET_KEY=<openssl rand -hex 32 로 생성>
 POSTGRES_DB=pholex
 POSTGRES_USER=pholex
 POSTGRES_PASSWORD=<설정>
 
+SSO_IDP_ENTITY_ID=https://sso.internal/oauth2/authorize
+SSO_CLIENT_ID=<IdP에 등록된 Client ID>
+SSO_BASE_URL=https://pholex.internal
+SSO_CERT="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+
 # beta
 REDIS_URL=redis://redis:6379/0
 DATABASE_URL=postgresql+asyncpg://pholex:<password>@postgres:5432/pholex
 ALLOWED_HOSTS=pholex.internal
+DEV_SSO_BYPASS=false
 
 # dev
 REDIS_URL=redis://redis:6379/1
 DATABASE_URL=postgresql+asyncpg://pholex:<password>@postgres:5432/pholex
 ALLOWED_HOSTS=localhost,127.0.0.1
 DEBUG=true
+DEV_SSO_BYPASS=true
 ```
 
 ---
@@ -173,7 +179,7 @@ scripts/deploy.sh --yes
 | `image name invalid` 오류 | `DOCKER_REGISTRY` trailing slash 누락 | 값 끝에 `/` 추가 |
 | `apt-get update` 실패 | apt 미러 주소 오류 | `APT_MIRROR` 값 확인. Dockerfile이 `.sources`와 `.list` 경로를 자동으로 시도함 |
 | `pip install` 404 | 사내 pip 미러에 패키지 없음 | Step 3 사전 검증으로 확인 후 레지스트리 관리자에게 패키지 등록 요청 |
-| 로그인 불가 | LDAP 서버 주소 오류 | `ldapsearch -H $LDAP_SERVER -x` 로 연결 테스트 |
+| 로그인 불가 | `SSO_*` 값 또는 인증서 설정 오류 | `SSO_IDP_ENTITY_ID`, `SSO_CLIENT_ID`, `SSO_BASE_URL`, `SSO_CERT` 값과 redirect URI 등록 상태 확인 |
 | DB 연결 실패 | `DATABASE_URL` 오류 | `POSTGRES_PASSWORD`가 URL 인코딩 필요한 특수문자 포함 여부 확인 |
 | npm install 실패 | npm 미러 인증 오류 | `NPM_REGISTRY_URL`에 인증이 필요한 경우 `.npmrc`에 토큰 설정 필요 |
 
