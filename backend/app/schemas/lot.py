@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,10 +11,10 @@ class LotRow(BaseModel):
 
     lot_id: str = Field(alias="lotId")
     status: str
-    equipment: str | None = None
-    process_step: str | None = Field(default=None, alias="processStep")
-    hold_comment: str | None = Field(default=None, alias="holdComment")
-    updated_at: datetime | None = Field(default=None, alias="updatedAt")
+    equipment: Optional[str] = None
+    process_step: Optional[str] = Field(default=None, alias="processStep")
+    hold_comment: Optional[str] = Field(default=None, alias="holdComment")
+    updated_at: Optional[datetime] = Field(default=None, alias="updatedAt")
 
 
 class SlotPayload(BaseModel):
@@ -22,5 +23,4 @@ class SlotPayload(BaseModel):
     table_id: int = Field(alias="tableId")
     rows: list[LotRow]
     diff: bool = True
-    last_updated: datetime | None = Field(default=None, alias="lastUpdated")
-
+    last_updated: Optional[datetime] = Field(default=None, alias="lastUpdated")

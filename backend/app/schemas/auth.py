@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class SessionUser(BaseModel):
-    id: int | None = None
+    id: Optional[int] = None
     employee_id: str
-    employee_number: str | None = None
+    employee_number: Optional[str] = None
     username: str
-    email: str | None = None
+    email: Optional[str] = None
     auth: str = "ENGINEER"
 
 
 class SessionResponse(BaseModel):
     authenticated: bool
-    user: SessionUser | None = None
-
+    user: Optional[SessionUser] = None

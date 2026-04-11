@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass
@@ -16,7 +16,7 @@ class CacheService:
         self._ttl_seconds = ttl_seconds
         self._entries: dict[str, CacheEntry] = {}
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> Optional[Any]:
         entry = self._entries.get(key)
         now = time.monotonic()
         if entry is None or entry.expires_at <= now:
@@ -32,4 +32,3 @@ class CacheService:
 
     async def invalidate(self, key: str) -> None:
         self._entries.pop(key, None)
-

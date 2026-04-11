@@ -1,0 +1,47 @@
+services:
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./pholex.db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SESSION_BACKEND: ${SESSION_BACKEND:-memory}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-1209600}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-5}
+      WS_POLL_INTERVAL: ${WS_POLL_INTERVAL:-1.0}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SSO_BASE_URL: ${SSO_BASE_URL:-http://localhost:8080}
+      SSO_IDP_ENTITY_ID: ${SSO_IDP_ENTITY_ID:-}
+      SSO_CLIENT_ID: ${SSO_CLIENT_ID:-}
+      SSO_CERT: ${SSO_CERT:-}
+      SSO_EMPLOYEE_ID_CLAIM: ${SSO_EMPLOYEE_ID_CLAIM:-employee_id}
+      SSO_EMPLOYEE_NUMBER_CLAIM: ${SSO_EMPLOYEE_NUMBER_CLAIM:-employee_number}
+      SSO_USERNAME_CLAIM: ${SSO_USERNAME_CLAIM:-username}
+      SSO_EMAIL_CLAIM: ${SSO_EMAIL_CLAIM:-email}
+      SSO_AUTH_CLAIM: ${SSO_AUTH_CLAIM:-auth}
+      DEV_SSO_BYPASS: ${DEV_SSO_BYPASS:-true}
+      DEV_SSO_USER_ID: ${DEV_SSO_USER_ID:-test001}
+      DEV_SSO_USERNAME: ${DEV_SSO_USERNAME:-테스트엔지니어}
+      DEV_SSO_EMPLOYEE_NUMBER: ${DEV_SSO_EMPLOYEE_NUMBER:-99999}
+      DEV_SSO_EMAIL: ${DEV_SSO_EMAIL:-test@dev.local}
+      DEV_SSO_AUTH: ${DEV_SSO_AUTH:-ENGINEER}
+
+  redis:
+    image: redis:7-alpine
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pholex}
+      POSTGRES_USER: ${POSTGRES_USER:-pholex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}

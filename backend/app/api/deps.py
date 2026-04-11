@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import HTTPException, Request, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,9 +43,8 @@ async def get_current_user(request: Request) -> SessionUser:
         )
 
 
-async def get_current_user_from_websocket(websocket: WebSocket) -> SessionUser | None:
+async def get_current_user_from_websocket(websocket: WebSocket) -> Optional[SessionUser]:
     session_id = websocket.cookies.get(websocket.app.state.settings.session_cookie_name)
     if not session_id:
         return None
     return await websocket.app.state.session_store.get_session(session_id)
-

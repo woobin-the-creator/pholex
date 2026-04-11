@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional, Union
 
 from sqlalchemy import Select, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,7 @@ from app.schemas.lot import LotRow, SlotPayload
 from app.services.cache_service import CacheService
 
 
-def normalize_employee_number(value: str | int | None) -> int | None:
+def normalize_employee_number(value: Optional[Union[str, int]]) -> Optional[int]:
     if value is None:
         return None
     text = str(value).strip()
@@ -65,8 +66,7 @@ class LotService:
                 return cached
 
         rows = await self.get_my_hold_rows(session, user)
-        last_updated: datetime | None = rows[0].updated_at if rows else None
+        last_updated: Optional[datetime] = rows[0].updated_at if rows else None
         payload = SlotPayload(tableId=1, rows=rows, diff=True, lastUpdated=last_updated)
         await cache_service.set(cache_key, payload)
         return payload
-

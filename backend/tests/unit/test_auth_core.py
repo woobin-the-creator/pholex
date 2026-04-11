@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -70,7 +70,7 @@ def test_validate_id_token_accepts_valid_token(rsa_keypair: tuple[str, str]) -> 
         settings.sso_auth_claim: "ENGINEER",
         "nonce": "nonce-123",
         "aud": "pholex-dev",
-        "exp": int((datetime.now(UTC) + timedelta(minutes=5)).timestamp()),
+        "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
     }
     token = jwt.encode(payload, private_pem, algorithm="RS256")
 
@@ -94,10 +94,9 @@ def test_validate_id_token_rejects_nonce_mismatch(rsa_keypair: tuple[str, str]) 
         settings.sso_auth_claim: "ENGINEER",
         "nonce": "other-nonce",
         "aud": "pholex-dev",
-        "exp": int((datetime.now(UTC) + timedelta(minutes=5)).timestamp()),
+        "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
     }
     token = jwt.encode(payload, private_pem, algorithm="RS256")
 
     with pytest.raises(AuthError, match="nonce"):
         validate_id_token(token, expected_nonce="nonce-123", settings=settings)
-

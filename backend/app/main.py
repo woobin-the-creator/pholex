@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
@@ -23,7 +23,7 @@ from app.services.lot_service import LotService
 logging.basicConfig(level=logging.INFO)
 
 
-def create_app(overrides: dict[str, Any] | None = None) -> FastAPI:
+def create_app(overrides: Optional[Dict[str, Any]] = None) -> FastAPI:
     settings = Settings.from_env(overrides)
 
     @asynccontextmanager
@@ -68,4 +68,3 @@ def create_app(overrides: dict[str, Any] | None = None) -> FastAPI:
 
 
 app = create_app()
-

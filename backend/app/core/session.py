@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Optional, Protocol
 from uuid import uuid4
 
 from app.db.redis import create_redis_client
 from app.schemas.auth import SessionUser
 
 
-@dataclass(slots=True)
+@dataclass
 class StoredSession:
     session_id: str
     user: SessionUser
@@ -16,7 +16,7 @@ class StoredSession:
 
 class SessionStore(Protocol):
     async def create_session(self, user: SessionUser, ttl_seconds: int) -> StoredSession: ...
-    async def get_session(self, session_id: str) -> SessionUser | None: ...
+    async def get_session(self, session_id: str) -> Optional[SessionUser]: ...
     async def delete_session(self, session_id: str) -> None: ...
     async def store_nonce(self, nonce: str, ttl_seconds: int) -> None: ...
     async def consume_nonce(self, nonce: str) -> bool: ...
@@ -34,7 +34,7 @@ class InMemorySessionStore:
         self._sessions[session_id] = user.model_dump_json()
         return StoredSession(session_id=session_id, user=user)
 
-    async def get_session(self, session_id: str) -> SessionUser | None:
+    async def get_session(self, session_id: str) -> Optional[SessionUser]:
         raw = self._sessions.get(session_id)
         if raw is None:
             return None
@@ -70,7 +70,7 @@ class RedisSessionStore:
         )
         return StoredSession(session_id=session_id, user=user)
 
-    async def get_session(self, session_id: str) -> SessionUser | None:
+    async def get_session(self, session_id: str) -> Optional[SessionUser]:
         raw = await self._client.get(f"session:{session_id}")
         if raw is None:
             return None

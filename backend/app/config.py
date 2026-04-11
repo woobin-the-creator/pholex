@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
 
-def _as_bool(value: str | bool | None, default: bool) -> bool:
+def _as_bool(value: Optional[Union[str, bool]], default: bool) -> bool:
     if value is None:
         return default
     if isinstance(value, bool):
@@ -32,7 +32,7 @@ class Settings(BaseModel):
     dev_sso_user_id: str = "test001"
     dev_sso_username: str = "테스트엔지니어"
     dev_sso_employee_number: str = "99999"
-    dev_sso_email: str | None = "test@dev.local"
+    dev_sso_email: Optional[str] = "test@dev.local"
     dev_sso_auth: str = "ENGINEER"
 
     sso_idp_entity_id: str = ""
@@ -46,7 +46,7 @@ class Settings(BaseModel):
     sso_auth_claim: str = "auth"
 
     @classmethod
-    def from_env(cls, overrides: Mapping[str, Any] | None = None) -> "Settings":
+    def from_env(cls, overrides: Optional[Mapping[str, Any]] = None) -> "Settings":
         data: dict[str, Any] = {
             "database_url": os.getenv("DATABASE_URL", cls.model_fields["database_url"].default),
             "redis_url": os.getenv("REDIS_URL", cls.model_fields["redis_url"].default),
@@ -141,4 +141,3 @@ class Settings(BaseModel):
         if overrides:
             data.update(overrides)
         return cls(**data)
-

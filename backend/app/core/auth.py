@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -14,12 +14,12 @@ class AuthError(ValueError):
     pass
 
 
-@dataclass(slots=True)
+@dataclass
 class IdentityClaims:
     employee_id: str
-    employee_number: str | None
+    employee_number: Optional[str]
     username: str
-    email: str | None
+    email: Optional[str]
     auth: str = "ENGINEER"
 
 
@@ -97,4 +97,3 @@ def build_authorize_url(nonce: str, settings: Settings) -> str:
         }
     )
     return f"{settings.sso_idp_entity_id}?{query}"
-

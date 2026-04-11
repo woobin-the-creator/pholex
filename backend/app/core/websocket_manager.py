@@ -5,6 +5,7 @@ import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
+from typing import Optional
 
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -22,8 +23,8 @@ class ConnectionState:
     websocket: WebSocket
     user: SessionUser
     subscriptions: set[int] = field(default_factory=set)
-    poll_task: asyncio.Task[None] | None = None
-    last_payload_signature: str | None = None
+    poll_task: Optional[asyncio.Task[None]] = None
+    last_payload_signature: Optional[str] = None
 
 
 class WebSocketManager:
