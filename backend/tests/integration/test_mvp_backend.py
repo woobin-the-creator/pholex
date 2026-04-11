@@ -27,14 +27,19 @@ def make_client(tmp_path: Path) -> TestClient:
 def seed_rows(client: TestClient) -> None:
     async def _seed() -> None:
         async with client.app.state.session_factory() as session:
-            user = User(
-                employee_id="test001",
-                employee_number="99999",
-                username="테스트엔지니어",
-                email="test@dev.local",
-                auth="ENGINEER",
+            existing_user = await session.execute(
+                select(User).where(User.employee_id == "test001")
             )
-            session.add(user)
+            if existing_user.scalar_one_or_none() is None:
+                session.add(
+                    User(
+                        employee_id="test001",
+                        employee_number="99999",
+                        username="테스트엔지니어",
+                        email="test@dev.local",
+                        auth="ENGINEER",
+                    )
+                )
             session.add_all(
                 [
                     LotStatus(

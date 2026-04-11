@@ -18,7 +18,7 @@ from app.services.lot_service import LotService
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(eq=False)
 class ConnectionState:
     websocket: WebSocket
     user: SessionUser
@@ -127,4 +127,3 @@ class WebSocketManager:
         await connection.websocket.send_json(
             {"type": "table_update", "payload": payload.model_dump(by_alias=True, mode="json")}
         )
-
