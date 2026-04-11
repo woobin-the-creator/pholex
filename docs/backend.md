@@ -29,10 +29,9 @@ CREATE TABLE user_lots (
 );
 CREATE INDEX idx_user_lots_user_id ON user_lots(user_id);  -- 로그인 시 사용자 랏 목록 조회
 
--- 랏 상태 (수집된 데이터)
+-- 랏 상태 (수집된 데이터) — lot_id가 유니크하므로 PK로 직접 사용
 CREATE TABLE lot_status (
-    id SERIAL PRIMARY KEY,
-    lot_id VARCHAR(100) NOT NULL,
+    lot_id VARCHAR(100) PRIMARY KEY,
     status VARCHAR(20) NOT NULL CHECK (status IN ('run', 'wait', 'hold')),
     equipment VARCHAR(100),
     process_step VARCHAR(100),
@@ -41,9 +40,10 @@ CREATE TABLE lot_status (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'
 );
-CREATE INDEX idx_lot_status_lot_id ON lot_status(lot_id);
+-- 수집 시: INSERT ... ON CONFLICT (lot_id) DO UPDATE SET ...
 CREATE INDEX idx_lot_status_updated_at ON lot_status(updated_at);
-CREATE INDEX idx_lot_status_status ON lot_status(status);  -- 상태별 필터링
+CREATE INDEX idx_lot_status_status ON lot_status(status);
+CREATE INDEX idx_lot_status_hold_operator ON lot_status(hold_operator_id) WHERE status = 'hold';
 
 -- 필터 프리셋 (사용자별 저장)
 CREATE TABLE filter_presets (

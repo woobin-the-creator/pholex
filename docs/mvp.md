@@ -96,27 +96,25 @@ WHERE status = 'hold'
 
 ## 개발 환경 테스트용 시드 데이터
 
-사외 개발 환경에서는 실제 API 수집이 불가하므로 seed 데이터를 DB에 직접 삽입해 테스트한다.
+사외 개발 환경에서는 실제 API 수집이 불가하므로 seed 스크립트를 실행해 테스트 데이터를 삽입한다.
 
-```sql
--- 테스트 사용자 (DEV_SSO_BYPASS 계정과 employee_number 일치)
-INSERT INTO users (employee_id, employee_number, username, email, auth)
-VALUES ('test001', '99999', '테스트엔지니어', 'test@dev.local', 'ENGINEER');
+**스크립트**: `scripts/seed_dev.sql`
 
--- 슬롯 [1]에 표시될 hold 랏 (hold_operator_id = 99999)
-INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_comment, hold_operator_id)
-VALUES
-  ('LOT-001', 'hold', 'EQ-A01', 'STEP-10', '장비 이상 확인 필요', 99999),
-  ('LOT-002', 'hold', 'EQ-B03', 'STEP-25', '자재 부족', 99999);
-
--- 다른 사용자의 hold 랏 (슬롯 [1]에 표시되면 안 됨)
-INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_comment, hold_operator_id)
-VALUES
-  ('LOT-003', 'hold', 'EQ-C01', 'STEP-05', '검사 대기', 88888);
-
--- 내 run/wait 랏 (슬롯 [1]에 표시되면 안 됨)
-INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_operator_id)
-VALUES
-  ('LOT-004', 'run', 'EQ-A02', 'STEP-15', 99999),
-  ('LOT-005', 'wait', 'EQ-D01', 'STEP-08', 99999);
+```bash
+# Alembic 마이그레이션 완료 후 실행
+docker compose -p pholex-dev exec -T postgres \
+  psql -U pholex -d pholex -f /dev/stdin < scripts/seed_dev.sql
 ```
+
+**포함된 데이터:**
+
+| 구분 | 건수 | 슬롯 [1] 표시 |
+|------|------|--------------|
+| 내 hold 랏 (`hold_operator_id=99999`) | 3건 | O |
+| 다른 사용자 hold 랏 | 2건 | X (필터링 검증) |
+| 내 run/wait 랏 | 4건 | X (상태 필터링 검증) |
+
+스크립트 실행 후 확인 쿼리가 자동 출력되어 슬롯 [1]에 표시될 3건을 바로 확인할 수 있다.
+
+> MVP 이후 실시간 테스트(WebSocket, 상태 변경 알림)가 필요해지면
+> `collectors/mock_collector.py`를 별도로 구현한다.
