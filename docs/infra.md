@@ -39,7 +39,10 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql+asyncpg://...
-      - LDAP_SERVER=ldap://...
+      - SSO_IDP_ENTITY_ID=https://sso.internal/oauth2/authorize
+      - SSO_CLIENT_ID=pholex
+      - SSO_BASE_URL=https://pholex.internal
+      - SSO_CERT=-----BEGIN CERTIFICATE-----...
 
   redis:
     image: redis:7-alpine
@@ -171,7 +174,11 @@ services:
     environment:
       - REDIS_URL=${REDIS_URL}
       - DATABASE_URL=${DATABASE_URL}
-      - LDAP_SERVER=${LDAP_SERVER}
+      - SSO_IDP_ENTITY_ID=${SSO_IDP_ENTITY_ID}
+      - SSO_CLIENT_ID=${SSO_CLIENT_ID}
+      - SSO_BASE_URL=${SSO_BASE_URL}
+      - SSO_CERT=${SSO_CERT}
+      - DEV_SSO_BYPASS=${DEV_SSO_BYPASS}
       - SECRET_KEY=${SECRET_KEY}
 
   redis:
@@ -402,13 +409,17 @@ SECRET_KEY=change-me-in-production
 POSTGRES_DB=pholex
 POSTGRES_USER=pholex
 POSTGRES_PASSWORD=change-me
-LDAP_SERVER=ldap://ldap.internal
+SSO_IDP_ENTITY_ID=https://sso.internal/oauth2/authorize
+SSO_CLIENT_ID=change-me
+SSO_BASE_URL=https://pholex.internal
+SSO_CERT="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 
 # ── Beta ──
 # .env.beta 에 복사 후 실제 값 입력
 REDIS_URL=redis://redis:6379/0
 DATABASE_URL=postgresql+asyncpg://pholex:change-me@postgres:5432/pholex
 ALLOWED_HOSTS=pholex.internal
+DEV_SSO_BYPASS=false
 
 # ── Dev ──
 # .env.dev 에 복사 후 실제 값 입력
@@ -416,18 +427,19 @@ REDIS_URL=redis://redis:6379/1   # DB 인덱스 분리 (같은 서버일 경우)
 DATABASE_URL=postgresql+asyncpg://pholex:change-me@postgres:5432/pholex
 ALLOWED_HOSTS=localhost,127.0.0.1
 DEBUG=true
+DEV_SSO_BYPASS=true
 ```
 
 ### 14.5 빠른 클로즈 베타 구축 순서
 
 ```
 1. 서버에 Docker + Docker Compose 설치
-2. .env.beta 파일 생성 (LDAP_SERVER, SECRET_KEY, DB 패스워드)
+2. .env.beta 파일 생성 (`SSO_*`, SECRET_KEY, DB 패스워드)
 3. main 브랜치로 전환
 4. scripts/deploy.sh --yes
    → frontend 빌드 → pholex-beta 스택 시작 (포트 80)
 5. Nginx SSL 설정 (Let's Encrypt or 사내 인증서)
-6. LDAP 화이트리스트로 베타 사용자 계정 등록
+6. IdP redirect URI/허용 사용자 설정 확인
 ```
 
 ### 14.6 확장 경로 (베타 → 정식)
