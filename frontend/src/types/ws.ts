@@ -1,4 +1,4 @@
-import type { LotRow } from './lot'
+import type { ApiLotRow } from './lot'
 
 export interface SocketEnvelope<T = unknown> {
   type: string
@@ -7,6 +7,7 @@ export interface SocketEnvelope<T = unknown> {
 
 export interface TableUpdatePayload {
   tableId: number
-  rows: LotRow[]
+  rows: ApiLotRow[]
   diff: boolean
+  lastUpdated?: string | null
 }

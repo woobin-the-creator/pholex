@@ -31,7 +31,7 @@ describe('TableSlot', () => {
 
     const row = screen.getByRole('row', { name: /LOT-HOLD-001 hold EQ-01 ETCH Recipe review/i })
     expect(row).toHaveClass('table-slot__row--critical')
-    expect(screen.getByText(/마지막 갱신 20시 30분 0초/i)).toBeInTheDocument()
+    expect(screen.getByText(/마지막 갱신 20:30:00\.000/i)).toBeInTheDocument()
 
     await userEvent.setup().click(screen.getByRole('button', { name: '새로고침' }))
     expect(onRefresh).toHaveBeenCalledTimes(1)

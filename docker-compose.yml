@@ -12,6 +12,9 @@ services:
   backend:
     build:
       context: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./pholex.db}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -45,3 +48,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pholex}
       POSTGRES_USER: ${POSTGRES_USER:-pholex}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pholex} -d ${POSTGRES_DB:-pholex}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

@@ -2,7 +2,7 @@ import { useAtom } from 'jotai'
 import { useCallback, useEffect } from 'react'
 import { tableDataAtomFamily, tableLastUpdatedAtomFamily, tableLoadingAtomFamily } from '../atoms/tableAtoms'
 import { fetchJson } from '../services/api'
-import type { MyHoldResponse } from '../types/lot'
+import { normalizeLotRows, type MyHoldResponse } from '../types/lot'
 
 const SLOT_1_ENDPOINT = '/api/lots/my-hold'
 
@@ -15,7 +15,7 @@ export function useTableData(tableId: number, enabled: boolean) {
     setLoading(true)
     try {
       const response = await fetchJson<MyHoldResponse>(SLOT_1_ENDPOINT)
-      setRows(response.rows)
+      setRows(normalizeLotRows(response.rows))
       setLastUpdated(new Date())
     } finally {
       setLoading(false)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { createWebSocketClient, type WebSocketClient } from '../services/ws'
 import type { SocketEnvelope, TableUpdatePayload } from '../types/ws'
-import type { LotRow } from '../types/lot'
+import { normalizeLotRows, type LotRow } from '../types/lot'
 
 interface UseSlot1WebSocketOptions {
   enabled: boolean
@@ -28,7 +28,7 @@ export function useSlot1WebSocket({ enabled, tableId, onRows, onUpdatedAt }: Use
           return
         }
 
-        onRows(envelope.payload.rows)
+        onRows(normalizeLotRows(envelope.payload.rows))
         onUpdatedAt(new Date())
       }
     })

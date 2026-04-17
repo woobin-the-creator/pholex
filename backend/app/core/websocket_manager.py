@@ -57,7 +57,7 @@ class WebSocketManager:
         if table_id != 1:
             return
         connection.subscriptions.add(table_id)
-        await self._send_update(connection, force_refresh=True)
+        await self._send_update(connection, force_refresh=True, always_emit=True)
         if connection.poll_task is None:
             connection.poll_task = asyncio.create_task(self._poll(connection))
 
@@ -71,7 +71,7 @@ class WebSocketManager:
 
     async def refresh(self, connection: ConnectionState, table_id: int) -> None:
         logger.info("ws_refresh", extra={"event": "ws_refresh", "tableId": table_id})
-        await self._send_update(connection, force_refresh=True)
+        await self._send_update(connection, force_refresh=True, always_emit=True)
 
     async def send_heartbeat_ack(self, connection: ConnectionState) -> None:
         await connection.websocket.send_json({"type": "heartbeat_ack"})
@@ -91,7 +91,7 @@ class WebSocketManager:
         try:
             while connection.subscriptions:
                 await asyncio.sleep(self._poll_interval)
-                await self._send_update(connection, force_refresh=True)
+                await self._send_update(connection, force_refresh=True, always_emit=False)
         except asyncio.CancelledError:  # pragma: no cover - lifecycle cleanup
             raise
 
@@ -100,6 +100,7 @@ class WebSocketManager:
         connection: ConnectionState,
         *,
         force_refresh: bool,
+        always_emit: bool,
     ) -> None:
         async with self._session_factory() as session:
             payload = await self._lot_service.get_my_hold_payload(
@@ -113,7 +114,7 @@ class WebSocketManager:
             sort_keys=True,
             ensure_ascii=False,
         )
-        if signature == connection.last_payload_signature:
+        if not always_emit and signature == connection.last_payload_signature:
             return
         connection.last_payload_signature = signature
         logger.info(

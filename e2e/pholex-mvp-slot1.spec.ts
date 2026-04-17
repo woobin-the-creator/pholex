@@ -23,7 +23,17 @@ test.describe('Pholex MVP slot [1] smoke', () => {
     await slot.getByRole('button', { name: '새로고침' }).click()
     await expect(lastUpdated).not.toHaveText(firstTimestamp ?? '')
 
+    const logoutResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/auth/logout') && response.status() === 200
+    )
+    const ssoInitResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/auth/sso/init') && response.status() === 302
+    )
+
     await page.getByRole('button', { name: '로그아웃' }).click()
-    await expect(page).toHaveURL(/\/api\/auth\/sso\/init/)
+    await logoutResponse
+    await ssoInitResponse
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('heading', { name: '대시보드' })).toBeVisible()
   })
 })
