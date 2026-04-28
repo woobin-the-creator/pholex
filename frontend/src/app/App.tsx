@@ -11,13 +11,24 @@ import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
 import { useMyHoldTable } from '../hooks/useMyHoldTable'
 import { getSession, logout, UnauthorizedError } from '../services/api'
 import { filterLotRows, type LotFilters } from '../utils/filterLots'
+import type { SessionUser } from '../types/auth'
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+const DEMO_USER: SessionUser = {
+  id: 0,
+  employee_id: 'DEMO-0001',
+  employee_number: 'DEMO-0001',
+  username: '데모 사용자',
+  email: 'demo@pholex.local',
+  auth: 'ENGINEER',
+}
 
 const PLACEHOLDER_SLOTS = [
-  { slotIndex: 0, title: '활성 Lot 상태', subtitle: '실시간 생산 흐름 카드가 들어올 자리입니다.' },
+  { slotIndex: 0, title: '전체 홀드', subtitle: '장기 hold용 코멘트 + 제외처리 가능' },
   { slotIndex: 2, title: '수율 계측', subtitle: '측정 결함과 판정 결과를 위한 슬롯입니다.' },
-  { slotIndex: 3, title: '자재 재고', subtitle: '부품/배치 재고 테이블이 여기에 들어옵니다.' },
-  { slotIndex: 4, title: '작업자 교대 로그', subtitle: '교대 이벤트와 메모 피드가 들어옵니다.' },
-  { slotIndex: 5, title: '중요 알림', subtitle: 'Critical alert 카드와 toast 연동 예정 슬롯입니다.' },
+  { slotIndex: 3, title: '인폼 lot hold', subtitle: '인폼에 포함된 랏 파싱 후 해당 랏 status 표시 (status: hold는 최상단)' },
+  { slotIndex: 4, title: 'special hold', subtitle: '특정 홀드 code (spc, fdc ...) 랏 표시' },
+  { slotIndex: 5, title: '간단 hold', subtitle: 'rework cnt / rework 판정대기' },
 ]
 
 const DEFAULT_FILTERS: LotFilters = {
@@ -43,6 +54,13 @@ function DashboardApp() {
   })
 
   const loadSession = useEffectEvent(async () => {
+    if (DEMO_MODE) {
+      setUser(DEMO_USER)
+      setAuthError(null)
+      setAuthResolved(true)
+      return
+    }
+
     try {
       const session = await getSession()
 

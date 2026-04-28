@@ -35,6 +35,14 @@ export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: L
 
       <div className="lot-panel__table-wrap">
         <table className="lot-table">
+          <colgroup>
+            <col className="col-lot-id" />
+            <col className="col-status" />
+            <col className="col-equipment" />
+            <col className="col-process" />
+            <col className="col-comment" />
+            <col className="col-updated" />
+          </colgroup>
           <thead>
             <tr>
               <th>Lot ID</th>
@@ -65,7 +73,7 @@ export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: L
                   className={`lot-table__row${row.status === 'hold' ? ' lot-table__row--hold' : ''}`}
                   data-status={row.status}
                 >
-                  <td className="lot-table__lot-id">{row.lotId}</td>
+                  <td className="lot-table__lot-id" title={row.lotId}>{row.lotId}</td>
                   <td>
                     <span
                       className={`status-pill${row.status === 'hold' ? ' status-pill--hold' : ' status-pill--default'}`}
@@ -73,10 +81,10 @@ export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: L
                       {row.status}
                     </span>
                   </td>
-                  <td>{row.equipment ?? '-'}</td>
-                  <td>{row.processStep ?? '-'}</td>
-                  <td>{row.holdComment ?? '-'}</td>
-                  <td>{formatDateTime(row.updatedAt)}</td>
+                  <td title={row.equipment ?? undefined}>{row.equipment ?? '-'}</td>
+                  <td title={row.processStep ?? undefined}>{row.processStep ?? '-'}</td>
+                  <td title={row.holdComment ?? undefined}>{row.holdComment ?? '-'}</td>
+                  <td title={row.updatedAt ?? undefined}>{formatDateTime(row.updatedAt)}</td>
                 </tr>
               ))
             )}
