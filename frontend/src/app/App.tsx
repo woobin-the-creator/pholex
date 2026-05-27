@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue } from 'jotai'
 import { Provider } from 'jotai/react'
 import { useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { authAtom } from '../atoms/authAtom'
 import { themeAtom } from '../atoms/themeAtom'
 import { TopNav } from '../components/layout/TopNav'
@@ -48,12 +49,40 @@ function formatDate(): string {
   return `${dd}.${mm}.${yyyy} · Fab 7`
 }
 
+type PanelId = 'slot-0' | 'live' | 'slot-2' | 'slot-3' | 'slot-4' | 'slot-5'
+
 function DashboardApp() {
   const [user, setUser] = useAtom(authAtom)
   const [authResolved, setAuthResolved] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [filters, setFilters] = useState<LotFilters>(DEFAULT_FILTERS)
+  const [maximized, setMaximized] = useState<PanelId | null>(null)
   const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user)
+
+  const toggleMaximize = (id: PanelId) => {
+    const update = () => {
+      setMaximized((current) => (current === id ? null : id))
+    }
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { ready: Promise<void> }
+    }
+    if (typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => {
+        flushSync(update)
+      })
+    } else {
+      update()
+    }
+  }
+
+  useEffect(() => {
+    if (!maximized) return undefined
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMaximized(null)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [maximized])
   const deferredLotIdQuery = useDeferredValue(filters.lotIdQuery)
   const filteredRows = filterLotRows(rows, {
     ...filters,
@@ -165,11 +194,14 @@ function DashboardApp() {
           kpis={kpis}
         />
 
-        <DashboardGrid>
+        <DashboardGrid hasMaximized={maximized !== null}>
           <PlaceholderPanel
             slotIndex={0}
             title="전체 홀드"
             subtitle="장기 hold 코멘트 + 제외처리 가능"
+            isMaximized={maximized === 'slot-0'}
+            onToggleMaximize={() => toggleMaximize('slot-0')}
+            vtName="card-slot-0"
           />
           <LotHoldPanel
             rows={filteredRows}
@@ -177,26 +209,41 @@ function DashboardApp() {
             error={error}
             lastUpdated={lastUpdated}
             onRefresh={refresh}
+            isMaximized={maximized === 'live'}
+            onToggleMaximize={() => toggleMaximize('live')}
+            vtName="card-live"
           />
           <PlaceholderPanel
             slotIndex={2}
             title="수율 계측"
             subtitle="측정 결함과 판정 결과를 위한 슬롯입니다."
+            isMaximized={maximized === 'slot-2'}
+            onToggleMaximize={() => toggleMaximize('slot-2')}
+            vtName="card-slot-2"
           />
           <PlaceholderPanel
             slotIndex={3}
             title="인폼 lot hold"
             subtitle="인폼에 포함된 lot 파싱 후 status 표시 (hold가 최상단)"
+            isMaximized={maximized === 'slot-3'}
+            onToggleMaximize={() => toggleMaximize('slot-3')}
+            vtName="card-slot-3"
           />
           <PlaceholderPanel
             slotIndex={4}
             title="Special hold"
             subtitle="SPC/FDC 등 특정 hold code lot"
+            isMaximized={maximized === 'slot-4'}
+            onToggleMaximize={() => toggleMaximize('slot-4')}
+            vtName="card-slot-4"
           />
           <PlaceholderPanel
             slotIndex={5}
             title="간단 hold"
             subtitle="rework cnt / rework 판정대기"
+            isMaximized={maximized === 'slot-5'}
+            onToggleMaximize={() => toggleMaximize('slot-5')}
+            vtName="card-slot-5"
           />
         </DashboardGrid>
 
