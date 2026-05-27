@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { formatDateTime } from '../../utils/format'
 import type { LotRow } from '../../types/lot'
 
@@ -8,6 +8,9 @@ interface LotHoldPanelProps {
   error: string | null
   lastUpdated: string | null
   onRefresh: () => void
+  isMaximized?: boolean
+  onToggleMaximize?: () => void
+  vtName?: string
 }
 
 function shortClock(iso: string | null): string {
@@ -21,13 +24,27 @@ function shortClock(iso: string | null): string {
   })
 }
 
-export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: LotHoldPanelProps) {
+export function LotHoldPanel({
+  rows,
+  loading,
+  error,
+  lastUpdated,
+  onRefresh,
+  isMaximized = false,
+  onToggleMaximize,
+  vtName,
+}: LotHoldPanelProps) {
   const [spinning, setSpinning] = useState(false)
 
   const handleRefresh = () => {
     setSpinning(true)
     window.setTimeout(() => setSpinning(false), 900)
     onRefresh()
+  }
+
+  const handleHeadDoubleClick = (event: MouseEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest('button')) return
+    onToggleMaximize?.()
   }
 
   const renderBody = () => {
@@ -70,11 +87,12 @@ export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: L
 
   return (
     <article
-      className="card card--span2 is-live"
+      className={`card card--span2 is-live${isMaximized ? ' is-maximized' : ''}`}
       aria-labelledby="lot-hold-title"
       data-testid="dashboard-panel"
+      style={vtName ? { viewTransitionName: vtName } : undefined}
     >
-      <header className="card__head">
+      <header className="card__head" onDoubleClick={handleHeadDoubleClick}>
         <div>
           <p className="card__index">— 02 · live</p>
           <h2 id="lot-hold-title" className="card__title">내 lot hold</h2>
@@ -93,6 +111,19 @@ export function LotHoldPanel({ rows, loading, error, lastUpdated, onRefresh }: L
             <span className="material-symbols-outlined" aria-hidden="true">refresh</span>
             refresh
           </button>
+          {onToggleMaximize ? (
+            <button
+              type="button"
+              className="card__icon"
+              onClick={onToggleMaximize}
+              aria-label={isMaximized ? '원래대로' : '패널 확대'}
+              title={isMaximized ? '원래대로 (ESC)' : '패널 확대'}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                {isMaximized ? 'close_fullscreen' : 'open_in_full'}
+              </span>
+            </button>
+          ) : null}
         </div>
       </header>
 
