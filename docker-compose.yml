@@ -1,0 +1,45 @@
+services:
+  nginx:
+    image: ${DOCKER_REGISTRY:-}nginx:alpine
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
+        APT_MIRROR: ${APT_MIRROR:-}
+    environment:
+      ADAPTER_MODE: ${ADAPTER_MODE:-fake}
+      DEV_SSO_BYPASS: ${DEV_SSO_BYPASS:-true}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://pholex:pholex@postgres:5432/pholex}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-}
+        NPM_REGISTRY_URL: ${NPM_REGISTRY_URL:-}
+    environment:
+      VITE_DEMO_MODE: "false"
+
+  postgres:
+    image: ${DOCKER_REGISTRY:-}postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pholex}
+      POSTGRES_USER: ${POSTGRES_USER:-pholex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pholex}
+    volumes:
+      - pg_data_dev:/var/lib/postgresql/data
+
+volumes:
+  pg_data_dev:

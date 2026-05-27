@@ -1,10 +1,20 @@
 .omx/
 
-# 환경 설정 파일 (실제 값 포함 — git 제외)
+# 환경 설정 파일 (실제 값 포함 — git 제외). .env.example만 추적.
+.env
 .env.dev
 .env.beta
 .env.local
+.env.*.local
 
 # OMC 상태/세션 파일 (스펙은 포함)
 .omc/state/
 .omc/logs/
+
+# macOS
+.DS_Store
+
+# Playwright/스크린샷 결과물 (CI 외 로컬)
+.playwright-cli/
+.playwright-mcp/
+test-results/
