@@ -5,5 +5,5 @@ interface DashboardGridProps {
 }
 
 export function DashboardGrid({ children }: DashboardGridProps) {
-  return <div className="dashboard-grid">{children}</div>
+  return <section className="grid">{children}</section>
 }

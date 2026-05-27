@@ -2,27 +2,36 @@ interface PlaceholderPanelProps {
   slotIndex: number
   title: string
   subtitle: string
+  spanTwo?: boolean
 }
 
-export function PlaceholderPanel({ slotIndex, title, subtitle }: PlaceholderPanelProps) {
+const SLOT_LABEL = (n: number) => `— 0${n + 1}`
+
+export function PlaceholderPanel({
+  slotIndex,
+  title,
+  subtitle,
+  spanTwo = false,
+}: PlaceholderPanelProps) {
   const headingId = `placeholder-panel-${slotIndex}`
 
   return (
-    <section className="panel placeholder-panel" aria-labelledby={headingId} data-testid="dashboard-panel">
-      <header className="panel__header">
+    <article
+      className={`card${spanTwo ? ' card--span2' : ''}`}
+      aria-labelledby={headingId}
+      data-testid="dashboard-panel"
+    >
+      <header className="card__head">
         <div>
-          <p className="panel__eyebrow">{slotIndex}. Placeholder</p>
-          <h2 id={headingId} className="panel__title">
+          <p className="card__index">{SLOT_LABEL(slotIndex)}</p>
+          <h2 id={headingId} className="card__title">
             {title}
           </h2>
         </div>
-        <span className="panel__meta">MVP 이후</span>
+        <span className="card__meta">MVP 이후</span>
       </header>
 
-      <div className="placeholder-panel__body">
-        <p className="placeholder-panel__subtitle">{subtitle}</p>
-        <p className="placeholder-panel__copy">이 슬롯은 현재 MVP 범위 밖이라 자리만 유지합니다.</p>
-      </div>
-    </section>
+      <p className="placeholder-copy">{subtitle}</p>
+    </article>
   )
 }

@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pholex — Light (default) / Dark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'ss01';
+    transition: background-color 360ms cubic-bezier(0.16,1,0.3,1), color 360ms cubic-bezier(0.16,1,0.3,1);
+  }
+
+  /* ===========================================================
+     Ambient edges — luxury-car ambient light style separators
+     Diffused gradient strips (2px) with brightness peak in middle,
+     fading at both ends. Replaces hard 1px borders for premium feel.
+     =========================================================== */
+  body[data-theme="light"] {
+    /* horizontal strip: peaks at center cross-section, fades at ends along length */
+    --ambient-h: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(17,17,17,0.10) 30%,
+        rgba(17,17,17,0.22) 50%,
+        rgba(17,17,17,0.10) 70%,
+        transparent 100%);
+    --ambient-h-mask: linear-gradient(to right,
+        transparent 0%, black 8%, black 92%, transparent 100%);
+    --ambient-v: linear-gradient(to right,
+        transparent 0%,
+        rgba(17,17,17,0.10) 30%,
+        rgba(17,17,17,0.22) 50%,
+        rgba(17,17,17,0.10) 70%,
+        transparent 100%);
+    --ambient-v-mask: linear-gradient(to bottom,
+        transparent 0%, black 8%, black 92%, transparent 100%);
+    --ambient-edge-color: rgba(17,17,17,0.18);
+  }
+  body[data-theme="dark"] {
+    --ambient-h: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(214,184,112,0.18) 30%,
+        rgba(214,184,112,0.42) 50%,
+        rgba(214,184,112,0.18) 70%,
+        transparent 100%);
+    --ambient-h-mask: linear-gradient(to right,
+        transparent 0%, black 7%, black 93%, transparent 100%);
+    --ambient-v: linear-gradient(to right,
+        transparent 0%,
+        rgba(214,184,112,0.18) 30%,
+        rgba(214,184,112,0.42) 50%,
+        rgba(214,184,112,0.18) 70%,
+        transparent 100%);
+    --ambient-v-mask: linear-gradient(to bottom,
+        transparent 0%, black 7%, black 93%, transparent 100%);
+    --ambient-edge-color: rgba(214,184,112,0.30);
+  }
+
+  @keyframes ambientBreathe {
+    0%, 100% { opacity: 0.78; }
+    50%      { opacity: 1; }
+  }
+
+  /* Major seam: side nav right edge */
+  .side { border-right: 0 !important; }
+  .side::after {
+    content: '';
+    position: absolute; right: 0; top: 0; bottom: 0; width: 2px;
+    background: var(--ambient-v);
+    -webkit-mask-image: var(--ambient-v-mask);
+            mask-image: var(--ambient-v-mask);
+    pointer-events: none;
+  }
+  body[data-theme="dark"] .side::after { animation: ambientBreathe 8s ease-in-out infinite; }
+
+  /* Top nav bottom seam */
+  .topnav { border-bottom: 0 !important; position: relative; }
+  .topnav::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: var(--ambient-h);
+    -webkit-mask-image: var(--ambient-h-mask);
+            mask-image: var(--ambient-h-mask);
+    pointer-events: none;
+  }
+  body[data-theme="dark"] .topnav::after { animation: ambientBreathe 9s ease-in-out infinite; }
+
+  /* Dash header bottom seam */
+  .dash-header { border-bottom: 0 !important; position: relative; }
+  .dash-header::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: var(--ambient-h);
+    -webkit-mask-image: var(--ambient-h-mask);
+            mask-image: var(--ambient-h-mask);
+    pointer-events: none;
+  }
+  body[data-theme="dark"] .dash-header::after { animation: ambientBreathe 8.4s ease-in-out infinite; }
+
+  /* Footer top seam */
+  .footer { border-top: 0 !important; position: relative; }
+  .footer::before {
+    content: '';
+    position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    background: var(--ambient-h);
+    -webkit-mask-image: var(--ambient-h-mask);
+            mask-image: var(--ambient-h-mask);
+    pointer-events: none;
+  }
+  body[data-theme="dark"] .footer::before { animation: ambientBreathe 9.6s ease-in-out infinite; }
+
+  /* KPI vertical dividers */
+  .kpi { border-left: 0 !important; position: relative; }
+  .kpi:not(:first-child)::before {
+    content: '';
+    position: absolute; left: 0; top: 18%; bottom: 18%; width: 1px;
+    background: var(--ambient-edge-color);
+    -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%, black 25%, black 75%, transparent 100%);
+            mask-image: linear-gradient(to bottom,
+      transparent 0%, black 25%, black 75%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Light theme card grid lines — use background-image gradients
+     because .card::before is reserved for dark theme accent stripe */
+  body[data-theme="light"] .card {
+    border-bottom: 0 !important;
+    border-right: 0 !important;
+    background-image:
+      linear-gradient(to right,
+        transparent 0%, rgba(17,17,17,0.12) 12%, rgba(17,17,17,0.22) 50%, rgba(17,17,17,0.12) 88%, transparent 100%),
+      linear-gradient(to bottom,
+        transparent 0%, rgba(17,17,17,0.12) 12%, rgba(17,17,17,0.22) 50%, rgba(17,17,17,0.12) 88%, transparent 100%);
+    background-size: 100% 1px, 1px 100%;
+    background-position: bottom left, top right;
+    background-repeat: no-repeat;
+    transition: background-color 200ms ease;
+  }
+  body[data-theme="light"] .card:nth-child(even) {
+    background-image: linear-gradient(to right,
+      transparent 0%, rgba(17,17,17,0.12) 12%, rgba(17,17,17,0.22) 50%, rgba(17,17,17,0.12) 88%, transparent 100%);
+    background-size: 100% 1px;
+    background-position: bottom;
+    background-repeat: no-repeat;
+  }
+
+  /* Dark theme cards — inner ambient glow (top edge catch + soft floor) */
+  body[data-theme="dark"] .card {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 0%, rgba(245,233,196,0.035), transparent 70%),
+      var(--soft);
+    box-shadow:
+      inset 0 1px 0 rgba(245,233,196,0.06),
+      inset 0 -1px 0 rgba(0,0,0,0.30);
+  }
+  body[data-theme="dark"] .card.is-live {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 0%, rgba(245,233,196,0.07), transparent 70%),
+      var(--soft);
+    box-shadow:
+      inset 0 1px 0 rgba(245,233,196,0.12),
+      inset 0 -1px 0 rgba(0,0,0,0.30);
+  }
+
+  /* Side-summary ambient bar (dark) — already gold; soften the start */
+  body[data-theme="dark"] .side-summary {
+    box-shadow: inset 0 1px 0 rgba(245,233,196,0.05);
+  }
+
+  /* ===========================================================
+     Motion system — minimal, ease-out cubic-bezier(0.16,1,0.3,1)
+     =========================================================== */
+  :root {
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translate3d(0, 10px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fadeRight {
+    from { opacity: 0; transform: translate3d(-6px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes ruleGrow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+  }
+  @keyframes accentFlash {
+    0%   { box-shadow: inset 2px 0 0 var(--accent), inset 0 0 0 9999px rgba(110,163,210,0.10); }
+    100% { box-shadow: inset 2px 0 0 var(--accent), inset 0 0 0 9999px transparent; }
+  }
+  @keyframes recentFlash {
+    0%   { background: rgba(17,17,17,0.04); }
+    100% { background: transparent; }
+  }
+
+  /* nav items slide-in from left */
+  .nav-list .nav-item {
+    animation: fadeRight 540ms var(--ease-out) backwards;
+    transition: color 200ms var(--ease-out), background-color 200ms var(--ease-out);
+  }
+  .nav-list .nav-item:nth-child(1) { animation-delay: 60ms; }
+  .nav-list .nav-item:nth-child(2) { animation-delay: 110ms; }
+  .nav-list .nav-item:nth-child(3) { animation-delay: 160ms; }
+  .nav-list .nav-item:nth-child(4) { animation-delay: 210ms; }
+  .nav-list .nav-item:nth-child(5) { animation-delay: 260ms; }
+
+  .side-filters .field,
+  .side-filters .toggle,
+  .side-filters .side-summary {
+    animation: fadeRight 540ms var(--ease-out) backwards;
+  }
+  .side-filters .field:nth-of-type(1) { animation-delay: 320ms; }
+  .side-filters .field:nth-of-type(2) { animation-delay: 370ms; }
+  .side-filters .toggle { animation-delay: 420ms; }
+  .side-filters .side-summary { animation-delay: 470ms; }
+
+  .topnav__title,
+  .pages .page-link,
+  .topnav__right > * {
+    animation: fadeUp 540ms var(--ease-out) backwards;
+  }
+  .topnav__title { animation-delay: 60ms; }
+  .pages .page-link:nth-child(1) { animation-delay: 100ms; }
+  .pages .page-link:nth-child(2) { animation-delay: 140ms; }
+  .pages .page-link:nth-child(3) { animation-delay: 180ms; }
+  .pages .page-link:nth-child(4) { animation-delay: 220ms; }
+  .topnav__right > *:nth-child(1) { animation-delay: 200ms; }
+  .topnav__right > *:nth-child(2) { animation-delay: 240ms; }
+  .topnav__right > *:nth-child(3) { animation-delay: 280ms; }
+  .topnav__right > *:nth-child(4) { animation-delay: 320ms; }
+  .topnav__right > *:nth-child(5) { animation-delay: 360ms; }
+
+  /* dash-header entrance */
+  .dash-header__context > * { animation: fadeUp 480ms var(--ease-out) 140ms backwards; }
+  .dash-header__meta { animation-delay: 200ms; }
+  .kpi { animation: fadeUp 480ms var(--ease-out) backwards; }
+  .kpi:nth-child(1) { animation-delay: 260ms; }
+  .kpi:nth-child(2) { animation-delay: 320ms; }
+  .kpi:nth-child(3) { animation-delay: 380ms; }
+  .kpi__value {
+    transition: color 360ms var(--ease-out);
+    will-change: contents;
+  }
+
+  /* card stagger + hover */
+  .card {
+    animation: fadeUp 540ms var(--ease-out) backwards;
+    transition:
+      transform 360ms var(--ease-out),
+      background-color 280ms var(--ease-out),
+      box-shadow 360ms var(--ease-out),
+      color 280ms var(--ease-out);
+    will-change: transform;
+  }
+  .card:nth-child(1) { animation-delay: 360ms; }
+  .card:nth-child(2) { animation-delay: 410ms; }
+  .card:nth-child(3) { animation-delay: 460ms; }
+  .card:nth-child(4) { animation-delay: 510ms; }
+  .card:nth-child(5) { animation-delay: 560ms; }
+  .card:nth-child(6) { animation-delay: 610ms; }
+
+  body[data-theme="dark"] .card:hover {
+    transform: translate3d(0, -2px, 0);
+    box-shadow:
+      inset 0 1px 0 rgba(245,233,196,0.14),
+      inset 0 -1px 0 rgba(0,0,0,0.30),
+      0 18px 40px rgba(0,0,0,0.42),
+      0 0 32px rgba(214,184,112,0.06);
+  }
+  body[data-theme="dark"] .card.is-live::before {
+    animation: breathe 4.2s ease-in-out infinite;
+  }
+
+  /* lot table row hover + recent flash */
+  .lot-table tbody tr {
+    transition: background-color 180ms var(--ease-out);
+  }
+  body[data-theme="light"] .lot-table tbody tr:hover td { background-color: rgba(17,17,17,0.02); }
+  body[data-theme="dark"]  .lot-table tbody tr:hover td { background-color: rgba(236,234,230,0.03); }
+
+  body[data-theme="light"] .lot-table tr.is-recent { animation: recentFlash 1800ms var(--ease-out) 1000ms backwards; }
+
+  /* pills & buttons */
+  .pill, .card__action, .icon-btn, .page-link, .theme-switch {
+    transition:
+      color 200ms var(--ease-out),
+      background-color 200ms var(--ease-out),
+      border-color 200ms var(--ease-out);
+  }
+  .card__action:hover .material-symbols-outlined {
+    transform: rotate(-30deg);
+    transition: transform 360ms var(--ease-out);
+  }
+  .card__action.is-spinning .material-symbols-outlined {
+    animation: spin 720ms linear infinite;
+  }
+
+  /* underline draw on light page-link hover */
+  body[data-theme="light"] .page-link {
+    background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+    padding-bottom: 4px;
+  }
+  body[data-theme="light"] .page-link:hover,
+  body[data-theme="light"] .page-link.is-active {
+    background-size: 100% 1px;
+    transition: background-size 320ms var(--ease-out);
+  }
+
+  /* focused inputs */
+  .field__input { transition: border-color 220ms var(--ease-out), box-shadow 220ms var(--ease-out), background-color 220ms var(--ease-out); }
+  .search input { transition: color 220ms var(--ease-out); }
+
+  /* footer live dot already pulses; refine timing */
+  .footer__live::before { animation: breathe 2.4s ease-in-out infinite !important; }
+
+  /* theme switch button gently rotates icon on click */
+  .theme-switch.is-flipping .material-symbols-outlined {
+    transform: rotate(180deg);
+    transition: transform 420ms var(--ease-out);
+  }
+  .theme-switch .material-symbols-outlined { transition: transform 360ms var(--ease-out); }
+
+  /* footer entrance */
+  .footer { animation: fadeIn 700ms var(--ease-out) 900ms backwards; }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    font-size: 20px;
+  }
+
+  /* ===========================================================
+     LIGHT (default) — Polestar/Tesla minimal
+     =========================================================== */
+  body[data-theme="light"] {
+    --canvas: #ffffff;
+    --soft: #fafafa;
+    --tint: #f0f0f0;
+    --ink: #111;
+    --ink-soft: #555;
+    --ink-mute: #9a9a9a;
+    --rule: rgba(17,17,17,0.08);
+    --hold: #c63927;
+    --hold-soft: #fff2f0;
+    --accent: #111;
+    background: var(--canvas);
+    color: var(--ink);
+  }
+
+  /* ===========================================================
+     DARK — Aston/Polestar dark with champagne accent
+     =========================================================== */
+  body[data-theme="dark"] {
+    --canvas: #0c0c0e;
+    --soft: #131316;
+    --tint: #1a1a1d;
+    --ink: #eceae6;
+    --ink-soft: #a6a39d;
+    --ink-mute: #6f6c66;
+    --rule: rgba(236,234,230,0.06);
+    --hold: #e87b6d;
+    --hold-soft: rgba(232,123,109,0.10);
+    --accent: #d6b870;
+    --champagne: #f5e9c4;
+    background: var(--canvas);
+    color: var(--ink);
+  }
+
+  /* shared shell */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* SIDE NAV --------------------------------------------------- */
+  .side {
+    padding: 18px 18px 16px;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  body[data-theme="light"] .side { border-right: 1px solid var(--rule); }
+  body[data-theme="dark"] .side { border-right: 1px solid var(--rule); }
+  .brand { padding: 0 4px 24px; }
+  body[data-theme="light"] .brand__mark { font-size: 17px; font-weight: 500; letter-spacing: -0.01em; margin: 0; }
+  body[data-theme="light"] .brand__sub { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink-mute); margin-top: 4px; }
+
+  body[data-theme="dark"] .brand__mark {
+    font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;
+  }
+  body[data-theme="dark"] .brand__mark .brand__accent { color: var(--accent); }
+  body[data-theme="dark"] .brand__line { height: 1px; background: linear-gradient(90deg, var(--accent) 0%, transparent 60%); margin: 4px 0; }
+  body[data-theme="dark"] .brand__sub { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-mute); }
+  body[data-theme="light"] .brand__line { display: none; }
+  body[data-theme="light"] .brand__accent { color: inherit; }
+
+  .nav-section { margin-bottom: 20px; }
+  .nav-section__label {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-mute);
+    margin: 0 0 10px; padding: 0 6px;
+  }
+  .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--ink-soft); font-size: 13px; cursor: pointer;
+    padding: 7px 8px;
+    transition: color 160ms ease, background 160ms ease;
+    border-radius: 6px;
+  }
+  body[data-theme="dark"] .nav-item { padding: 8px 8px; }
+  body[data-theme="dark"] .nav-item:hover { background: var(--tint); color: var(--ink); }
+  body[data-theme="light"] .nav-item:hover { color: var(--ink); }
+  .nav-item.is-active { color: var(--ink); font-weight: 500; }
+  body[data-theme="dark"] .nav-item.is-active { color: var(--champagne); }
+  body[data-theme="dark"] .nav-item.is-active::before {
+    content: ''; width: 2px; height: 14px; background: var(--accent); border-radius: 2px;
+    margin-right: -6px;
+  }
+  body[data-theme="light"] .nav-item.is-active::before {
+    content: ''; display: block; width: 10px; height: 1px; background: var(--ink); margin-right: 2px;
+  }
+  .nav-item .material-symbols-outlined { font-size: 16px; opacity: 0.6; }
+
+  .side-filters { display: grid; gap: 16px; padding: 0 6px; }
+  body[data-theme="dark"] .side-filters { padding: 0 4px; }
+  .field { display: grid; gap: 6px; }
+  .field__label { font-size: 10px; color: var(--ink-mute); letter-spacing: 0.2em; text-transform: uppercase; padding-left: 4px; }
+  body[data-theme="light"] .field__input {
+    background: transparent; border: 0; border-bottom: 1px solid var(--rule);
+    padding: 8px 0; font-size: 13px; color: var(--ink); font-family: inherit;
+  }
+  body[data-theme="light"] .field__input:focus { outline: 0; border-bottom-color: var(--ink); }
+  body[data-theme="dark"] .field__input {
+    background: var(--tint); border: 0; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: var(--ink); font-family: inherit;
+  }
+  body[data-theme="dark"] .field__input:focus { outline: 0; box-shadow: inset 0 -2px 0 var(--accent); }
+  .field__input::placeholder { color: var(--ink-mute); }
+  .toggle {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--ink-soft); cursor: pointer;
+  }
+  body[data-theme="dark"] .toggle { background: var(--tint); padding: 9px 12px; border-radius: 8px; }
+  .toggle input { accent-color: var(--accent); margin: 0; }
+  .side-summary {
+    margin-top: 16px; font-size: 12px; color: var(--ink-soft); line-height: 1.7;
+  }
+  body[data-theme="light"] .side-summary { padding-top: 16px; border-top: 1px solid var(--rule); }
+  body[data-theme="dark"] .side-summary { padding: 14px; background: var(--soft); border-left: 2px solid var(--accent); }
+  .side-summary strong { color: var(--ink); font-weight: 500; }
+  body[data-theme="dark"] .side-summary strong { color: var(--champagne); font-weight: 600; }
+  .side-footer { margin-top: auto; padding-top: 24px; display: grid; gap: 12px; border-top: 1px solid var(--rule); }
+
+  /* MAIN ------------------------------------------------------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topnav {
+    display: flex; align-items: center; justify-content: space-between; gap: 32px;
+    padding: 14px 56px;
+  }
+  body[data-theme="light"] .topnav { border-bottom: 1px solid var(--rule); }
+  body[data-theme="dark"] .topnav { border-bottom: 1px solid var(--rule); }
+  .topnav__left { display: flex; align-items: center; gap: 36px; }
+  body[data-theme="light"] .topnav__title { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-mute); margin: 0; }
+  body[data-theme="dark"] .topnav__title { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-mute); margin: 0; }
+  .pages { display: flex; gap: 26px; }
+  body[data-theme="dark"] .pages { gap: 24px; }
+  .page-link {
+    font-size: 13px; color: var(--ink-mute); cursor: pointer; padding: 4px 0; position: relative;
+    transition: color 160ms ease;
+  }
+  body[data-theme="dark"] .page-link {
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; padding: 6px 0;
+  }
+  .page-link:hover { color: var(--ink); }
+  .page-link.is-active { color: var(--ink); }
+  body[data-theme="dark"] .page-link.is-active { color: var(--champagne); }
+  body[data-theme="dark"] .page-link.is-active::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--accent);
+  }
+
+  .topnav__right { display: flex; align-items: center; gap: 18px; }
+  body[data-theme="light"] .search {
+    display: flex; align-items: center; gap: 8px; min-width: 220px;
+    border-bottom: 1px solid var(--rule); padding: 6px 0;
+    color: var(--ink-mute); font-size: 13px;
+  }
+  body[data-theme="dark"] .search {
+    display: flex; align-items: center; gap: 8px; min-width: 240px;
+    background: var(--soft); padding: 8px 12px; border-radius: 8px;
+    color: var(--ink-mute); font-size: 13px;
+  }
+  .search input { background: transparent; border: 0; outline: 0; flex: 1; color: var(--ink); font: inherit; }
+  .icon-btn {
+    width: 32px; height: 32px; display: grid; place-items: center;
+    background: transparent; border: 0; color: var(--ink-soft); cursor: pointer; border-radius: 999px;
+  }
+  body[data-theme="dark"] .icon-btn:hover { background: var(--tint); color: var(--ink); }
+  body[data-theme="light"] .icon-btn:hover { color: var(--ink); }
+
+  /* theme switch */
+  .theme-switch {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font: inherit; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    cursor: pointer; transition: all 160ms ease;
+  }
+  .theme-switch:hover { color: var(--ink); border-color: var(--ink); }
+  body[data-theme="dark"] .theme-switch:hover { border-color: var(--accent); color: var(--accent); }
+  .theme-switch .material-symbols-outlined { font-size: 14px; }
+
+  .user { display: flex; align-items: center; gap: 12px; }
+  .user__name { font-size: 13px; }
+  body[data-theme="dark"] .user { padding-left: 14px; }
+  body[data-theme="dark"] .user__meta { text-align: right; line-height: 1.2; }
+  body[data-theme="dark"] .user__name { font-size: 13px; font-weight: 500; }
+  body[data-theme="dark"] .user__role { font-size: 10px; color: var(--ink-mute); letter-spacing: 0.18em; text-transform: uppercase; }
+  body[data-theme="light"] .user__role { display: none; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center;
+    background: var(--ink); color: var(--canvas); font-weight: 500; font-size: 11px; letter-spacing: 0.04em;
+  }
+  body[data-theme="dark"] .avatar {
+    background: linear-gradient(145deg, #d6b870, #8c6c2c); color: #1a1305; font-weight: 700;
+  }
+
+  /* DASH HEADER (compact, info-dense) -------------------------- */
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 32px; padding: 18px 56px 18px;
+  }
+  body[data-theme="light"] .dash-header { border-bottom: 1px solid var(--rule); }
+  body[data-theme="dark"]  .dash-header { border-bottom: 1px solid var(--rule); }
+
+  .dash-header__context { display: flex; align-items: baseline; gap: 18px; min-width: 0; }
+  .dash-header__page {
+    font-size: 14px; font-weight: 500; letter-spacing: -0.01em; margin: 0; color: var(--ink);
+  }
+  .dash-header__meta {
+    margin: 0; font-size: 11px; color: var(--ink-mute);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    display: flex; gap: 14px; align-items: baseline;
+  }
+  .dash-header__meta::before {
+    content: ''; display: inline-block; width: 1px; height: 12px; background: var(--rule);
+    align-self: center;
+  }
+  .dash-header__live {
+    color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px;
+  }
+  body[data-theme="dark"] .dash-header__live { color: var(--accent); }
+  .dash-header__live::before {
+    content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  /* KPIs — uniform horizontal strip in both themes */
+  .kpis { display: flex; gap: 0; align-items: stretch; }
+  .kpi {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 0 22px; min-width: 96px;
+    border-left: 1px solid var(--rule);
+    justify-content: center;
+  }
+  .kpi:first-child { border-left: 0; padding-left: 12px; }
+  .kpi:last-child  { padding-right: 0; }
+  .kpi__num { display: none; }
+  .kpi__label {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-mute);
+    order: 2;
+  }
+  .kpi__value {
+    font-size: 26px; font-weight: 300; letter-spacing: -0.03em; line-height: 1;
+    order: 1; font-variant-numeric: tabular-nums;
+  }
+  body[data-theme="dark"] .kpi__label { letter-spacing: 0.28em; }
+  body[data-theme="dark"] .kpi__value { font-weight: 300; }
+  .kpi--hold .kpi__value { color: var(--hold); }
+  body[data-theme="dark"] .kpi--yield .kpi__value { color: var(--accent); }
+
+  /* GRID ------------------------------------------------------- */
+  body[data-theme="light"] .grid {
+    padding: 0 56px 32px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0;
+  }
+  body[data-theme="dark"] .grid {
+    padding: 16px 56px 32px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+  }
+
+  body[data-theme="light"] .card {
+    padding: 22px 24px; min-height: 220px;
+    display: flex; flex-direction: column;
+    border-bottom: 1px solid var(--rule);
+    transition: background 200ms ease;
+  }
+  body[data-theme="light"] .card:nth-child(odd) { border-right: 1px solid var(--rule); }
+  body[data-theme="light"] .card:hover { background: var(--soft); }
+  body[data-theme="light"] .card.is-live { background: var(--soft); }
+
+  body[data-theme="dark"] .card {
+    background: var(--soft); border-radius: 8px;
+    padding: 20px 22px; min-height: 220px;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  body[data-theme="dark"] .card::before {
+    content: ''; position: absolute; top: 22px; left: 0; width: 2px; height: 20px;
+    background: rgba(214,184,112,0.14);
+  }
+  body[data-theme="dark"] .card.is-live::before { background: var(--accent); }
+
+  .card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+  body[data-theme="dark"] .card__head { margin-bottom: 18px; }
+
+  body[data-theme="light"] .card__index { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); letter-spacing: 0.1em; margin: 0 0 4px; }
+  body[data-theme="dark"] .card__index {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  body[data-theme="light"] .card__title { margin: 0; font-size: 16px; font-weight: 500; letter-spacing: -0.015em; }
+  body[data-theme="dark"] .card__title { margin: 0; font-size: 15px; font-weight: 500; letter-spacing: -0.01em; color: var(--champagne); }
+
+  .card__meta { font-size: 10px; color: var(--ink-mute); letter-spacing: 0.18em; text-transform: uppercase; }
+  body[data-theme="dark"] .card__meta { font-size: 10px; letter-spacing: 0.18em; }
+
+  body[data-theme="light"] .card__action {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: transparent; border: 0; padding: 0 0 2px;
+    font-size: 12px; color: var(--ink); cursor: pointer; font-family: inherit;
+    border-bottom: 1px solid var(--ink);
+  }
+  body[data-theme="dark"] .card__action {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid var(--rule); border-radius: 999px;
+    padding: 6px 14px; font-size: 11px; color: var(--ink-soft); cursor: pointer;
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  body[data-theme="dark"] .card__action:hover { border-color: var(--accent); color: var(--accent); }
+  .card__action .material-symbols-outlined { font-size: 14px; }
+
+  /* LOT TABLE -------------------------------------------------- */
+  .lot-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .lot-table thead th {
+    text-align: left; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-mute); font-weight: 400; padding: 0 0 10px;
+  }
+  body[data-theme="dark"] .lot-table thead th {
+    font-size: 9px; letter-spacing: 0.24em; padding: 0 10px 10px;
+  }
+  .lot-table td {
+    padding: 7px 10px 7px 0; font-size: 12.5px; line-height: 1.35; vertical-align: middle;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  body[data-theme="dark"] .lot-table td { padding: 8px 10px; }
+  .lot-table tbody tr:last-child td { border-bottom: 0; }
+  .lot-table .lot-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding-left: 0; }
+  body[data-theme="dark"] .lot-table .lot-id { padding-left: 12px; }
+
+  body[data-theme="light"] .lot-table tr.is-hold .lot-id { color: var(--hold); }
+  body[data-theme="light"] .lot-table tr.is-hold .lot-id::before { content: '•'; color: var(--hold); margin-right: 6px; }
+  body[data-theme="light"] .lot-table tr.is-recent .lot-id::before { content: '•'; color: var(--ink); margin-right: 6px; }
+
+  body[data-theme="dark"] .lot-table tr.is-hold td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+  body[data-theme="dark"] .lot-table tr.is-recent td:first-child { box-shadow: inset 2px 0 0 #6ea3d2; }
+
+  .pill {
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute);
+  }
+  body[data-theme="dark"] .pill {
+    display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+  }
+  body[data-theme="light"] .pill--hold { color: var(--hold); }
+  body[data-theme="dark"] .pill--hold { background: var(--hold-soft); color: var(--hold); }
+  body[data-theme="light"] .pill--ok { color: var(--ink); }
+  body[data-theme="dark"] .pill--ok { background: rgba(110,163,210,0.10); color: #6ea3d2; }
+
+  /* placeholder rows */
+  .placeholder-block { display: grid; gap: 0; flex: 1; }
+  body[data-theme="dark"] .placeholder-block { gap: 4px; }
+  .placeholder-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--rule);
+  }
+  body[data-theme="dark"] .placeholder-row { padding: 7px 0; }
+  .placeholder-row:last-child { border-bottom: 0; }
+  .placeholder-row__key { font-size: 12.5px; color: var(--ink-soft); }
+  .placeholder-row__value { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink); }
+  body[data-theme="light"] .placeholder-row__value.is-warn { color: var(--hold); }
+  body[data-theme="dark"] .placeholder-row__value.is-warn { color: var(--accent); }
+
+  /* big number */
+  body[data-theme="light"] .big-number { font-size: 48px; font-weight: 300; letter-spacing: -0.04em; line-height: 1; margin: 4px 0 0; }
+  body[data-theme="dark"] .big-number { font-size: 42px; font-weight: 300; letter-spacing: -0.03em; line-height: 1; margin: 4px 0 0; color: var(--champagne); }
+  .big-number__unit { font-size: 11px; color: var(--ink-mute); margin-left: 8px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400; }
+  body[data-theme="light"] .big-number__unit { font-size: 11px; margin-left: 10px; }
+
+  body[data-theme="light"] .progress { height: 1px; background: var(--rule); overflow: hidden; margin-top: 16px; }
+  body[data-theme="light"] .progress__bar { height: 100%; background: var(--ink); }
+  body[data-theme="dark"] .progress { height: 2px; background: var(--tint); overflow: hidden; margin-top: 14px; border-radius: 999px; }
+  body[data-theme="dark"] .progress__bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--champagne)); border-radius: 999px; }
+
+  /* footer ----------------------------------------------------- */
+  .footer {
+    padding: 22px 56px 30px;
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-mute);
+    display: flex; gap: 32px; justify-content: space-between;
+    border-top: 1px solid var(--rule);
+  }
+  .footer__group { display: flex; gap: 32px; }
+  .footer__live::before {
+    content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--ink); margin-right: 8px; vertical-align: middle;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  body[data-theme="dark"] .footer__live { color: var(--accent); }
+  body[data-theme="dark"] .footer__live::before { background: var(--accent); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <p class="brand__mark">pho<span class="brand__accent">lex</span></p>
+      <div class="brand__line"></div>
+      <p class="brand__sub">Fab 7 ops</p>
+    </div>
+
+    <div class="nav-section">
+      <p class="nav-section__label">Workspace</p>
+      <ul class="nav-list">
+        <li class="nav-item is-active"><span class="material-symbols-outlined">dashboard</span>Dashboard</li>
+        <li class="nav-item"><span class="material-symbols-outlined">view_list</span>Lot tracking</li>
+        <li class="nav-item"><span class="material-symbols-outlined">precision_manufacturing</span>Equipment</li>
+        <li class="nav-item"><span class="material-symbols-outlined">analytics</span>Yield analytics</li>
+        <li class="nav-item"><span class="material-symbols-outlined">description</span>Reports</li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <p class="nav-section__label">Filter</p>
+      <div class="side-filters">
+        <div class="field">
+          <label class="field__label">Lot ID</label>
+          <input class="field__input" type="text" placeholder="KH-2024-…" />
+        </div>
+        <div class="field">
+          <label class="field__label">상태</label>
+          <select class="field__input">
+            <option>전체</option><option>Hold</option><option>Running</option>
+          </select>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked /> 최근 24시간만
+        </label>
+        <div class="side-summary">
+          <strong>24</strong> of 132 lots<br />
+          updated <strong>14:02</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-footer">
+      <div class="nav-item"><span class="material-symbols-outlined">help</span>Support</div>
+      <div class="nav-item"><span class="material-symbols-outlined">logout</span>Sign out</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <nav class="topnav">
+      <div class="topnav__left">
+        <p class="topnav__title">batch monitoring</p>
+        <div class="pages">
+          <span class="page-link is-active">Overview</span>
+          <span class="page-link">Lots</span>
+          <span class="page-link">Equipment</span>
+          <span class="page-link">Yield</span>
+        </div>
+      </div>
+      <div class="topnav__right">
+        <div class="search">
+          <span class="material-symbols-outlined" style="font-size:16px">search</span>
+          <input placeholder="Search…" />
+        </div>
+        <button class="theme-switch" id="themeSwitch" type="button">
+          <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
+          <span id="themeLabel">Dark</span>
+        </button>
+        <button class="icon-btn"><span class="material-symbols-outlined">notifications</span></button>
+        <button class="icon-btn"><span class="material-symbols-outlined">settings</span></button>
+        <div class="user">
+          <div class="user__meta">
+            <div class="user__name">김우빈</div>
+            <div class="user__role">Lead Engineer</div>
+          </div>
+          <div class="avatar">WB</div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="dash-header">
+      <div class="dash-header__context">
+        <h1 class="dash-header__page">Lot Monitor</h1>
+        <p class="dash-header__meta">
+          <span>27.05.2026 · Fab 7</span>
+          <span class="dash-header__live">Live · 14:02:11</span>
+        </p>
+      </div>
+      <div class="kpis">
+        <div class="kpi">
+          <span class="kpi__label">Active</span>
+          <span class="kpi__value">24</span>
+        </div>
+        <div class="kpi kpi--hold">
+          <span class="kpi__label">Hold</span>
+          <span class="kpi__value">3</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi__label">Rework</span>
+          <span class="kpi__value">7</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi__label">Inform</span>
+          <span class="kpi__value">1</span>
+        </div>
+        <div class="kpi kpi--yield">
+          <span class="kpi__label">Yield · 24h</span>
+          <span class="kpi__value">96.4<span style="font-size:12px;color:var(--ink-mute)">%</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+
+      <article class="card">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 01</p>
+            <h2 class="card__title">전체 홀드</h2>
+          </div>
+          <span class="card__meta">3 lots</span>
+        </header>
+        <div class="placeholder-block">
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-091 · Etch</span><span class="placeholder-row__value is-warn">+ 3d 04h</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-088 · CMP</span><span class="placeholder-row__value is-warn">+ 1d 12h</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-079 · Photo</span><span class="placeholder-row__value">+ 6h 22m</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">제외 처리됨</span><span class="placeholder-row__value">2 lots</span></div>
+        </div>
+      </article>
+
+      <article class="card is-live" style="grid-row: span 2;">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 02 · live</p>
+            <h2 class="card__title">내 lot hold</h2>
+          </div>
+          <div style="display:flex;gap:14px;align-items:center">
+            <span class="card__meta">14:02:11</span>
+            <button class="card__action"><span class="material-symbols-outlined">refresh</span>refresh</button>
+          </div>
+        </header>
+
+        <table class="lot-table">
+          <thead>
+            <tr><th>Lot</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Updated</th></tr>
+          </thead>
+          <tbody>
+            <tr class="is-hold"><td class="lot-id">KH-2024-091</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>Metal Etch</td><td>CD shift 2.3nm</td><td>14:01</td></tr>
+            <tr class="is-recent"><td class="lot-id">KH-2024-103</td><td><span class="pill pill--ok">Run</span></td><td>LAM-K3B-2</td><td>Dry Etch</td><td>—</td><td>14:02</td></tr>
+            <tr class="is-hold"><td class="lot-id">KH-2024-088</td><td><span class="pill pill--hold">Hold</span></td><td>CMP-04</td><td>Oxide CMP</td><td>Particle &gt; spec</td><td>13:48</td></tr>
+            <tr><td class="lot-id">KH-2024-104</td><td><span class="pill pill--ok">Run</span></td><td>AMAT-EHP-9</td><td>HDP Dep</td><td>—</td><td>13:42</td></tr>
+            <tr><td class="lot-id">KH-2024-105</td><td><span class="pill pill--ok">Run</span></td><td>TEL-ACT-N</td><td>Photo Coat</td><td>—</td><td>13:38</td></tr>
+            <tr class="is-hold"><td class="lot-id">KH-2024-079</td><td><span class="pill pill--hold">Hold</span></td><td>PHOTO-12</td><td>Overlay</td><td>Reg. tool busy</td><td>13:21</td></tr>
+            <tr><td class="lot-id">KH-2024-106</td><td><span class="pill pill--ok">Run</span></td><td>KLA-2367</td><td>Inspection</td><td>—</td><td>13:15</td></tr>
+            <tr><td class="lot-id">KH-2024-107</td><td><span class="pill pill--ok">Run</span></td><td>ASML-1980i</td><td>Litho</td><td>—</td><td>13:02</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 03</p>
+            <h2 class="card__title">수율 계측</h2>
+          </div>
+          <span class="card__meta">1σ band</span>
+        </header>
+        <p class="big-number">96.4<span class="big-number__unit">yield %</span></p>
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:14px;letter-spacing:0.18em;text-transform:uppercase">전일 대비 + 0.7</div>
+        <div class="progress"><div class="progress__bar" style="width:96.4%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:auto;padding-top:30px;font-size:11px;color:var(--ink-mute);letter-spacing:0.2em;text-transform:uppercase">
+          <span>ok 1,184</span><span>soft 22</span><span>fail 41</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 04</p>
+            <h2 class="card__title">인폼 lot hold</h2>
+          </div>
+          <span class="card__meta">#4419</span>
+        </header>
+        <div class="placeholder-block">
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-091</span><span class="placeholder-row__value is-warn">Hold</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-094</span><span class="placeholder-row__value">Run</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-096</span><span class="placeholder-row__value">Run</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-098</span><span class="placeholder-row__value">Idle</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 05</p>
+            <h2 class="card__title">Special hold</h2>
+          </div>
+          <span class="card__meta">SPC · FDC</span>
+        </header>
+        <div class="placeholder-block">
+          <div class="placeholder-row"><span class="placeholder-row__key">SPC-OVL-04</span><span class="placeholder-row__value is-warn">KH-2024-091</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">FDC-CMP-12</span><span class="placeholder-row__value is-warn">KH-2024-088</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">SPC-CD-22</span><span class="placeholder-row__value">—</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card__head">
+          <div>
+            <p class="card__index">— 06</p>
+            <h2 class="card__title">간단 hold</h2>
+          </div>
+          <span class="card__meta">Rework</span>
+        </header>
+        <p class="big-number">7<span class="big-number__unit">rework</span></p>
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:14px;letter-spacing:0.18em;text-transform:uppercase">판정대기 · <span style="color:var(--ink)">2</span> · 진행중 5</div>
+        <div style="margin-top:auto;padding-top:24px">
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-082</span><span class="placeholder-row__value">대기</span></div>
+          <div class="placeholder-row"><span class="placeholder-row__key">KH-2024-085</span><span class="placeholder-row__value">대기</span></div>
+        </div>
+      </article>
+
+    </section>
+
+    <footer class="footer">
+      <div class="footer__group">
+        <span>pholex</span>
+        <span>fab 7</span>
+        <span>build 2026.05.27</span>
+      </div>
+      <div class="footer__group">
+        <span class="footer__live">live</span>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+  function animateNumber(el, target, decimals = 0, duration = 900) {
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = easeOutCubic(t);
+      const value = target * eased;
+      el.firstChild.nodeValue = decimals ? value.toFixed(decimals) : Math.round(value).toString();
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function applyTheme(theme) {
+    document.body.dataset.theme = theme;
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (theme === 'light') { icon.textContent = 'dark_mode'; label.textContent = 'Dark'; }
+    else { icon.textContent = 'light_mode'; label.textContent = 'Light'; }
+  }
+
+  const params = new URLSearchParams(location.search);
+  const initial = params.get('theme') === 'dark' || location.hash === '#dark' ? 'dark' : 'light';
+  applyTheme(initial);
+
+  window.addEventListener('load', () => {
+    const values = document.querySelectorAll('.kpi__value');
+    const targets = [
+      { v: 24,   d: 0, dly: 380 },
+      { v: 3,    d: 0, dly: 440 },
+      { v: 7,    d: 0, dly: 500 },
+      { v: 1,    d: 0, dly: 560 },
+      { v: 96.4, d: 1, dly: 620 }
+    ];
+    values.forEach((el, i) => {
+      const cfg = targets[i]; if (!cfg) return;
+      if (!el.firstChild || el.firstChild.nodeType !== 3) {
+        el.insertBefore(document.createTextNode('0'), el.firstChild);
+      } else {
+        el.firstChild.nodeValue = '0';
+      }
+      setTimeout(() => animateNumber(el, cfg.v, cfg.d, 900), cfg.dly);
+    });
+  });
+
+  const themeBtn = document.getElementById('themeSwitch');
+  themeBtn.addEventListener('click', () => {
+    themeBtn.classList.add('is-flipping');
+    setTimeout(() => themeBtn.classList.remove('is-flipping'), 420);
+    applyTheme(document.body.dataset.theme === 'light' ? 'dark' : 'light');
+  });
+
+  document.querySelectorAll('.card__action').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.classList.add('is-spinning');
+      setTimeout(() => btn.classList.remove('is-spinning'), 900);
+    });
+  });
+</script>
+</body>
+</html>

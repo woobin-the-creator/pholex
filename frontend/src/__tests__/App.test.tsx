@@ -112,14 +112,14 @@ describe('App', () => {
     expect(await screen.findByText('LOT-B5532-19')).toBeInTheDocument()
     expect(screen.getAllByText('MVP 이후')).toHaveLength(5)
 
-    const pageNavigation = screen.getByRole('navigation', { name: 'Page sections' })
-    expect(within(pageNavigation).getByRole('button', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(within(pageNavigation).getByRole('button', { name: 'Lot Tracking' })).toBeInTheDocument()
+    const pageNavigation = screen.getByRole('navigation', { name: 'Primary' })
+    expect(within(pageNavigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()
+    expect(within(pageNavigation).getByRole('button', { name: 'Lots' })).toBeInTheDocument()
 
-    const filtersSidebar = screen.getByRole('complementary', { name: 'Lot filters' })
-    expect(within(filtersSidebar).getByLabelText('Lot ID 검색')).toBeInTheDocument()
+    const filtersSidebar = screen.getByRole('complementary', { name: 'Workspace navigation' })
+    expect(within(filtersSidebar).getByLabelText('Lot ID')).toBeInTheDocument()
     expect(within(filtersSidebar).getByLabelText('상태')).toBeInTheDocument()
-    expect(within(filtersSidebar).getByLabelText('최근 30분 내 변경만 보기')).toBeInTheDocument()
+    expect(within(filtersSidebar).getByLabelText('최근 30분 변경만')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(MockWebSocket.instances).toHaveLength(1)
@@ -189,13 +189,13 @@ describe('App', () => {
     expect(screen.queryByText('LOT-C8812-44')).not.toBeInTheDocument()
 
     await user.selectOptions(screen.getByLabelText('상태'), 'all')
-    await user.click(screen.getByLabelText('최근 30분 내 변경만 보기'))
+    await user.click(screen.getByLabelText('최근 30분 변경만'))
 
     expect(screen.getByText('LOT-A2948-01')).toBeInTheDocument()
     expect(screen.getByText('LOT-C8812-44')).toBeInTheDocument()
     expect(screen.queryByText('LOT-B5532-19')).not.toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Lot ID 검색'), 'C8812')
+    await user.type(screen.getByLabelText('Lot ID'), 'C8812')
 
     expect(screen.getByText('LOT-C8812-44')).toBeInTheDocument()
     expect(screen.queryByText('LOT-A2948-01')).not.toBeInTheDocument()

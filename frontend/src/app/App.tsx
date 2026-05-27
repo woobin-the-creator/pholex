@@ -1,10 +1,12 @@
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import { Provider } from 'jotai/react'
-import { useDeferredValue, useEffect, useEffectEvent, useState } from 'react'
+import { useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { authAtom } from '../atoms/authAtom'
+import { themeAtom } from '../atoms/themeAtom'
 import { TopNav } from '../components/layout/TopNav'
 import { SideNav } from '../components/layout/SideNav'
 import { DashboardGrid } from '../components/layout/DashboardGrid'
+import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
 import { SystemFooter } from '../components/layout/SystemFooter'
 import { LotHoldPanel } from '../components/panels/LotHoldPanel'
 import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
@@ -23,18 +25,27 @@ const DEMO_USER: SessionUser = {
   auth: 'ENGINEER',
 }
 
-const PLACEHOLDER_SLOTS = [
-  { slotIndex: 0, title: '전체 홀드', subtitle: '장기 hold용 코멘트 + 제외처리 가능' },
-  { slotIndex: 2, title: '수율 계측', subtitle: '측정 결함과 판정 결과를 위한 슬롯입니다.' },
-  { slotIndex: 3, title: '인폼 lot hold', subtitle: '인폼에 포함된 랏 파싱 후 해당 랏 status 표시 (status: hold는 최상단)' },
-  { slotIndex: 4, title: 'special hold', subtitle: '특정 홀드 code (spc, fdc ...) 랏 표시' },
-  { slotIndex: 5, title: '간단 hold', subtitle: 'rework cnt / rework 판정대기' },
-]
-
 const DEFAULT_FILTERS: LotFilters = {
   lotIdQuery: '',
   status: 'all',
   recentOnly: false,
+}
+
+function ThemeBinder() {
+  const theme = useAtomValue(themeAtom)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.dataset.theme = theme
+  }, [theme])
+  return null
+}
+
+function formatDate(): string {
+  const today = new Date()
+  const dd = String(today.getDate()).padStart(2, '0')
+  const mm = String(today.getMonth() + 1).padStart(2, '0')
+  const yyyy = today.getFullYear()
+  return `${dd}.${mm}.${yyyy} · Fab 7`
 }
 
 function DashboardApp() {
@@ -48,6 +59,18 @@ function DashboardApp() {
     ...filters,
     lotIdQuery: deferredLotIdQuery,
   })
+
+  const kpis = useMemo<KpiSpec[]>(() => {
+    const activeCount = rows.length
+    const holdCount = rows.filter((row) => row.status === 'hold').length
+    return [
+      { label: 'Active', value: activeCount },
+      { label: 'Hold', value: holdCount, tone: 'hold' },
+      { label: 'Rework', value: null },
+      { label: 'Inform', value: null },
+      { label: 'Yield · 24h', value: null, tone: 'yield', suffix: '%' },
+    ]
+  }, [rows])
 
   const redirectToSso = useEffectEvent(() => {
     window.location.assign('/api/auth/sso/init')
@@ -63,12 +86,10 @@ function DashboardApp() {
 
     try {
       const session = await getSession()
-
       if (!session.authenticated || !session.user) {
         redirectToSso()
         return
       }
-
       setUser(session.user)
       setAuthError(null)
     } catch (sessionError) {
@@ -76,8 +97,9 @@ function DashboardApp() {
         redirectToSso()
         return
       }
-
-      setAuthError(sessionError instanceof Error ? sessionError.message : '세션을 확인하지 못했습니다.')
+      setAuthError(
+        sessionError instanceof Error ? sessionError.message : '세션을 확인하지 못했습니다.',
+      )
     } finally {
       setAuthResolved(true)
     }
@@ -92,10 +114,7 @@ function DashboardApp() {
   })
 
   const handleFiltersChange = useEffectEvent((nextFilters: Partial<LotFilters>) => {
-    setFilters((currentFilters) => ({
-      ...currentFilters,
-      ...nextFilters,
-    }))
+    setFilters((currentFilters) => ({ ...currentFilters, ...nextFilters }))
   })
 
   const handleResetFilters = useEffectEvent(() => {
@@ -126,7 +145,7 @@ function DashboardApp() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="shell">
       <SideNav
         filters={filters}
         totalRows={rows.length}
@@ -136,25 +155,50 @@ function DashboardApp() {
         onLogout={handleLogout}
       />
 
-      <div className="main-shell">
+      <div className="main">
         <TopNav user={user} />
 
-        <main className="dashboard-content">
-          <DashboardGrid>
-            <PlaceholderPanel {...PLACEHOLDER_SLOTS[0]} />
-            <LotHoldPanel
-              rows={filteredRows}
-              loading={loading}
-              error={error}
-              lastUpdated={lastUpdated}
-              onRefresh={refresh}
-            />
-            <PlaceholderPanel {...PLACEHOLDER_SLOTS[1]} />
-            <PlaceholderPanel {...PLACEHOLDER_SLOTS[2]} />
-            <PlaceholderPanel {...PLACEHOLDER_SLOTS[3]} />
-            <PlaceholderPanel {...PLACEHOLDER_SLOTS[4]} />
-          </DashboardGrid>
-        </main>
+        <DashHeader
+          pageLabel="Lot Monitor"
+          scope={formatDate()}
+          liveAt={lastUpdated}
+          kpis={kpis}
+        />
+
+        <DashboardGrid>
+          <PlaceholderPanel
+            slotIndex={0}
+            title="전체 홀드"
+            subtitle="장기 hold 코멘트 + 제외처리 가능"
+          />
+          <LotHoldPanel
+            rows={filteredRows}
+            loading={loading}
+            error={error}
+            lastUpdated={lastUpdated}
+            onRefresh={refresh}
+          />
+          <PlaceholderPanel
+            slotIndex={2}
+            title="수율 계측"
+            subtitle="측정 결함과 판정 결과를 위한 슬롯입니다."
+          />
+          <PlaceholderPanel
+            slotIndex={3}
+            title="인폼 lot hold"
+            subtitle="인폼에 포함된 lot 파싱 후 status 표시 (hold가 최상단)"
+          />
+          <PlaceholderPanel
+            slotIndex={4}
+            title="Special hold"
+            subtitle="SPC/FDC 등 특정 hold code lot"
+          />
+          <PlaceholderPanel
+            slotIndex={5}
+            title="간단 hold"
+            subtitle="rework cnt / rework 판정대기"
+          />
+        </DashboardGrid>
 
         <SystemFooter />
       </div>
@@ -165,6 +209,7 @@ function DashboardApp() {
 export default function App() {
   return (
     <Provider>
+      <ThemeBinder />
       <DashboardApp />
     </Provider>
   )

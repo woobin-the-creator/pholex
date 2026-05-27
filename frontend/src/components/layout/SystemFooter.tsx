@@ -1,10 +1,16 @@
+const BUILD_TAG = '2026.05.28'
+
 export function SystemFooter() {
   return (
-    <footer className="system-footer">
-      <span>FAB_ID: F7-SEOUL</span>
-      <span>SYSTEM_STATUS: ONLINE</span>
-      <span>LATENCY: 12ms</span>
-      <span>REAL-TIME SYNC ACTIVE</span>
+    <footer className="footer">
+      <div className="footer__group">
+        <span>pholex</span>
+        <span>fab 7</span>
+        <span>build {BUILD_TAG}</span>
+      </div>
+      <div className="footer__group">
+        <span className="footer__live">live</span>
+      </div>
     </footer>
   )
 }

@@ -1,3 +1,6 @@
+import { useAtom } from 'jotai'
+import { useState } from 'react'
+import { themeAtom } from '../../atoms/themeAtom'
 import type { SessionUser } from '../../types/auth'
 
 interface TopNavProps {
@@ -5,66 +8,87 @@ interface TopNavProps {
 }
 
 const PAGE_ITEMS = [
-  { icon: 'dashboard', label: 'Dashboard', active: true },
-  { icon: 'lan', label: 'Lot Tracking' },
-  { icon: 'precision_manufacturing', label: 'Equipment' },
-  { icon: 'analytics', label: 'Yield Analytics' },
-  { icon: 'description', label: 'Reports' },
+  { label: 'Overview', active: true },
+  { label: 'Lots' },
+  { label: 'Equipment' },
+  { label: 'Yield' },
 ]
 
-export function TopNav({ user }: TopNavProps) {
-  return (
-    <header className="top-nav">
-      <div className="top-nav__left">
-        <p className="top-nav__brand">Lot Monitor</p>
+function initialsOf(user: SessionUser | null): string {
+  const name = user?.username?.trim() ?? ''
+  if (!name) return 'WB'
+  // Latin name with a space → first initials (e.g. "John Doe" → "JD")
+  if (name.includes(' ') && /^[A-Za-z\s]+$/.test(name)) {
+    const parts = name.split(/\s+/)
+    return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase()
+  }
+  // Korean / single-word → first 2 chars (e.g. "김우빈" → "김우", "데모 사용자" → "데모")
+  return name.replace(/\s+/g, '').slice(0, 2)
+}
 
-        <nav className="top-nav__page-nav" aria-label="Page sections">
+export function TopNav({ user }: TopNavProps) {
+  const [theme, setTheme] = useAtom(themeAtom)
+  const [flipping, setFlipping] = useState(false)
+
+  const toggleTheme = () => {
+    setFlipping(true)
+    window.setTimeout(() => setFlipping(false), 420)
+    setTheme(theme === 'light' ? 'dark' : 'light')
+  }
+
+  return (
+    <nav className="topnav" aria-label="Primary">
+      <div className="topnav__left">
+        <p className="topnav__title">batch monitoring</p>
+        <div className="pages">
           {PAGE_ITEMS.map((item) => (
             <button
               key={item.label}
               type="button"
-              className={`top-nav__page-link${item.active ? ' top-nav__page-link--active' : ''}`}
+              className={`page-link${item.active ? ' is-active' : ''}`}
             >
-              <span className="material-symbols-outlined" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
+              {item.label}
             </button>
           ))}
-        </nav>
-      </div>
-
-      <div className="top-nav__right">
-        <label className="top-nav__search" aria-label="Search lots">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            search
-          </span>
-          <input type="search" placeholder="Search Lot, Tool, or Operator..." />
-        </label>
-
-        <button type="button" className="top-nav__icon-button" aria-label="Notifications">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            notifications
-          </span>
-        </button>
-
-        <button type="button" className="top-nav__icon-button" aria-label="Settings">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            settings
-          </span>
-        </button>
-
-        <div className="top-nav__user">
-          <div>
-            <p className="top-nav__user-name">{user?.username ?? 'Lead Engineer'}</p>
-            <p className="top-nav__user-meta">{user?.employee_number ?? 'Station 04-A'}</p>
-          </div>
-
-          <div className="top-nav__avatar" aria-hidden="true">
-            {user?.username?.slice(0, 1) ?? 'L'}
-          </div>
         </div>
       </div>
-    </header>
+
+      <div className="topnav__right">
+        <label className="search" aria-label="Search">
+          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 16 }}>
+            search
+          </span>
+          <input type="search" placeholder="Search lot, tool, comment…" />
+        </label>
+
+        <button
+          type="button"
+          className={`theme-switch${flipping ? ' is-flipping' : ''}`}
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">
+            {theme === 'light' ? 'dark_mode' : 'light_mode'}
+          </span>
+          <span>{theme === 'light' ? 'Dark' : 'Light'}</span>
+        </button>
+
+        <button type="button" className="icon-btn" aria-label="Notifications">
+          <span className="material-symbols-outlined" aria-hidden="true">notifications</span>
+        </button>
+
+        <button type="button" className="icon-btn" aria-label="Settings">
+          <span className="material-symbols-outlined" aria-hidden="true">settings</span>
+        </button>
+
+        <div className="user">
+          <div className="user__meta">
+            <div className="user__name">{user?.username ?? '데모 사용자'}</div>
+            <div className="user__role">{user?.employee_number ?? 'Engineer'}</div>
+          </div>
+          <div className="avatar" aria-hidden="true">{initialsOf(user)}</div>
+        </div>
+      </div>
+    </nav>
   )
 }
