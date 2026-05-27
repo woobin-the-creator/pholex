@@ -118,7 +118,7 @@ class MailSender(Protocol):
 
 - `send`는 **raise하지 않음**. 실패는 `MailSendResult(success=False, error=...)`로 반환.
   (사내 메일 라이브러리가 raise하면 어댑터 내부에서 catch + 결과 객체로 변환.)
-- 호출자(use case)는 결과 boolean으로 분기 (`ai-prompts/260413-1430-send-mail-return-value-check.md` 참조)
+- 호출자(use case)는 결과 boolean으로 분기 (`ai-prompts/archived/260413-1430-send-mail-return-value-check.md` 참조)
 
 ### 3.4 `SsoVerifier` (`backend/app/ports/sso_verifier.py`)
 
@@ -178,7 +178,7 @@ class SsoVerifier(Protocol):
 
 - 사내 lot 테이블 컬럼명/타입
 - Lot 데이터 소스 우선순위 (사내 REST API → 429 시 Python lib fallback)
-- 메일 SMTP 라이브러리 시그니처 (`ai-prompts/260413-1430-send-mail-return-value-check.md`)
+- 메일 SMTP 라이브러리 시그니처 (`ai-prompts/archived/260413-1430-send-mail-return-value-check.md`)
 - SSO OIDC 엔드포인트/JWKS/`client_id`/audience 설정값 출처
 
 ---
