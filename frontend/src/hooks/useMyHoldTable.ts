@@ -13,6 +13,9 @@ import type { SlotPayload } from '../types/lot'
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 
+// LotStatus is a closed set {"run","wait","hold"} (docs/mvp.md). DEMO_ROWS must match
+// backend Fake adapter golden dataset (backend/app/adapters/fake/golden_dataset.py) so that
+// VITE_DEMO_MODE=true / VITE_DEMO_MODE=false produce equivalent visible state for AC 7.
 const DEMO_ROWS: SlotPayload['rows'] = [
   {
     lotId: 'LOT-A2948',
@@ -37,22 +40,6 @@ const DEMO_ROWS: SlotPayload['rows'] = [
     processStep: 'Implant / NWell',
     holdComment: 'Dose 검증 재측정 요청',
     updatedAt: '2026-04-28T06:58:02+09:00',
-  },
-  {
-    lotId: 'LOT-D8841',
-    status: 'review',
-    equipment: 'METRO-07',
-    processStep: 'Overlay 측정',
-    holdComment: 'overlay 스펙 in/out 경계, 2nd opinion 진행 중',
-    updatedAt: '2026-04-28T06:12:40+09:00',
-  },
-  {
-    lotId: 'LOT-E5026',
-    status: 'release-pending',
-    equipment: 'LITHO-04',
-    processStep: 'Photo / Mask 4',
-    holdComment: 'Hold 해제 승인 대기 (PE 결재)',
-    updatedAt: '2026-04-28T05:47:18+09:00',
   },
 ]
 const DEMO_LAST_UPDATED = '2026-04-28T07:42:11+09:00'

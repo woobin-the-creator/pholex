@@ -1,0 +1,30 @@
+[project]
+name = "pholex-backend"
+version = "0.1.0"
+description = "Pholex MVP backend — hexagonal architecture with Fake adapters"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.30",
+  "python-ulid>=3.0",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "freezegun>=1.5",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
