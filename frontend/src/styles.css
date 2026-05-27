@@ -138,7 +138,9 @@ body[data-theme='dark'] {
 
 /* ---------- Shell --------------------------------------------- */
 .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-.main { display: flex; flex-direction: column; min-width: 0; }
+.main {
+  display: flex; flex-direction: column; min-width: 0; min-height: 100vh;
+}
 
 /* ---------- Side nav ------------------------------------------ */
 .side {
@@ -491,10 +493,12 @@ body[data-theme='dark'] .kpi--yield .kpi__value { color: var(--accent); }
 body[data-theme='light'] .grid {
   padding: 0 56px 32px;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0;
+  flex: 1; min-height: 0;
 }
 body[data-theme='dark'] .grid {
   padding: 16px 56px 32px;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+  flex: 1; min-height: 0;
 }
 
 .card {
@@ -632,6 +636,96 @@ body[data-theme='dark'] .card__action:hover { border-color: var(--accent); color
   margin: 0 0 12px; padding: 8px 10px; border-radius: 6px;
   background: var(--hold-soft); color: var(--hold);
   font-size: 12.5px;
+}
+
+.card__head { user-select: none; cursor: default; }
+.card__icon {
+  display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 999px;
+  background: transparent; border: 0; color: var(--ink-mute);
+  cursor: pointer;
+  transition: color 200ms var(--ease-out), background-color 200ms var(--ease-out);
+}
+body[data-theme='light'] .card__icon:hover {
+  color: var(--ink); background: rgba(17, 17, 17, 0.05);
+}
+body[data-theme='dark'] .card__icon:hover {
+  color: var(--accent); background: var(--tint);
+}
+.card__icon .material-symbols-outlined { font-size: 16px; }
+
+/* ---------- Maximized panel (fills the grid area) ------------- */
+@keyframes maximizeIn {
+  from { opacity: 0; transform: scale(0.99); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+body[data-theme='light'] .grid.has-maximized,
+body[data-theme='dark']  .grid.has-maximized {
+  display: block; gap: 0;
+}
+.grid.has-maximized .card:not(.is-maximized) { display: none; }
+
+.card.is-maximized {
+  width: 100%; height: 100%; min-height: 0;
+  padding: 30px 32px;
+  animation: maximizeIn 220ms var(--ease-out);
+  transform: none !important;
+}
+body[data-theme='light'] .card.is-maximized {
+  background-color: var(--soft);
+  background-image: none;
+}
+body[data-theme='dark'] .card.is-maximized {
+  background:
+    radial-gradient(ellipse 90% 30% at 50% 0%, rgba(245, 233, 196, 0.05), transparent 70%),
+    var(--soft);
+}
+body[data-theme='dark'] .card.is-maximized.is-live::before {
+  height: 28px; top: 30px;
+}
+
+.card.is-maximized .card__head { margin-bottom: 24px; }
+.card.is-maximized .card__title { font-size: 20px; }
+.card.is-maximized .lot-table thead th { font-size: 10px; padding: 0 12px 12px; }
+.card.is-maximized .lot-table td { font-size: 13.5px; padding: 10px 12px; }
+.card.is-maximized .lot-table__lot-id { font-size: 13px; }
+.card.is-maximized .placeholder-copy { font-size: 14px; max-width: 60ch; }
+
+/* cursor affordance on draggable header */
+.card .card__head:hover { cursor: zoom-in; }
+.card.is-maximized .card__head:hover { cursor: zoom-out; }
+
+/* ---------- View Transitions (Chrome 111+, Safari 18+, FF 약함) -- */
+/* maximize / restore 시 카드가 grid cell ↔ 전체 그리드 영역으로 morph */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* 사라지는 카드들은 살짝만 페이드 (모핑 X) */
+::view-transition-old(card-slot-0),
+::view-transition-new(card-slot-0),
+::view-transition-old(card-slot-2),
+::view-transition-new(card-slot-2),
+::view-transition-old(card-slot-3),
+::view-transition-new(card-slot-3),
+::view-transition-old(card-slot-4),
+::view-transition-new(card-slot-4),
+::view-transition-old(card-slot-5),
+::view-transition-new(card-slot-5),
+::view-transition-old(card-live),
+::view-transition-new(card-live) {
+  animation-duration: 320ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* ---------- Lot table ----------------------------------------- */
