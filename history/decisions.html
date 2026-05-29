@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-05-29 (20k mock 구현 완료)";
+  const LAST_UPDATED = "2026-05-29 (운영 HTTPS 환경 추가)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -476,6 +476,20 @@
         { name: "데이터 양만 줄이기", rejected: "원인이 코드라 양 조절로는 안 풀림" }
       ],
       note: "사내 AI에 진단·수정 명세 전달 완료(ai-prompts/260528). 후속 검증 답변 대기 중이에요."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-05-29",
+      status: "done",
+      title: "beta 단계 생략, 운영(prod) HTTPS 환경 직행",
+      decision: "클로즈 베타 환경을 따로 두지 않고, 실사용자 대상 운영(prod) 환경 하나를 만들어 바로 서비스해요. nginx가 사내 CA 인증서로 TLS를 종단하고(prod.conf, 80→443 리다이렉트), 빌드된 frontend 정적 파일(dist)을 직접 서빙하며 /api·/ws만 backend로 프록시해요.",
+      rationale: "베타 테스터 단계를 거칠 계획이 없어 beta/dev 2환경 설계 중 beta를 prod로 대체했어요. 인증서는 외부 인터넷이 제한된 사내 환경이라 Let's Encrypt 대신 사내 CA 발급분을 쓰고, 운영자는 docker/nginx/certs/ 에 crt·key만 넣으면 되도록 분리(키는 .gitignore로 커밋 금지). 쿠키는 SESSION_COOKIE_SECURE=true.",
+      alternatives: [
+        { name: "infra.md 원안(beta 먼저 → 정식)", rejected: "베타 사용자 단계가 실제로 없어 환경만 늘어남" },
+        { name: "self-signed 인증서", rejected: "브라우저 보안 경고 — 실사용자 부적합" },
+        { name: "Let's Encrypt", rejected: "사내 폐쇄망에서 ACME 챌린지 도달 불가" }
+      ],
+      note: "구현: docker-compose.prod.yml(80/443 + frontend_dist 볼륨 + uvicorn 멀티워커) + docker/nginx/prod.conf + certs/README.md + .env.prod + deploy.sh --prod(frontend 빌드 후 기동, 인증서 부재 시 중단). 운영자 할 일: certs/ 에 pholex.crt(fullchain)·pholex.key 넣고, prod.conf server_name 을 실도메인으로 교체."
     }
   ];
 

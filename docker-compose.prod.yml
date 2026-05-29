@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pholex 운영(prod) 오버레이 — 실사용자 대상 HTTPS 서비스
+#
+#   base(docker-compose.yml) + 이 파일 을 함께 올려 운영 스택을 띄웁니다.
+#   실행:  scripts/deploy.sh --prod   (frontend 빌드 → 스택 기동까지 한 번에)
+#
+# dev 와 차이:
+#   - nginx 가 80/443 을 열고 HTTPS 종단(prod.conf + 사내 CA 인증서)
+#   - frontend 는 Vite dev 서버가 아니라, 빌드된 정적 파일(dist)을 nginx 가 직접 서빙
+#   - backend 는 --reload 없이 멀티 워커
+#   - 별도 prod 볼륨(pg_data_prod) 사용
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_completed_successfully   # dist 복사 완료 후 nginx 기동
+    volumes: !override
+      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+
+  frontend:
+    # 운영에서는 dev 서버를 띄우지 않고, 미리 빌드된 dist 를 공유 볼륨에 복사만 하고 종료.
+    # (frontend/dist 는 scripts/deploy.sh --prod 가 배포 전에 npm run build 로 생성)
+    build: !reset null
+    image: ${DOCKER_REGISTRY:-}alpine:3.20
+    command: sh -c "cp -R /built-dist/. /frontend_dist/"
+    restart: "no"
+    volumes:
+      - ./frontend/dist:/built-dist:ro
+      - frontend_dist:/frontend_dist
+
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 3
+    environment:
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+
+  postgres:
+    volumes: !override
+      - pg_data_prod:/var/lib/postgresql/data
+
+volumes:
+  frontend_dist:
+  pg_data_prod:
