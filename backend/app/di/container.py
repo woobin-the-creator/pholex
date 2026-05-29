@@ -42,6 +42,10 @@ def _is_fake() -> bool:
 @lru_cache(maxsize=1)
 def get_lot_source() -> LotSource:
     if _is_fake():
+        if settings.FAKE_LOT_SOURCE == "postgres":
+            from app.adapters.fake.pg_lot_source import PgSampleLotSource
+
+            return PgSampleLotSource()
         return InMemoryLotSource()
     return _load_real("LotSource")
 

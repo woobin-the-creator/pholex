@@ -21,3 +21,13 @@
 문서를 먼저 읽으면 이런 결정들을 모르고 뒤집는 실수를 방지할 수 있다.
 
 여러 영역에 걸친 작업(예: WebSocket 메시지 추가)이라면 관련 문서를 모두 읽는다.
+
+## 의사결정 기록 (Decision Log)
+
+굵직한 결정을 내릴 때마다 `history/decisions.html`을 업데이트한다.
+
+- **대상**: architecture 선택, framework/library 선택, 큰 트레이드오프 결정(예: SQLite→Postgres, fake/real adapter 분리, 데이터 소스 전략, 테마 정책 등). 자잘한 버그 픽스·리팩터는 제외한다.
+- **방법**: 파일 상단 `DECISIONS` 배열에 객체 하나를 추가하고 `LAST_UPDATED` 날짜를 갱신한다. timeline은 JS가 자동으로 그리므로 HTML 본문은 건드리지 않는다.
+- **필드**: `era`, `when`, `status`(`done`|`future`|`revisit`), `title`, `decision`, `rationale`, `alternatives`(name + rejected), `note`(선택).
+
+**왜 중요한가**: 과거에 왜 이런 architecture/framework를 골랐는지 헷갈리지 않으려고 만든 기록이다. 결정이 생길 때마다 누적되지 않으면 가치가 사라진다.

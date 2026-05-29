@@ -13,6 +13,7 @@
 | 파일 | 주제 | 우선순위 |
 |------|------|---------|
 | [`260527-1318-handoff-to-internal-ai.md`](./260527-1318-handoff-to-internal-ai.md) | Pholex MVP Real adapter 구현 위임 (4종 + alembic + contract test) | **1순위 — 사내 AI 진입점** |
+| [`260529-1522-prod-https-deploy-verify.md`](./260529-1522-prod-https-deploy-verify.md) | 운영(prod) HTTPS 배포 — VM 기존 인증서 탐색·재사용(도메인 커버 확인) + end-to-end TLS 검증 위임 | 인프라 — 운영 전환 시 |
 
 사내 AI는 위 파일을 먼저 읽고, 거기서 안내하는 `docs/adapter-spec.md` §0 시작 가이드로 이동하면 작업 시작 지점이 명확해집니다.
 

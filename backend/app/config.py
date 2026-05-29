@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     ADAPTER_MODE: Literal["fake", "real"] = "fake"
+    # fake 모드에서 LotSource 백엔드 선택. "postgres"는 사내 sample 테이블을 모방한
+    # 로컬 20k mock(PgSampleLotSource)을 쓴다. "memory"는 golden dataset in-memory.
+    FAKE_LOT_SOURCE: Literal["memory", "postgres"] = "memory"
     DEV_SSO_BYPASS: bool = True
 
     DATABASE_URL: str = "postgresql+asyncpg://pholex:pholex@postgres:5432/pholex"
