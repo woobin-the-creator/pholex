@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pholex — 의사결정 기록 (Decision Log)</title>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg-soft: #11151a;
+    --panel: #151a21;
+    --panel-edge: rgba(140, 170, 210, 0.14);
+    --ink: #e8edf3;
+    --ink-soft: #9aa6b4;
+    --ink-faint: #5f6b78;
+    --accent: #6ea8fe;
+    --accent-soft: rgba(110, 168, 254, 0.16);
+    --done: #5fd0a0;
+    --done-soft: rgba(95, 208, 160, 0.14);
+    --future: #d6a35f;
+    --future-soft: rgba(214, 163, 95, 0.14);
+    --revisit: #c77dff;
+    --revisit-soft: rgba(199, 125, 255, 0.14);
+    --line: rgba(140, 170, 210, 0.18);
+    --radius: 14px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, monospace;
+  }
+  body[data-theme="light"] {
+    --bg: #f4f6f8;
+    --bg-soft: #ffffff;
+    --panel: #ffffff;
+    --panel-edge: rgba(40, 70, 110, 0.12);
+    --ink: #1a2230;
+    --ink-soft: #4a5664;
+    --ink-faint: #8a96a4;
+    --accent: #2f6fe0;
+    --accent-soft: rgba(47, 111, 224, 0.10);
+    --done: #1f9e6e;
+    --done-soft: rgba(31, 158, 110, 0.10);
+    --future: #b07820;
+    --future-soft: rgba(176, 120, 32, 0.10);
+    --revisit: #8b3fd6;
+    --revisit-soft: rgba(139, 63, 214, 0.10);
+    --line: rgba(40, 70, 110, 0.16);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.4s ease, color 0.4s ease;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 56px 24px 120px; }
+
+  /* Header */
+  header.page {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 8px;
+  }
+  .title-block h1 {
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  .title-block .sub {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin: 0;
+    max-width: 560px;
+  }
+  .theme-btn {
+    flex: none;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.2s ease;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* Legend / filters */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 28px 0 8px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border: 1px solid var(--panel-edge);
+    background: var(--panel);
+    color: var(--ink-soft);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.18s ease;
+  }
+  .chip[aria-pressed="true"] { color: var(--ink); border-color: currentColor; }
+  .chip.is-dimmed { opacity: 0.38; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.done { background: var(--done); }
+  .dot.future { background: var(--future); }
+  .dot.revisit { background: var(--revisit); }
+
+  /* Timeline */
+  .timeline { position: relative; margin-top: 40px; padding-left: 30px; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--line) 8%, var(--line) 92%, transparent);
+  }
+  .era {
+    position: relative;
+    margin: 0 0 14px -30px;
+    padding-left: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .era:not(:first-child) { margin-top: 34px; }
+
+  .node { position: relative; margin-bottom: 16px; }
+  .node::before {
+    content: "";
+    position: absolute;
+    left: -27px; top: 22px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 4px var(--bg);
+    z-index: 2;
+  }
+  .node[data-status="done"]::before { border-color: var(--done); }
+  .node[data-status="future"]::before { border-color: var(--future); }
+  .node[data-status="revisit"]::before { border-color: var(--revisit); }
+  .node.is-hidden { display: none; }
+
+  .card {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.55;
+  }
+  .node[data-status="done"] .card::before { background: var(--done); }
+  .node[data-status="future"] .card::before { background: var(--future); }
+  .node[data-status="revisit"] .card::before { background: var(--revisit); }
+  .card:hover { border-color: var(--accent); transform: translateX(2px); }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 18px;
+    cursor: pointer;
+  }
+  .card-head .meta { flex: 1; min-width: 0; }
+  .card-head .when {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+  }
+  .card-head h3 {
+    margin: 2px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .badge {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .badge.done { background: var(--done-soft); color: var(--done); }
+  .badge.future { background: var(--future-soft); color: var(--future); }
+  .badge.revisit { background: var(--revisit-soft); color: var(--revisit); }
+  .caret { flex: none; color: var(--ink-faint); transition: transform 0.25s ease; font-size: 13px; }
+  .node.is-open .caret { transform: rotate(90deg); }
+
+  .card-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease;
+  }
+  .node.is-open .card-body { grid-template-rows: 1fr; }
+  .card-body > .inner { overflow: hidden; }
+  .body-pad { padding: 0 18px 18px; }
+
+  .decision-line {
+    font-size: 14.5px;
+    color: var(--ink);
+    padding: 2px 0 12px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .field { margin-bottom: 11px; }
+  .field:last-child { margin-bottom: 0; }
+  .field .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 3px;
+  }
+  .field .val { font-size: 13.5px; color: var(--ink-soft); }
+  .field .val code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 5px;
+  }
+  .alts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+  .alt {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 7px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .alt s { color: var(--ink-faint); }
+
+  footer.page {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 12.5px;
+  }
+  footer.page code { font-family: var(--mono); color: var(--ink-soft); }
+  .updated { color: var(--ink-soft); }
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+  <header class="page">
+    <div class="title-block">
+      <h1>Pholex 의사결정 기록</h1>
+      <p class="sub">아키텍처와 framework를 왜 이렇게 골랐는지 헷갈리지 않도록 모아둔 decision log예요. 굵직한 결정을 내릴 때마다 여기에 추가돼요.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn">◐ Light</button>
+  </header>
+
+  <div class="legend" id="legend">
+    <span class="chip" data-filter="done" aria-pressed="true"><span class="dot done"></span>확정 (Decided)</span>
+    <span class="chip" data-filter="future" aria-pressed="true"><span class="dot future"></span>예정 (Planned)</span>
+    <span class="chip" data-filter="revisit" aria-pressed="true"><span class="dot revisit"></span>재검토 (Revisit)</span>
+  </div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <footer class="page">
+    <p class="updated" id="updatedAt"></p>
+    <p>이 파일은 <code>history/decisions.html</code> 이고, 모든 결정은 파일 상단 <code>DECISIONS</code> 배열에 들어 있어요.
+       새 결정을 추가하려면 배열에 객체 하나만 넣으면 timeline에 자동으로 그려져요.
+       상태값은 <code>done</code> / <code>future</code> / <code>revisit</code> 중 하나예요.</p>
+  </footer>
+</div>
+
+<script>
+  /* ─────────────────────────────────────────────────────────────
+     의사결정 데이터 — 새 결정이 생기면 이 배열에 객체를 추가하세요.
+     era 순서대로 위→아래로 그려지고, 같은 era 안에서는 배열 순서대로 놓여요.
+     status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
+     fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
+     ───────────────────────────────────────────────────────────── */
+  const LAST_UPDATED = "2026-05-29 (20k mock 구현 완료)";
+
+  const DECISIONS = [
+    // ─── ERA 1: 기반 설계 ───
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "프로젝트 킥오프",
+      status: "done",
+      title: "Hexagonal Architecture (Ports & Adapters)",
+      decision: "domain / usecases / ports 를 core로 두고, 데이터 소스는 adapter로 갈아끼우는 구조를 채택했어요.",
+      rationale: "데이터 소스가 '복합/미정'이라 처음부터 한 곳에 묶으면 안 됐어요. fake adapter로 먼저 개발·테스트하고, 사내 real adapter는 나중에 같은 port에 꽂기만 하면 되도록 격리했어요.",
+      alternatives: [
+        { name: "Layered(3-tier) 단순 구조", rejected: "데이터 소스 교체 시 비즈니스 로직까지 흔들림" },
+        { name: "core에 DB 직접 의존", rejected: "fake/real 전환 불가, 테스트 어려움" }
+      ],
+      note: "ADAPTER_MODE=fake|real 로 런타임 전환. domain/usecases/api/ports 는 CI gate로 사내 AI가 못 건드리게 보호돼요."
+    },
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "킥오프",
+      status: "done",
+      title: "Frontend: React + Vite + TypeScript",
+      decision: "React 19 + Vite 7 + TypeScript 5.9 조합으로 frontend를 구성했어요.",
+      rationale: "팀 기존 React 역량, TanStack Table·Jotai 같은 핵심 library의 1급 지원, Vite의 즉시 HMR.",
+      alternatives: [
+        { name: "Vue 3", rejected: "사내 React 경험 부재 시 전환 비용 큼" },
+        { name: "Svelte", rejected: "생태계 협소, TanStack Table 공식 지원 불안정" }
+      ]
+    },
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "킥오프",
+      status: "done",
+      title: "State 관리: Jotai (Zustand 아님)",
+      decision: "atomFamily(tableId) 패턴으로 6개 테이블 state를 구조적으로 분리했어요.",
+      rationale: "테이블 0 업데이트가 테이블 1~5의 리렌더를 유발하지 않는 게 보장돼야 했어요. atom effect로 WebSocket 이벤트를 해당 테이블 atom에 직접 연결할 수 있어요.",
+      alternatives: [
+        { name: "Zustand", rejected: "selector 미사용 시 store 전체 구독 → 6개 테이블 동반 리렌더 위험" },
+        { name: "Redux Toolkit", rejected: "boilerplate 과도, WebSocket middleware 별도 필요" }
+      ]
+    },
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "킥오프",
+      status: "done",
+      title: "테이블: TanStack Table v8",
+      decision: "headless table library로 TanStack Table v8을 골랐어요.",
+      rationale: "완전 headless·무료·가상 스크롤 내장. SheetJS 조합으로 Excel 내보내기를 직접 구현하고 디자인을 자유롭게 입힐 수 있어요.",
+      alternatives: [
+        { name: "AG Grid Community", rejected: "Excel 내보내기·행 그룹핑이 Enterprise 전용(유료)" },
+        { name: "react-table v7", rejected: "headless 아님, 스타일 커스텀 어려움" }
+      ]
+    },
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "킥오프",
+      status: "done",
+      title: "Backend: FastAPI + SQLAlchemy 2.0 async",
+      decision: "FastAPI + SQLAlchemy async + asyncpg + Pydantic v2 + Alembic 스택을 채택했어요.",
+      rationale: "Pydantic으로 WebSocket 메시지 스키마 자동 검증, OpenAPI 자동 문서화, Redis pub/sub 직접 통합으로 channel layer 없이 멀티워커 broadcast.",
+      alternatives: [
+        { name: "Django + Channels", rejected: "channel layer 추상화 레이어가 추가로 붙음" },
+        { name: "Node.js / Express", rejected: "팀 Python 역량 우선" }
+      ]
+    },
+    {
+      era: "1 · 기반 설계 (Foundation)",
+      when: "킥오프",
+      status: "done",
+      title: "인프라: Redis + Docker Swarm + Nginx",
+      decision: "세션/캐시/pub-sub은 Redis, 오케스트레이션은 Docker Swarm, reverse proxy는 Nginx로 정했어요.",
+      rationale: "Redis 하나로 pub/sub + 세션 + 쿼리 캐시. Swarm은 소규모 베어메탈(2~5노드)에서 Compose 문법을 재사용하면서 rolling update가 돼요.",
+      alternatives: [
+        { name: "Kubernetes / K3s", rejected: "베어메탈에서 control plane·CNI 운영 인력 과도" },
+        { name: "Memcached", rejected: "Pub/Sub 없어 WebSocket broadcast 불가" }
+      ]
+    },
+
+    // ─── ERA 2: MVP 구현 ───
+    {
+      era: "2 · MVP 구현",
+      when: "MVP 초기",
+      status: "revisit",
+      title: "MVP 한정 SQLite stand-in",
+      decision: "개발 극초기에 가볍게 MVP를 굴리려고 SQLite를 임시 DB로 썼어요.",
+      rationale: "Postgres 컨테이너 없이도 바로 백엔드를 돌려보려는 편의 목적이었어요. 설계상 최종 저장소는 처음부터 PostgreSQL이에요.",
+      alternatives: [
+        { name: "처음부터 Postgres", rejected: "극초기엔 컨테이너 띄우는 부담을 줄이고 싶었음" }
+      ],
+      note: "SQLite는 멀티 워커 동시 쓰기에 부적합 → 운영은 Postgres. .env.dev 의 DATABASE_URL이 아직 SQLite라 Postgres로 교정 예정이에요."
+    },
+    {
+      era: "2 · MVP 구현",
+      when: "MVP",
+      status: "done",
+      title: "데이터 소스: 사내 REST API (primary) + Python lib (fallback)",
+      decision: "랏 데이터는 사내 REST API를 우선으로, 안 되면 Python 라이브러리를 fallback으로 읽어요.",
+      rationale: "데이터 소스가 미정이라 adapter 뒤로 숨겼어요. 어느 쪽이든 동일한 LotRowDTO로 정규화돼서 core는 출처를 몰라요.",
+      alternatives: [
+        { name: "MES/EAP DB 직접 조회", rejected: "접근 권한·스키마 결합도가 너무 큼 (추후 adapter로 추가 가능)" }
+      ]
+    },
+    {
+      era: "2 · MVP 구현",
+      when: "MVP",
+      status: "done",
+      title: "fake/real adapter 분리 + 사내 AI 위임",
+      decision: "fake adapter는 우리가 짜고, real adapter는 사내 AI가 같은 구조로 미러링하도록 ai-prompts/ 명세로 위임해요.",
+      rationale: "사내망 안에서만 접근 가능한 real 데이터 소스라 외부(우리)가 직접 못 짜요. fake/ 코드를 reference template으로 주면 사내 AI가 real/ 에 동일 구조로 복제해요.",
+      alternatives: [
+        { name: "real을 우리가 직접 구현", rejected: "사내망·민감정보 접근 불가" }
+      ],
+      note: "real/ 디렉터리는 비워둔 채 README로 예약. 위임 명세는 ai-prompts/ 에 날짜별 markdown으로 관리해요."
+    },
+
+    // ─── ERA 3: UX / 디자인 ───
+    {
+      era: "3 · UX · 디자인",
+      when: "디자인 리뉴얼",
+      status: "done",
+      title: "고급차 브랜드 톤 + 다크/라이트 테마",
+      decision: "Dark = Aston/Polestar 톤, Light = Polestar/Tesla 미니멀 톤(default)로 정했어요.",
+      rationale: "미니멀하지만 세련된 느낌을 원했고, body[data-theme] + CSS custom properties + localStorage로 전환해요.",
+      alternatives: [
+        { name: "단일 라이트 테마", rejected: "24/7 교대·야간 사용 환경에서 다크 모드 필요" }
+      ]
+    },
+    {
+      era: "3 · UX · 디자인",
+      when: "디자인 리뉴얼",
+      status: "done",
+      title: "정보 밀도 우선 — 보여주기용 타이틀 제거 + ambient 경계선",
+      decision: "hero 타이틀 텍스트를 빼고 정보 밀도를 높였고, 고급차 ambient light 스타일의 은은한 경계선을 넣었어요.",
+      rationale: "일회성 접속 페이지가 아니라 엔지니어가 매일 몇 시간씩 켜두는 페이지라 화면당 정보량이 더 중요해요. 경계선은 패널 구분을 부드럽게 하되 시선을 뺏지 않아요.",
+      alternatives: [
+        { name: "큰 hero 타이틀 유지", rejected: "상시 사용 대시보드에서 공간 낭비" }
+      ]
+    },
+    {
+      era: "3 · UX · 디자인",
+      when: "stacked PR",
+      status: "done",
+      title: "패널 maximize + View Transitions",
+      decision: "패널을 2×3 grid 영역만큼 채우는 in-grid maximize로 키워요 (browser fullscreen 아님). 아이콘 클릭·헤더 더블클릭·ESC로 조작해요.",
+      rationale: "브라우저 전체화면은 너무 공격적이었어요. grid를 가득 채우는 정도면 충분해요. 전환은 View Transitions API(startViewTransition + flushSync)로 부드럽게, prefers-reduced-motion은 존중해요.",
+      alternatives: [
+        { name: "Fullscreen API (브라우저 전체화면)", rejected: "context를 너무 많이 잃어서 과함" }
+      ]
+    },
+
+    // ─── ERA 4: 안정화 / 진행 중 ───
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-05-29 구현 완료",
+      status: "done",
+      title: "로컬 20k Postgres mock (fake/ = real/ template)",
+      decision: "사내 환경을 닮은 ~20k행 mock을 로컬 Postgres에 적재하고, 그걸 다루는 PgSampleLotSource를 fake/ 에 작성해 contract test로 검증했어요. 사내 AI가 real/ 에 그대로 복제할 reference예요.",
+      rationale: "사내 AI는 fake/ 코드만 읽고 real/ 에 같은 구조로 복제해요. golden rows를 mock에 심어 독립적인 oracle로 삼았고, fetch_my_holds(99999)가 정확히 3건임이 20k 행 속에서도 통과해요 — owner 필터가 실제로 동작한다는 증거예요.",
+      alternatives: [
+        { name: "InMemoryLotSource만 유지", rejected: "real-shaped SQL을 검증 못 함 — 단, 빠른 단위 테스트용으로 InMemory도 함께 유지" }
+      ],
+      note: "구현: pg_schema.py(sample 테이블) + pg_engine.py(engine singleton, S2 교훈) + pg_lot_source.py(owner 필터 + canonical 매핑 + KST→UTC) + seed_sample_mock.py(20k 합성+golden) + FAKE_LOT_SOURCE 설정 + PHOLEX_TEST_PG contract param. 사내 real/ 미러링은 사내 AI 대기."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "현재",
+      status: "future",
+      title: "내 lot hold employee 필터 + 페이지네이션",
+      decision: "'내 lot hold' 섹션이 전체 hold가 아니라 로그인 사용자의 hold만, 그리고 페이지 단위로 가져오도록 고쳐요.",
+      rationale: "지금은 전체 테이블을 한 번에 불러와서 과부하로 500/504가 났어요. 근본 원인은 데이터 양이 아니라 real adapter 코드 버그(엔진 per-request 생성, datetime 직렬화 등)와 employee 필터 누락이에요.",
+      alternatives: [
+        { name: "데이터 양만 줄이기", rejected: "원인이 코드라 양 조절로는 안 풀림" }
+      ],
+      note: "사내 AI에 진단·수정 명세 전달 완료(ai-prompts/260528). 후속 검증 답변 대기 중이에요."
+    }
+  ];
+
+  /* ─── 렌더링 (수정 불필요) ─── */
+  const STATUS_LABEL = { done: "확정", future: "예정", revisit: "재검토" };
+  const tl = document.getElementById("timeline");
+  let lastEra = null;
+  DECISIONS.forEach((d, i) => {
+    if (d.era !== lastEra) {
+      const e = document.createElement("div");
+      e.className = "era";
+      e.textContent = d.era;
+      tl.appendChild(e);
+      lastEra = d.era;
+    }
+    const node = document.createElement("div");
+    node.className = "node";
+    node.dataset.status = d.status;
+    node.dataset.filter = d.status;
+
+    const alts = (d.alternatives || []).map(a =>
+      `<span class="alt"><s>${a.name}</s> — ${a.rejected}</span>`).join("");
+
+    node.innerHTML = `
+      <div class="card">
+        <div class="card-head">
+          <div class="meta">
+            <div class="when">${d.when}</div>
+            <h3>${d.title}</h3>
+          </div>
+          <span class="badge ${d.status}">${STATUS_LABEL[d.status]}</span>
+          <span class="caret">▸</span>
+        </div>
+        <div class="card-body"><div class="inner"><div class="body-pad">
+          <div class="decision-line">${d.decision}</div>
+          ${d.rationale ? `<div class="field"><div class="label">왜 (Rationale)</div><div class="val">${d.rationale}</div></div>` : ""}
+          ${alts ? `<div class="field"><div class="label">대안 & 거절 이유</div><div class="alts">${alts}</div></div>` : ""}
+          ${d.note ? `<div class="field"><div class="label">메모</div><div class="val">${d.note}</div></div>` : ""}
+        </div></div></div>
+      </div>`;
+    node.querySelector(".card-head").addEventListener("click", () => node.classList.toggle("is-open"));
+    if (i === DECISIONS.length - 1) node.classList.add("is-open");
+    tl.appendChild(node);
+  });
+
+  /* ─── 필터 ─── */
+  const active = new Set(["done", "future", "revisit"]);
+  document.getElementById("legend").addEventListener("click", (ev) => {
+    const chip = ev.target.closest(".chip");
+    if (!chip) return;
+    const f = chip.dataset.filter;
+    if (active.has(f)) { active.delete(f); chip.setAttribute("aria-pressed", "false"); chip.classList.add("is-dimmed"); }
+    else { active.add(f); chip.setAttribute("aria-pressed", "true"); chip.classList.remove("is-dimmed"); }
+    document.querySelectorAll(".node").forEach(n =>
+      n.classList.toggle("is-hidden", !active.has(n.dataset.filter)));
+  });
+
+  /* ─── 테마 토글 ─── */
+  const body = document.body;
+  const btn = document.getElementById("themeBtn");
+  const saved = (() => { try { return localStorage.getItem("pholex-history-theme"); } catch { return null; } })();
+  if (saved) body.dataset.theme = saved;
+  const syncBtn = () => { btn.textContent = body.dataset.theme === "dark" ? "◐ Light" : "◑ Dark"; };
+  syncBtn();
+  btn.addEventListener("click", () => {
+    body.dataset.theme = body.dataset.theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("pholex-history-theme", body.dataset.theme); } catch {}
+    syncBtn();
+  });
+
+  document.getElementById("updatedAt").textContent = "마지막 업데이트: " + LAST_UPDATED + " · 총 " + DECISIONS.length + "개 결정";
+</script>
+</body>
+</html>

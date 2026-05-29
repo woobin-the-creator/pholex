@@ -23,6 +23,13 @@ async def test_fetch_only_returns_hold_status(lot_source):
 
 
 @pytest.mark.asyncio
+async def test_golden_oracle_exact_counts(lot_source):
+    """Golden oracle: 99999는 정확히 3 holds, 88888은 1 hold (합성 행이 섞여도 불변)."""
+    assert len(await lot_source.fetch_my_holds("99999")) == 3
+    assert len(await lot_source.fetch_my_holds("88888")) == 1
+
+
+@pytest.mark.asyncio
 async def test_fetch_filters_other_employees(lot_source):
     """Cross-employee contamination: 88888의 hold가 99999 결과에 섞이면 안 됨."""
     rows_99999 = await lot_source.fetch_my_holds("99999")
