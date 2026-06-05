@@ -63,7 +63,6 @@ describe('App', () => {
         createJsonResponse({
           authenticated: true,
           user: {
-            employee_id: 'test001',
             employee_number: '99999',
             username: '테스트엔지니어',
             auth: 'ENGINEER',
@@ -133,7 +132,6 @@ describe('App', () => {
         createJsonResponse({
           authenticated: true,
           user: {
-            employee_id: 'test001',
             employee_number: '99999',
             username: '테스트엔지니어',
             auth: 'ENGINEER',
@@ -207,7 +205,6 @@ describe('App', () => {
         createJsonResponse({
           authenticated: true,
           user: {
-            employee_id: 'test001',
             employee_number: '99999',
             username: '테스트엔지니어',
             auth: 'ENGINEER',
