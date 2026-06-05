@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Pholex guardrail — 사내(opencode) 머신에서 Claude 소유 파일 수정을 하드 차단.
+#
+# 동작 조건: 'external' remote 가 있는 머신에서만 작동한다.
+#   - 사내 머신:  origin=사내GitHub, external=외부GitHub  → 차단 활성
+#   - Claude 머신: origin=외부GitHub (external remote 없음) → no-op (통과)
+#
+# 활성화(사내에서 1회):  git config core.hooksPath .githooks
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+# Claude/external 머신이면 통과 (external remote 부재 = 정본 소유자)
+if ! git remote | grep -qx external; then
+  exit 0
+fi
+
+# external(정본)이 소유하는 계약 영역 — 사내에서 수정 금지
+PROTECTED=(
+  "backend/app/domain/"
+  "backend/app/usecases/"
+  "backend/app/api/"
+  "backend/app/ports/"
+  "backend/app/di/"
+  "backend/app/config.py"
+  "backend/app/adapters/fake/"
+)
+
+staged="$(git diff --cached --name-only)"
+violations=""
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  for p in "${PROTECTED[@]}"; do
+    case "$f" in
+      "$p"*) violations="${violations}  - ${f}"$'\n' ;;
+    esac
+  done
+done <<< "$staged"
+
+if [ -n "$violations" ]; then
+  cat >&2 <<EOF
+✋ 커밋 차단 — Claude 소유 파일은 사내에서 수정할 수 없습니다.
+
+external(외부 GitHub)이 정본인 계약 영역을 건드렸습니다:
+${violations}
+해야 할 일:
+  1) 변경이 필요하면 직접 고치지 말고 Claude에게 요청하세요 (groupchat).
+     "verify_callback 시그니처를 ~로 바꿔달라" 처럼 무엇이 왜 필요한지 전달.
+  2) Claude가 external 에 반영 → pull.
+  3) 실수로 건드렸으면 정본으로 되돌리세요:
+       git restore --staged <파일> && git checkout external/<브랜치> -- <파일>
+
+사내 영구 작업 영역: backend/app/adapters/real/, backend/alembic/, 인프라/빌드 파일.
+(우회 금지: --no-verify 로 강제 커밋하면 CI gate 에서 다시 막힙니다.)
+EOF
+  exit 1
+fi
+
+exit 0
