@@ -14,7 +14,7 @@ async def test_init_login_returns_url_string(sso_verifier):
 
 @pytest.mark.asyncio
 async def test_verify_callback_returns_identity(sso_verifier):
-    identity = await sso_verifier.verify_callback("code123", "state")
+    identity = await sso_verifier.verify_callback("code123", "id-token", "state")
     assert isinstance(identity, SsoIdentityDTO)
     assert identity.auth_level in ("ENGINEER", "ADMIN")
 
@@ -30,3 +30,11 @@ async def test_verify_session_token_returns_identity(sso_verifier):
     identity = await sso_verifier.verify_session_token("some-token")
     assert isinstance(identity, SsoIdentityDTO)
     assert identity.employee_number
+
+
+@pytest.mark.asyncio
+async def test_create_session_token_returns_str(sso_verifier):
+    identity = await sso_verifier.verify_callback("c", "id-token", "s")
+    token = await sso_verifier.create_session_token(identity)
+    assert isinstance(token, str)
+    assert token
