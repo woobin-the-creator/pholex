@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-05-29 (운영 HTTPS 환경 추가)";
+  const LAST_UPDATED = "2026-06-05 (SSO users 식별자 단일화 · UserRepository 분리)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -490,6 +490,19 @@
         { name: "Let's Encrypt", rejected: "사내 폐쇄망에서 ACME 챌린지 도달 불가" }
       ],
       note: "구현: docker-compose.prod.yml(80/443 + frontend_dist 볼륨 + uvicorn 멀티워커) + docker/nginx/prod.conf + certs/README.md + .env.prod + deploy.sh --prod(frontend 빌드 후 기동, 인증서 부재 시 중단). 운영자 할 일: certs/ 에 pholex.crt(fullchain)·pholex.key 넣고, prod.conf server_name 을 실도메인으로 교체."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-05",
+      status: "done",
+      title: "users 식별자: 사번(sabun) 단일키, employee_id 컬럼 제거",
+      decision: "users 테이블에서 employee_id(원래 'IdP 고유 ID' 의도) 컬럼을 없애고, employee_number(사번/sabun)를 UNIQUE NOT NULL 키 겸 upsert 대상으로 단일화했어요. id SERIAL은 내부 surrogate PK로 유지.",
+      rationale: "사내 IdP가 sub/oid 같은 별도 고유 ID를 주지 않고 sabun 하나만 제공하는 게 jfpage 기존 SSO 구현 분석으로 확인됐어요. 두 컬럼을 두면 employee_id가 항상 employee_number와 같은 값이 되는 redundant 설계라, 받쳐줄 데이터가 없는 추상화를 제거했어요(YAGNI). IdP가 훗날 진짜 subject를 주면 그때 국소 마이그레이션으로 추가.",
+      alternatives: [
+        { name: "employee_id 유지(=sabun 복제)", rejected: "항상 중복값 — 미래 대비 seam이지만 현재 무의미" },
+        { name: "employee_id=Django auto PK(jfpage 방식)", rejected: "Pholex는 id SERIAL이 이미 surrogate PK 역할" }
+      ],
+      note: "함께 정리: (1) SSO provisioning을 UnitOfWork/lot_repository에서 빼 별도 UserRepository port(+fake)로 분리. (2) IdP claim key 매핑 확정 — email→mail, employee_number→sabun, username→username, auth는 IdP 미제공이라 'ENGINEER' 하드코딩(추후 ADMIN_EMAILS 산정). 사내 real 구현이 external 정본 ports/dto에 conform."
     }
   ];
 

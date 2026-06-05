@@ -7,15 +7,20 @@
 # dev 와 차이:
 #   - nginx 가 80/443 을 열고 HTTPS 종단(prod.conf + 사내 CA 인증서)
 #   - frontend 는 Vite dev 서버가 아니라, 빌드된 정적 파일(dist)을 nginx 가 직접 서빙
-#   - backend 는 --reload 없이 멀티 워커
-#   - 별도 prod 볼륨(pg_data_prod) 사용
+#   - backend 는 --reload 없이 멀티 워커 + SSO(real) 의존 인프라(Redis, IdP cert)
+#   - 별도 prod 볼륨(pg_data_prod, redis_data_prod) 사용
+#
+# 사내 특화값은 .env.prod 로 주입합니다 (커밋 금지):
+#   HTTPS_PORT=10004        # 사내 host 포트(외부 LB가 :443 → host:10004 라우팅)
+#   DOCKER_REGISTRY=...     # 사내 Docker 레지스트리 미러
+#   REDIS_URL, APP_BASE_URL, SSO_CERT_PATH 등
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
   nginx:
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"     # 사내: HTTPS_PORT=10004 → "10004:443"
     depends_on:
       backend:
         condition: service_started
@@ -41,6 +46,23 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 3
     environment:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      # SSO(real) 의존: nonce/세션 저장용 Redis, IdP id_token RS256 검증용 공개 인증서
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SSO_CERT_PATH: ${SSO_CERT_PATH:-/app/certs/sso.cert}
+      APP_BASE_URL: ${APP_BASE_URL:-}
+      SSO_RETURN_URL: ${SSO_RETURN_URL:-/}
+    volumes:
+      # IdP 공개 인증서(sso.cert)를 backend 컨테이너에 마운트 (host certs/ 는 gitignore).
+      - ./certs:/app/certs:ro
+    depends_on:
+      - postgres
+      - redis
+
+  redis:
+    image: ${DOCKER_REGISTRY:-}redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_prod:/data
 
   postgres:
     volumes: !override
@@ -49,3 +71,4 @@ services:
 volumes:
   frontend_dist:
   pg_data_prod:
+  redis_data_prod:

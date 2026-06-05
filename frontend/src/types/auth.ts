@@ -1,6 +1,5 @@
 export interface SessionUser {
   id?: number
-  employee_id?: string
   employee_number?: string
   username?: string
   email?: string

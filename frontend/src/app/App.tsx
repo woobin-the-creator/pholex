@@ -19,7 +19,6 @@ import type { SessionUser } from '../types/auth'
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 const DEMO_USER: SessionUser = {
   id: 0,
-  employee_id: 'DEMO-0001',
   employee_number: 'DEMO-0001',
   username: '데모 사용자',
   email: 'demo@pholex.local',

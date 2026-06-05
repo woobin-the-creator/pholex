@@ -13,6 +13,13 @@ docker/nginx/certs/*
 !docker/nginx/certs/README.md
 !docker/nginx/certs/.gitkeep
 
+# 사내가 jfpage에서 복사한 top-level 인증서/개인키 — 절대 커밋 금지 (server.key 등)
+certs/
+*.key
+*.crt
+*.pem
+!**/README.md
+
 # OMC 상태/세션 파일 (스펙은 포함)
 .omc/state/
 .omc/logs/

@@ -48,16 +48,18 @@ DEV_SSO_AUTH=ENGINEER     # ENGINEER | ADMIN
 
 ```sql
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    employee_id VARCHAR(100) UNIQUE NOT NULL,  -- IdP 고유 ID
-    employee_number VARCHAR(50),               -- 사번
-    username VARCHAR(100) NOT NULL,            -- 이름
+    id SERIAL PRIMARY KEY,                          -- 내부 surrogate PK
+    employee_number VARCHAR(50) UNIQUE NOT NULL,   -- 사번(sabun) = 유일 식별자
+    username VARCHAR(100) NOT NULL,                -- 이름
     email VARCHAR(200),
-    auth VARCHAR(50) DEFAULT 'ENGINEER',       -- ENGINEER | ADMIN
+    auth VARCHAR(50) DEFAULT 'ENGINEER',           -- ENGINEER | ADMIN
     created_at TIMESTAMPTZ DEFAULT NOW(),
     last_login TIMESTAMPTZ
 );
-CREATE INDEX idx_users_employee_id ON users(employee_id);
+CREATE INDEX idx_users_employee_number ON users(employee_number);
+
+-- 주: IdP가 sub/oid 같은 별도 고유 ID를 주지 않아(sabun만 제공) 기존 employee_id 컬럼은 제거.
+--    사번(employee_number)을 UNIQUE 키 겸 upsert 대상으로 사용한다.
 ```
 
 ---
@@ -66,7 +68,7 @@ CREATE INDEX idx_users_employee_id ON users(employee_id);
 
 ```
 key:   session:{uuid4}
-value: { "user_id": 1, "employee_id": "...", "username": "...", "auth": "ENGINEER" }
+value: { "user_id": 1, "employee_number": "...", "username": "...", "auth": "ENGINEER" }
 TTL:   2주 (교대 주기 8h와 별개 — 로그인 유지 기간)
 ```
 
@@ -108,10 +110,11 @@ TTL:   2주 (교대 주기 8h와 별개 — 로그인 유지 기간)
    - RS256 서명 검증
    - 만료시간(exp) 검증
    - nonce 검증 → Redis에서 소비(삭제)
-4. 클레임 추출: employee_id, employee_number, username, email, auth
+4. 클레임 추출: employee_number(=sabun), username, email, auth
+   (IdP claim key: sabun / username / mail. auth는 IdP 미제공 → Pholex가 ADMIN_EMAILS로 산정)
 5. DB upsert:
    INSERT INTO users (...) VALUES (...)
-   ON CONFLICT (employee_id) DO UPDATE SET last_login = NOW()
+   ON CONFLICT (employee_number) DO UPDATE SET last_login = NOW()
 6. Redis 세션 저장 (TTL 2주)
 7. HttpOnly 쿠키 발급 (pholex_sid)
 8. 302 Redirect → /
@@ -171,7 +174,6 @@ GET /api/auth/session
 // atoms/authAtom.ts
 interface AuthUser {
   id: number
-  employee_id: string
   employee_number: string
   username: string
   email: string

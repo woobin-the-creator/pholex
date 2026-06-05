@@ -64,6 +64,21 @@ class SsoIdentityDTO(BaseModel):
     auth_level: AuthLevelLiteral
 
 
+class UserRecordDTO(BaseModel):
+    """SSO 프로비저닝 대상 사용자 레코드. employee_number(sabun)를 unique 키로 upsert.
+
+    SsoIdentityDTO와 필드는 같지만 의미가 다르다 — auth_level은 IdP가 준 값(항상 ENGINEER)이
+    아니라 Pholex가 ADMIN_EMAILS 등으로 산정한 최종 권한이 들어갈 수 있다 (docs/auth.md §3).
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    employee_number: str      # 사번 (sabun) — unique 프로비저닝 키 (IdP 별도 고유 ID 없음)
+    username: str
+    email: str
+    auth_level: AuthLevelLiteral
+
+
 class MailSendResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

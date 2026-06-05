@@ -9,6 +9,7 @@ from app.adapters.fake.lot_source import InMemoryLotSource
 from app.adapters.fake.mail_sender import LogMailSender
 from app.adapters.fake.sso_verifier import DevSsoVerifier
 from app.adapters.fake.unit_of_work import InMemoryUnitOfWork
+from app.adapters.fake.user_repository import InMemoryUserRepository
 from app.config import settings
 from app.ports.clock import Clock
 from app.ports.lot_repository import LotRepository
@@ -16,15 +17,17 @@ from app.ports.lot_source import LotSource
 from app.ports.mail_sender import MailSender
 from app.ports.sso_verifier import SsoVerifier
 from app.ports.unit_of_work import UnitOfWork
+from app.ports.user_repository import UserRepository
 
 
 # Naming convention for Real adapters (사내 AI 합의):
 #   app/adapters/real/{module}.py  →  class Real{ClassSuffix}
 ADAPTER_NAMING: dict[str, tuple[str, str]] = {
-    "LotSource":     ("lot_source",     "LotSource"),
-    "LotRepository": ("lot_repository", "LotRepository"),
-    "MailSender":    ("mail_sender",    "MailSender"),
-    "SsoVerifier":   ("sso_verifier",   "SsoVerifier"),
+    "LotSource":      ("lot_source",      "LotSource"),
+    "LotRepository":  ("lot_repository",  "LotRepository"),
+    "MailSender":     ("mail_sender",     "MailSender"),
+    "SsoVerifier":    ("sso_verifier",    "SsoVerifier"),
+    "UserRepository": ("user_repository", "UserRepository"),
 }
 
 
@@ -89,6 +92,13 @@ def get_unit_of_work() -> UnitOfWork:
 
 
 @lru_cache(maxsize=1)
+def get_user_repository() -> UserRepository:
+    if _is_fake():
+        return InMemoryUserRepository()
+    return _load_real("UserRepository")
+
+
+@lru_cache(maxsize=1)
 def get_clock() -> Clock:
     return SystemClock()
 
@@ -99,4 +109,5 @@ def reset_for_tests() -> None:
     get_lot_repository.cache_clear()
     get_mail_sender.cache_clear()
     get_sso_verifier.cache_clear()
+    get_user_repository.cache_clear()
     get_clock.cache_clear()
