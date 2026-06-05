@@ -12,6 +12,7 @@ from app.di.container import (
     get_mail_sender,
     get_sso_verifier,
     get_unit_of_work,
+    get_user_repository,
 )
 from app.domain.session import SessionUser
 from app.ports.clock import Clock
@@ -20,6 +21,7 @@ from app.ports.lot_source import LotSource
 from app.ports.mail_sender import MailSender
 from app.ports.sso_verifier import SsoVerifier
 from app.ports.unit_of_work import UnitOfWork
+from app.ports.user_repository import UserRepository
 from app.usecases.fetch_my_holds import FetchMyHolds
 from app.usecases.sso import VerifySessionToken
 from app.usecases.stream_hold_changes import StreamHoldChanges
@@ -43,6 +45,10 @@ def sso_verifier_dep() -> SsoVerifier:
 
 def unit_of_work_dep() -> UnitOfWork:
     return get_unit_of_work()
+
+
+def user_repository_dep() -> UserRepository:
+    return get_user_repository()
 
 
 def clock_dep() -> Clock:
