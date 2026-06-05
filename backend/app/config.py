@@ -31,6 +31,22 @@ class Settings(BaseSettings):
     DEV_USER_EMAIL: str = "test@pholex.local"
     DEV_USER_AUTH_LEVEL: Literal["ENGINEER", "ADMIN"] = "ENGINEER"
 
+    # ── SSO (real adapter) — IdP/세션. 값은 .env(.prod)로 주입(커밋 금지) ──
+    IDP_LOGIN_URL: str = ""
+    IDP_LOGOUT_URL: str = ""
+    IDP_CLIENT_ID: str = ""
+    IDP_JWKS_URI: str = ""
+    SSO_CERT_PATH: str = ""        # IdP id_token RS256 검증용 공개 인증서 경로
+    APP_BASE_URL: str = ""         # redirect_uri 구성 기준 (예: https://pholex.사내:10004)
+
+    # 세션 쿠키 토큰 = 서명 JWT (real). dev는 plain(사번).
+    JWT_SECRET: str = "dev-insecure-change-me"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
+
+    # IdP는 권한 claim을 주지 않음 → 이 이메일들만 ADMIN 으로 승격 (콤마 구분)
+    ADMIN_EMAILS: str = ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         if not self.CORS_ORIGINS:
