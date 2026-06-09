@@ -6,7 +6,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
-LotStatusLiteral = Literal["run", "wait", "hold"]
+# status는 열린 집합(raw lot_status_seg 그대로) — closed Literal로 두면 사내 MES의
+# 새 값이 ValidationError로 랏을 드랍한다. 알려진 값/hold 앵커는 domain.lot.LotStatus 참조.
 AuthLevelLiteral = Literal["ENGINEER", "ADMIN"]
 ChangeTypeLiteral = Literal["status", "hold", "comment", "created", "removed"]
 SeverityLiteral = Literal["info", "warning", "critical"]
@@ -24,7 +25,7 @@ class LotRowDTO(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     lot_id: str
-    status: LotStatusLiteral
+    status: str
     equipment: str | None = None
     process_step: str | None = None
     hold_comment: str | None = None
@@ -45,7 +46,7 @@ class WatchlistRowDTO(BaseModel):
 
     lot_id: str
     found: bool
-    status: LotStatusLiteral | None = None
+    status: str | None = None
     equipment: str | None = None
     process_step: str | None = None
     hold_comment: str | None = None
@@ -62,8 +63,8 @@ class LotChangeEventDTO(BaseModel):
 
     lot_id: str
     change_type: ChangeTypeLiteral
-    previous_status: LotStatusLiteral | None = None
-    new_status: LotStatusLiteral | None = None
+    previous_status: str | None = None
+    new_status: str | None = None
     new_hold_comment: str | None = None
     occurred_at: datetime
     event_id: str

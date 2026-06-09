@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import AsyncIterator, Literal
 
+from app.domain.lot import LotStatus
 from app.ports.dto import ChangeWithSeverity, LotChangeEventDTO
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
@@ -32,8 +33,8 @@ class StreamHoldChanges:
     def _classify_severity(event: LotChangeEventDTO) -> Literal["info", "warning", "critical"]:
         if (
             event.change_type == "status"
-            and event.new_status == "hold"
-            and event.previous_status != "hold"
+            and event.new_status == LotStatus.HOLD
+            and event.previous_status != LotStatus.HOLD
         ):
             return "critical"
         return "info"

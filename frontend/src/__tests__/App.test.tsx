@@ -75,7 +75,7 @@ describe('App', () => {
           rows: [
             {
               lotId: 'LOT-A2948-01',
-              status: 'hold',
+              status: 'Hold',
               equipment: 'CMP-01',
               processStep: 'CMP - Planarization',
               holdComment: 'Recipe check',
@@ -83,7 +83,7 @@ describe('App', () => {
             },
             {
               lotId: 'LOT-B5532-19',
-              status: 'wait',
+              status: 'PreActive',
               equipment: 'ETCH-09',
               processStep: 'Photo - Align',
               holdComment: 'Queue waiting',
@@ -91,7 +91,7 @@ describe('App', () => {
             },
             {
               lotId: 'LOT-C8812-44',
-              status: 'hold',
+              status: 'Hold',
               equipment: 'ETCH-02',
               processStep: 'Photo - Exposure',
               holdComment: 'Operator hold',
@@ -144,7 +144,7 @@ describe('App', () => {
           rows: [
             {
               lotId: 'LOT-A2948-01',
-              status: 'hold',
+              status: 'Hold',
               equipment: 'CMP-01',
               processStep: 'CMP - Planarization',
               holdComment: 'Recipe check',
@@ -152,7 +152,7 @@ describe('App', () => {
             },
             {
               lotId: 'LOT-B5532-19',
-              status: 'wait',
+              status: 'PreActive',
               equipment: 'ETCH-09',
               processStep: 'Photo - Align',
               holdComment: 'Queue waiting',
@@ -160,7 +160,7 @@ describe('App', () => {
             },
             {
               lotId: 'LOT-C8812-44',
-              status: 'hold',
+              status: 'Hold',
               equipment: 'ETCH-02',
               processStep: 'Photo - Exposure',
               holdComment: 'Operator hold',
@@ -180,7 +180,7 @@ describe('App', () => {
     expect(screen.getByText('LOT-B5532-19')).toBeInTheDocument()
     expect(screen.getByText('LOT-C8812-44')).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('상태'), 'wait')
+    await user.selectOptions(screen.getByLabelText('상태'), 'PreActive')
 
     expect(screen.getByText('LOT-B5532-19')).toBeInTheDocument()
     expect(screen.queryByText('LOT-A2948-01')).not.toBeInTheDocument()
@@ -225,7 +225,7 @@ describe('App', () => {
           rows: [
             {
               lotId: 'LOT-C8812-44',
-              status: 'hold',
+              status: 'Hold',
               equipment: 'ETCH-02',
               processStep: 'Photo - Exposure',
               holdComment: 'Operator hold',

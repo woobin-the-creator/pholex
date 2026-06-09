@@ -7,6 +7,7 @@ from typing import AsyncIterator
 from ulid import ULID
 
 from app.adapters.fake.golden_dataset import GOLDEN_ROWS, GoldenRow
+from app.domain.lot import LotStatus
 from app.ports.dto import LotChangeEventDTO, LotRowDTO
 
 
@@ -18,7 +19,7 @@ class InMemoryLotSource:
         self._subscribers: dict[str, list[asyncio.Queue[LotChangeEventDTO]]] = defaultdict(list)
 
     async def fetch_my_holds(self, employee_number: str) -> list[LotRowDTO]:
-        matching = [r for r in self._rows if r["hold_operator_employee_number"] == employee_number and r["status"] == "hold"]
+        matching = [r for r in self._rows if r["hold_operator_employee_number"] == employee_number and r["status"] == LotStatus.HOLD]
         matching.sort(key=lambda r: r["lot_id"])  # deterministic ordering
         return [self._to_dto(r, employee_number) for r in matching]
 
@@ -51,7 +52,7 @@ class InMemoryLotSource:
     def _to_dto(row: GoldenRow, viewer_employee_number: str) -> LotRowDTO:
         return LotRowDTO(
             lot_id=row["lot_id"],
-            status=row["status"],  # already canonical
+            status=row["status"],  # raw 그대로 (golden은 raw "Hold")
             equipment=row["equipment"],
             process_step=row["process_step"],
             hold_comment=row["hold_comment"],

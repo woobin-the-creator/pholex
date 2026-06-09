@@ -13,13 +13,13 @@ import type { SlotPayload } from '../types/lot'
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 
-// LotStatus is a closed set {"run","wait","hold"} (docs/mvp.md). DEMO_ROWS must match
-// backend Fake adapter golden dataset (backend/app/adapters/fake/golden_dataset.py) so that
-// VITE_DEMO_MODE=true / VITE_DEMO_MODE=false produce equivalent visible state for AC 7.
+// status는 열린 집합 — raw lot_status_seg 값(예: "Hold")을 변환 없이 그대로 쓴다.
+// DEMO_ROWS는 backend Fake adapter golden dataset(backend/app/adapters/fake/golden_dataset.py)과
+// 일치해야 VITE_DEMO_MODE=true/false가 동일 화면을 내준다(AC 7). 슬롯[1]은 전부 "Hold".
 const DEMO_ROWS: SlotPayload['rows'] = [
   {
     lotId: 'LOT-A2948',
-    status: 'hold',
+    status: 'Hold',
     equipment: 'CMP-03',
     processStep: 'CMP / 슬러리 모니터',
     holdComment: 'Pad life 초과 의심 — 측정값 확인 필요',
@@ -27,7 +27,7 @@ const DEMO_ROWS: SlotPayload['rows'] = [
   },
   {
     lotId: 'LOT-B1175',
-    status: 'hold',
+    status: 'Hold',
     equipment: 'ETCH-11',
     processStep: 'Dry Etch / Poly',
     holdComment: 'OES 신호 이상, eng review 대기',
@@ -35,7 +35,7 @@ const DEMO_ROWS: SlotPayload['rows'] = [
   },
   {
     lotId: 'LOT-C3320',
-    status: 'hold',
+    status: 'Hold',
     equipment: 'IMP-02',
     processStep: 'Implant / NWell',
     holdComment: 'Dose 검증 재측정 요청',

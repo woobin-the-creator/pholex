@@ -77,7 +77,9 @@ async def get_lots_by_ids(self, lot_ids: list[str]) -> dict[str, LotRowDTO]:
 
 위 SQL의 `lot_status` / `status` / `hold_operator_id`는 **Pholex 캐노니컬 이름**이며, 사내 raw 소스(`sample` / `lot_status_seg` / `lot_hold_user_id` …)와 다르다. **구조는 (A)로 확정한다 — 이건 설계 결정이지 네가 고를 선택지가 아니다:**
 
-- **(A) 캐노니컬 `lot_status` 테이블**: 너는 alembic으로 `docs/backend.md §4.2`의 `lot_status`를 **Pholex Postgres**에 생성하고, **30분 dump가 raw→canonical 매핑을 수행**해 적재한다(item ④). `get_lots_by_ids`는 위 SQL **그대로 캐노니컬 이름으로** 읽는다. raw 컬럼명은 dump 내부에서만 등장.
+- **(A) 캐노니컬 `lot_status` 테이블**: 너는 alembic으로 `docs/backend.md §4.2`의 `lot_status`를 **Pholex Postgres**에 생성하고, 30분 dump가 적재한다(item ④). `get_lots_by_ids`는 위 SQL **그대로 캐노니컬 이름으로** 읽는다. raw 컬럼명은 dump 내부에서만 등장.
+
+> ⚠️ **status 값 정정 (2026-06-09 — 직전 지시 철회)**: 캐노니컬인 건 **컬럼/테이블 *이름*뿐**이다. **`status` *값*은 매핑하지 말고 `lot_status_seg` raw 값을 그대로 적재해라** (`Active`/`Hold`/`PreActive` + 미래 값). `Active→run` 류 변환·`_map_status_to_canonical`·`unknown→wait` 폴백 **전부 폐기**한다 — raw enum이 열려있어 매핑하면 새 값이 위조된다. 따라서 `lot_status.status`는 **`VARCHAR(32)`, CHECK 제약 없음**(closed CHECK면 새 값 INSERT가 거부됨). 슬롯[1] hold 필터만 raw 앵커 `'Hold'`로 닫는다.
 - 결정 근거: `LotRepository`는 Pholex Postgres(캐노니컬 저장소)에 붙는다(정본 docstring). 슬롯[1] fallback과 슬롯[2]가 같은 캐노니컬 캐시를 공유하고, raw→canonical 매핑이 한 곳(dump)에 모인다. raw 직접 읽기는 이 패턴과 모순.
 
 **네가 줘야 할 건 '구조 선택'이 아니라 '사내 사실'이다** (외부 AI가 못 보는 정보 — 아래 §5 계약):
@@ -102,7 +104,7 @@ WHERE lot_id = ANY(:lot_ids);
 
 **이건 pholex 레포 코드가 아니라 사내 운영 스케줄러/잡입니다.** 외부 AI는 이 코드를 못 봅니다. **(A) 구조라면 raw→canonical 매핑이 여기서 일어납니다** — 즉 사내 실제 테이블/컬럼명은 dump의 READ 쪽에, Pholex 캐노니컬 이름은 WRITE(`lot_status`) 쪽에. 30분 주기로:
 
-1. bigdataquery(사내 전용 lib)로 lot 정보 조회(**실제 raw 컬럼명**) → 캐노니컬로 매핑(`status`는 run/wait/hold 로, 기존 `_map_status_to_canonical` 동일 규칙) → `lot_status`(캐노니컬)에 `INSERT … ON CONFLICT (lot_id) DO UPDATE`.
+1. bigdataquery(사내 전용 lib)로 lot 정보 조회(**실제 raw 컬럼명**) → 컬럼 *이름*만 캐노니컬로 매핑하고 **`status` 값은 `lot_status_seg` raw 그대로**(매핑·변환 없음) → `lot_status`에 `INSERT … ON CONFLICT (lot_id) DO UPDATE`. (추가 보고: `SELECT DISTINCT lot_status_seg`로 현재 status 전수값 — 프론트 색 레지스트리용, 검증·제한용 아님)
 2. **매 실행 끝에** `lot_dump_meta` 1행 갱신:
    ```sql
    INSERT INTO lot_dump_meta (id, last_run_at, row_count, status)
@@ -121,7 +123,7 @@ WHERE lot_id = ANY(:lot_ids);
 |----|------|----------|
 | **CONTRACT-1** | `lot_status.hold_operator_id` 실제 컬럼명 + 값=사번 | `260529-1500` 문서에서 사내 sample 컬럼이 **`lot_hold_user_id`(varchar 40)** 로 확인됨. **dump가 `lot_status`에 적재 시 이 값을 `hold_operator_id`(또는 합의된 컬럼)에 사번으로 넣는지 확인.** 도메인은 문자열 사번 기준. |
 | **CONTRACT-2** | `lot_id` 형식(자릿수/접두어 패턴) | **[답변 필요]** lot_id에 고정 형식 있나요? 있으면 프론트 입력 검증에 씁니다. |
-| **CONTRACT-3** | `lot_status` dump 컬럼셋 | lot_id, status(run/wait/hold), equipment, process_step, hold_comment, updated_at, hold_operator_id. **bigdataquery 결과를 이 컬럼들로 매핑 가능한지 확인.** |
+| **CONTRACT-3** | `lot_status` dump 컬럼셋 | lot_id, **status(=lot_status_seg raw 그대로, 매핑 금지)**, equipment, process_step, hold_comment, updated_at, hold_operator_id(VARCHAR(50)). **컬럼 이름만 매핑, status 값은 raw verbatim.** |
 | **CONTRACT-4** | `lot_dump_meta.last_run_at` 매 실행 upsert | 위 4번. **lot 변경 없어도 매번 갱신** — 이게 핵심. |
 
 ---

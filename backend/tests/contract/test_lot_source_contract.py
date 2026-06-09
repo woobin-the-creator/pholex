@@ -19,7 +19,7 @@ async def test_fetch_returns_list_of_dto(lot_source):
 @pytest.mark.asyncio
 async def test_fetch_only_returns_hold_status(lot_source):
     rows = await lot_source.fetch_my_holds("99999")
-    assert all(r.status == "hold" for r in rows)
+    assert all(r.status == "Hold" for r in rows)  # raw 값 그대로
 
 
 @pytest.mark.asyncio

@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-09 (CONTRACT-1 확정 — lot_status.hold_operator_id BIGINT→VARCHAR(50) 사번 문자열 정정)";
+  const LAST_UPDATED = "2026-06-09 (lot status raw 그대로 저장 — canonical 매핑 폐기, 열린 집합 + hold 앵커)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -542,7 +542,21 @@
       alternatives: [
         { name: "BIGINT 유지(기존 설계 일관성)", rejected: "문자열 사번을 BIGINT 캐스팅 → leading zero 손실 + employee_number(VARCHAR)와 타입 불일치 비교 버그. 사내 미래 접두어 사번(EMP_…)도 불가" }
       ],
-      note: "CONTRACT-1 종결: 컬럼명 lot_hold_user_id, 값=문자열 사번, NULL 비율 35%(hold lot만 값). 정정 범위: docs/backend.md §4.2 DDL + 코멘트, scripts/seed_dev.sql(99999/88888/77777 → 따옴표 문자열), 사내 alembic 마이그레이션은 VARCHAR(50)으로 생성. 함께 사내 회신에 박은 것: status 매핑은 Active→run/Hold→hold/PreActive→wait 3개 전부 명시 + unknown→wait+warning(pg_lot_source.py:37 _STATUS_MAP 정본 — opencode 보고가 PreActive 누락했던 과거 버그 재발 방지)."
+      note: "CONTRACT-1 종결: 컬럼명 lot_hold_user_id, 값=문자열 사번, NULL 비율 35%(hold lot만 값). 정정 범위: docs/backend.md §4.2 DDL + 코멘트, scripts/seed_dev.sql(99999/88888/77777 → 따옴표 문자열), 사내 alembic 마이그레이션은 VARCHAR(50)으로 생성. 함께 사내 회신에 박은 것: status 매핑은 Active→run/Hold→hold/PreActive→wait 3개 전부 명시 + unknown→wait+warning(pg_lot_source.py:37 _STATUS_MAP 정본 — opencode 보고가 PreActive 누락했던 과거 버그 재발 방지). ※ 직후 이 status 매핑 방침은 폐기됨 — 바로 아래 항목 참조."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-09",
+      status: "done",
+      title: "lot status는 raw 그대로 저장 — canonical 매핑(run/wait/hold) 폐기",
+      decision: "lot_status_seg(raw)를 run/wait/hold 캐노니컬로 변환하던 _STATUS_MAP·_map_status_to_canonical을 제거하고, raw 값(Active/Hold/PreActive + 미래 값)을 status에 그대로 저장·표시한다. status 타입을 closed Literal[\"run\",\"wait\",\"hold\"]에서 열린 str로 개방, DB CHECK 제약 제거(VARCHAR(32)). 슬롯[1] hold 판정은 raw 앵커 'Hold' 단일값으로 닫는다(LotStatus.HOLD). 프론트는 known 값(Active/Hold/PreActive)엔 색, unknown은 중립 칩에 raw 그대로 + 필터는 데이터에서 동적 수집.",
+      rationale: "raw enum이 닫혀있지 않다(사용자 확인 — 미래에 4번째 값 등장). 매핑 + unknown→wait 폴백은 새 raw 값을 조용히 'wait'로 위조해 틀린 데이터를 만든다(데이터 충실도 위반). raw 보존이 무손실이고, hold 판정만 단일 앵커로 닫으면 슬롯[1]·KPI·severity가 깨지지 않는다. closed Literal/CHECK는 새 값을 ValidationError·INSERT 거부로 드랍하므로 열어야 한다.",
+      alternatives: [
+        { name: "canonical 3값 유지 + unknown→wait", rejected: "새 raw 값을 wait로 위조 = 틀린 데이터. 사용자가 명시적으로 거부" },
+        { name: "raw를 소문자 closed set(active/hold/preactive)로 rename", rejected: "여전히 닫힌 집합이라 4번째 값 드랍 문제 동일" },
+        { name: "closed Literal 유지하고 unknown은 reject", rejected: "검증 실패한 lot이 통째로 누락 — 모니터링 누락 버그" }
+      ],
+      note: "변경: backend dto.py(LotStatusLiteral 제거→str), domain/lot.py(LotStatus=Active/Hold/PreActive 상수+HOLD 앵커, Lot.status:str), pg_lot_source.py(_STATUS_MAP 제거, raw verbatim), lot_source.py(hold 필터=LotStatus.HOLD), golden_dataset(hold→Hold), stream_hold_changes·wire(hold 앵커=LotStatus.HOLD), docs/backend.md §4.2(CHECK 제거), seed_dev.sql(run/wait/hold→Active/PreActive/Hold), docs/mvp.md. frontend: filterLots(동적 옵션 collectStatusOptions), statusDisplay.ts(색 레지스트리+HOLD_STATUS), SideNav(동적 드롭다운), App KPI/LotHoldPanel(앵커 'Hold'), styles.css(pill--active/preactive/unknown). 사내 회신: status 매핑 지시 철회, lot_status_seg raw verbatim 적재 + SELECT DISTINCT 전수보고. 백엔드 76 + 프론트 3 tests green."
     }
   ];
 

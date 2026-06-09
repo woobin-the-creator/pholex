@@ -1,9 +1,21 @@
 import type { LotRow } from '../types/lot'
 
+// status는 열린 집합 — raw lot_status_seg 값(Active/Hold/PreActive + 미래 값)을 그대로
+// 비교한다. 'all'은 전체 표시 sentinel. 드롭다운 옵션은 실제 데이터에서 동적 수집한다.
 export interface LotFilters {
   lotIdQuery: string
-  status: 'all' | 'hold' | 'wait' | 'run'
+  status: string
   recentOnly: boolean
+}
+
+// 현재 로드된 rows에 실재하는 status 목록(중복 제거). Hold를 항상 맨 앞에 고정(슬롯[1] 핵심).
+export function collectStatusOptions(rows: LotRow[]): string[] {
+  const seen = new Set<string>()
+  for (const row of rows) {
+    if (row.status) seen.add(row.status)
+  }
+  const rest = [...seen].filter((s) => s !== 'Hold').sort()
+  return seen.has('Hold') ? ['Hold', ...rest] : rest
 }
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000
@@ -28,7 +40,7 @@ export function filterLotRows(rows: LotRow[], filters: LotFilters): LotRow[] {
   const recentCutoff = latestTimestamp === null ? null : latestTimestamp - THIRTY_MINUTES_MS
 
   return rows.filter((row) => {
-    if (filters.status !== 'all' && row.status.toLowerCase() !== filters.status) {
+    if (filters.status !== 'all' && row.status !== filters.status) {
       return false
     }
 

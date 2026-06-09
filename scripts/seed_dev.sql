@@ -26,32 +26,32 @@ VALUES ('99999', '테스트엔지니어', 'test@dev.local', 'ENGINEER');
 
 -- =============================================================================
 -- 슬롯 [1] "내 lot hold" 에 표시되어야 하는 행
--- 조건: status='hold' AND hold_operator_id=99999
+-- 조건: status='Hold' AND hold_operator_id=99999  (status는 raw lot_status_seg 값)
 -- =============================================================================
 INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_comment, hold_operator_id, updated_at)
 VALUES
-    ('LOT-HOLD-001', 'hold', 'EQ-CVD-01', 'CVD-DEPO-10',  '챔버 압력 이상 — 엔지니어 확인 필요',  '99999', NOW() - INTERVAL '5 minutes'),
-    ('LOT-HOLD-002', 'hold', 'EQ-ETCH-03', 'ETCH-DRY-25', '자재 부족 — 웨이퍼 공급 대기',         '99999', NOW() - INTERVAL '23 minutes'),
-    ('LOT-HOLD-003', 'hold', 'EQ-IMP-02',  'IMP-ANNEAL-8','장비 PM 완료 후 재개 예정',             '99999', NOW() - INTERVAL '2 hours');
+    ('LOT-HOLD-001', 'Hold', 'EQ-CVD-01', 'CVD-DEPO-10',  '챔버 압력 이상 — 엔지니어 확인 필요',  '99999', NOW() - INTERVAL '5 minutes'),
+    ('LOT-HOLD-002', 'Hold', 'EQ-ETCH-03', 'ETCH-DRY-25', '자재 부족 — 웨이퍼 공급 대기',         '99999', NOW() - INTERVAL '23 minutes'),
+    ('LOT-HOLD-003', 'Hold', 'EQ-IMP-02',  'IMP-ANNEAL-8','장비 PM 완료 후 재개 예정',             '99999', NOW() - INTERVAL '2 hours');
 
 -- =============================================================================
 -- 슬롯 [1] 에 표시되면 안 되는 행 — 다른 사용자의 hold 랏
--- 조건: status='hold' BUT hold_operator_id≠99999
+-- 조건: status='Hold' BUT hold_operator_id≠99999
 -- =============================================================================
 INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_comment, hold_operator_id, updated_at)
 VALUES
-    ('LOT-HOLD-OTHER-001', 'hold', 'EQ-CMP-01', 'CMP-POLISH-3', '슬러리 교체 필요', '88888', NOW() - INTERVAL '10 minutes'),
-    ('LOT-HOLD-OTHER-002', 'hold', 'EQ-CVD-04', 'CVD-DEPO-15',  '레시피 검토 중',   '77777', NOW() - INTERVAL '1 hour');
+    ('LOT-HOLD-OTHER-001', 'Hold', 'EQ-CMP-01', 'CMP-POLISH-3', '슬러리 교체 필요', '88888', NOW() - INTERVAL '10 minutes'),
+    ('LOT-HOLD-OTHER-002', 'Hold', 'EQ-CVD-04', 'CVD-DEPO-15',  '레시피 검토 중',   '77777', NOW() - INTERVAL '1 hour');
 
 -- =============================================================================
 -- 슬롯 [1] 에 표시되면 안 되는 행 — 내 랏이지만 status가 hold가 아님
 -- =============================================================================
 INSERT INTO lot_status (lot_id, status, equipment, process_step, hold_operator_id, updated_at)
 VALUES
-    ('LOT-RUN-001',  'run',  'EQ-ETCH-01', 'ETCH-DRY-12',  '99999', NOW() - INTERVAL '3 minutes'),
-    ('LOT-RUN-002',  'run',  'EQ-CVD-02',  'CVD-DEPO-7',   '99999', NOW() - INTERVAL '8 minutes'),
-    ('LOT-WAIT-001', 'wait', 'EQ-IMP-01',  'IMP-IMPLANT-2', '99999', NOW() - INTERVAL '30 minutes'),
-    ('LOT-WAIT-002', 'wait', 'EQ-CMP-03',  'CMP-POLISH-1',  '99999', NOW() - INTERVAL '45 minutes');
+    ('LOT-RUN-001',  'Active',  'EQ-ETCH-01', 'ETCH-DRY-12',  '99999', NOW() - INTERVAL '3 minutes'),
+    ('LOT-RUN-002',  'Active',  'EQ-CVD-02',  'CVD-DEPO-7',   '99999', NOW() - INTERVAL '8 minutes'),
+    ('LOT-WAIT-001', 'PreActive', 'EQ-IMP-01',  'IMP-IMPLANT-2', '99999', NOW() - INTERVAL '30 minutes'),
+    ('LOT-WAIT-002', 'PreActive', 'EQ-CMP-03',  'CMP-POLISH-1',  '99999', NOW() - INTERVAL '45 minutes');
 
 -- =============================================================================
 -- 슬롯 [2] "내 관심 랏" watchlist — 유저(99999)가 수동 등록한 lot 목록
@@ -80,7 +80,7 @@ SELECT lot_id, status, hold_operator_id FROM lot_status ORDER BY status, lot_id;
 SELECT '=== 슬롯 [1] 표시 예상 (3건) ===' AS info;
 SELECT lot_id, equipment, process_step, hold_comment, hold_operator_id
 FROM lot_status
-WHERE status = 'hold' AND hold_operator_id = '99999'
+WHERE status = 'Hold' AND hold_operator_id = '99999'
 ORDER BY updated_at DESC;
 
 SELECT '=== 슬롯 [2] "내 관심 랏" 표시 예상 (4건, LOT-NOTYET-001은 status NULL) ===' AS info;
