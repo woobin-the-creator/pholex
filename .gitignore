@@ -31,3 +31,6 @@ certs/
 .playwright-cli/
 .playwright-mcp/
 test-results/
+
+# 탐색용 디자인 mockup (throwaway)
+design_sample/
