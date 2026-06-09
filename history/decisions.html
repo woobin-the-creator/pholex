@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-06 (내 관심 랏 watchlist + 내 lot hold 캐시 fallback 설계 — DDL/계약 문서화)";
+  const LAST_UPDATED = "2026-06-09 (CONTRACT-1 확정 — lot_status.hold_operator_id BIGINT→VARCHAR(50) 사번 문자열 정정)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -531,6 +531,18 @@
         { name: "신규 lots/user_lot_watchlist 테이블 신설", rejected: "동일 역할의 lot_status/user_lots가 이미 docs에 존재 — 재사용" }
       ],
       note: "설계 시각화: docs/watchlist-final-design.html. 스키마/계약: docs/backend.md §4.2~4.3 (lot_dump_meta 신규, user_lots reconcile). 사내 AI 계약 4건(CONTRACT-1~4: hold_operator 컬럼명·값, lot_id 형식, dump 컬럼셋, lot_dump_meta heartbeat). dump 잡은 사내 소유·레포 바깥(30분). 범위 정리: MVP='랏 데이터를 보여준다'(30분 dump로 충분)는 다 결정 — 슬롯1은 기존 실시간 LotSource/WS 코드 유지 + lot_status fallback·heartbeat만 추가(작동 코드 안 뜯음, 'live가 30분보다 신선한가'는 MVP에선 moot). 실시간/준실시간은 stretch goal로 의식적 연기 — LotSource 포트라 나중에 빠른 live 어댑터를 꽂으면 됨(§7 cadence/WS push 트리거/REST API 신선도/collector 흡수는 goal 착수 시 결정). status=future(미구현, DDL/계약 문서화만 완료)."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-09",
+      status: "done",
+      title: "lot_status.hold_operator_id 타입 BIGINT → VARCHAR(50) (CONTRACT-1 사내 사실 확인)",
+      decision: "lot_status.hold_operator_id 컬럼 타입을 BIGINT에서 VARCHAR(50)으로 정정. 사내 AI(opencode)가 BDQ로 raw 소스를 조회한 결과, 사번 원본 컬럼 lot_hold_user_id가 VARCHAR 문자열 사번(예 '23053056')으로 확인됨. dump는 사번 문자열을 캐스팅 없이 그대로 적재한다.",
+      rationale: "비교 대상이 이미 전부 VARCHAR다 — users.employee_number VARCHAR(50)(auth.md), user_lots.employee_number VARCHAR(50), raw lot_hold_user_id VARCHAR. 슬롯[1] fallback 필터가 'lot_status WHERE hold_operator_id = {조회자 사번}'으로 문자열 비교를 하는데, hold_operator_id만 BIGINT면 string↔int 타입 불일치로 is_held_by_me/fallback이 조용히 깨진다. 숫자 사번이라도 BIGINT 캐스팅은 leading zero를 잃을 위험. 도메인(golden_dataset의 hold_operator_employee_number)도 문자열 기준.",
+      alternatives: [
+        { name: "BIGINT 유지(기존 설계 일관성)", rejected: "문자열 사번을 BIGINT 캐스팅 → leading zero 손실 + employee_number(VARCHAR)와 타입 불일치 비교 버그. 사내 미래 접두어 사번(EMP_…)도 불가" }
+      ],
+      note: "CONTRACT-1 종결: 컬럼명 lot_hold_user_id, 값=문자열 사번, NULL 비율 35%(hold lot만 값). 정정 범위: docs/backend.md §4.2 DDL + 코멘트, scripts/seed_dev.sql(99999/88888/77777 → 따옴표 문자열), 사내 alembic 마이그레이션은 VARCHAR(50)으로 생성. 함께 사내 회신에 박은 것: status 매핑은 Active→run/Hold→hold/PreActive→wait 3개 전부 명시 + unknown→wait+warning(pg_lot_source.py:37 _STATUS_MAP 정본 — opencode 보고가 PreActive 누락했던 과거 버그 재발 방지)."
     }
   ];
 

@@ -38,7 +38,7 @@ CREATE TABLE lot_status (
     equipment VARCHAR(100),
     process_step VARCHAR(100),
     hold_comment TEXT,                -- hold 상태일 때 홀드 사유
-    hold_operator_id BIGINT,          -- hold 담당자 사번 [CONTRACT-1] 실제 dump 컬럼명 사내 확인 필요(예 lot_hold_user_id), 값=employee_number(사번). 도메인은 문자열 hold_operator_employee_number 사용 → 타입 매핑 주의
+    hold_operator_id VARCHAR(50),     -- hold 담당자 사번 [CONTRACT-1 확정] 사내 dump 컬럼 = lot_hold_user_id(VARCHAR 문자열 사번). users.employee_number(VARCHAR(50))와 동일 타입 — fallback 필터가 문자열 비교라 BIGINT 금지(leading zero 손실·타입 불일치). 캐스팅 없이 사번 문자열 그대로 적재.
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'
 );
@@ -100,7 +100,7 @@ CREATE TABLE table_configs (
 
 | ID | 내용 |
 |----|------|
-| CONTRACT-1 | `lot_status.hold_operator_id` 실제 dump 컬럼명(예 `lot_hold_user_id`) + 값=employee_number(사번). 도메인 문자열 `hold_operator_employee_number`와 타입 매핑 주의 |
+| CONTRACT-1 ✅확정 | `lot_status.hold_operator_id` ← 사내 dump 컬럼 `lot_hold_user_id`(VARCHAR 문자열 사번, 예 `'23053056'`, NULL 35%). 타입 **VARCHAR(50)**(BIGINT 아님 — `users.employee_number`와 동일, 캐스팅 없이 적재) |
 | CONTRACT-2 | `lot_id` 형식(자릿수/접두어 패턴) — 슬롯[2] 클라이언트 형식 검증용 |
 | CONTRACT-3 | `lot_status` dump 컬럼셋 = lot_id, status, equipment, process_step, hold_comment, hold_operator_id, updated_at |
 | CONTRACT-4 | `lot_dump_meta.last_run_at` 매 dump 실행마다 upsert (lot 변경 무관) — 신선도 판정 소스 |
