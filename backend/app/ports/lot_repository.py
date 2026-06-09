@@ -19,6 +19,14 @@ class LotRepository(Protocol):
         """N건을 단일 트랜잭션으로 적용. 부분 실패 없이 전부 또는 전무."""
         ...
 
+    async def get_lots_by_ids(self, lot_ids: list[str]) -> dict[str, LotRowDTO]:
+        """주어진 lot_id 중 캐시(`lot_status`)에 존재하는 것만 {lot_id: LotRowDTO}로 반환.
+
+        슬롯[2] "내 관심 랏"이 watchlist lot_id를 lot 데이터와 JOIN할 때 사용. 없는 lot_id는
+        결과에서 빠진다(호출 측이 "조회 대기"로 표시). Real adapter: SELECT … WHERE lot_id = ANY(:ids).
+        """
+        ...
+
     async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None:
         """캐시된 결과 반환. None은 *cache miss* (key 부재). 빈 리스트는 *정상 빈 결과*."""
         ...

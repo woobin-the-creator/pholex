@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from app.ports.dto import ChangeWithSeverity, LotRowDTO
+from app.ports.dto import ChangeWithSeverity, LotRowDTO, WatchlistRowDTO
 
 
 def _iso(dt: datetime) -> str:
@@ -25,6 +25,31 @@ def lot_row_to_wire(row: LotRowDTO) -> dict[str, Any]:
         "processStep": row.process_step,
         "holdComment": row.hold_comment,
         "updatedAt": _iso(row.updated_at),
+    }
+
+
+def watchlist_row_to_wire(row: WatchlistRowDTO) -> dict[str, Any]:
+    return {
+        "lotId": row.lot_id,
+        "found": row.found,
+        "status": row.status,
+        "equipment": row.equipment,
+        "processStep": row.process_step,
+        "holdComment": row.hold_comment,
+        "updatedAt": _iso(row.updated_at) if row.updated_at is not None else None,
+    }
+
+
+def watchlist_payload(
+    *,
+    table_id: int,
+    rows: list[WatchlistRowDTO],
+    last_updated: datetime,
+) -> dict[str, Any]:
+    return {
+        "tableId": table_id,
+        "rows": [watchlist_row_to_wire(r) for r in rows],
+        "lastUpdated": _iso(last_updated),
     }
 
 
