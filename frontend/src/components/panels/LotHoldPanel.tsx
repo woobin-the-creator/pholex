@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from 'react'
 import { formatDateTime } from '../../utils/format'
+import { HOLD_STATUS, statusPillClass } from '../../utils/statusDisplay'
 import type { LotRow } from '../../types/lot'
 
 interface LotHoldPanelProps {
@@ -63,7 +64,7 @@ export function LotHoldPanel({
       )
     }
     return rows.map((row) => {
-      const isHold = row.status === 'hold'
+      const isHold = row.status === HOLD_STATUS
       return (
         <tr
           key={row.lotId}
@@ -72,7 +73,7 @@ export function LotHoldPanel({
         >
           <td className="lot-table__lot-id" title={row.lotId}>{row.lotId}</td>
           <td>
-            <span className={`pill ${isHold ? 'pill--hold' : 'pill--ok'}`}>
+            <span className={`pill ${statusPillClass(row.status)}`}>
               {row.status}
             </span>
           </td>

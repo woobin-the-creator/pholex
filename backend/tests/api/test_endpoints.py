@@ -39,7 +39,7 @@ def test_my_hold_returns_slot_payload(client):
     assert len(payload["rows"]) == 3
     first = payload["rows"][0]
     assert set(first.keys()) == {"lotId", "status", "equipment", "processStep", "holdComment", "updatedAt"}
-    assert all(row["status"] == "hold" for row in payload["rows"])
+    assert all(row["status"] == "Hold" for row in payload["rows"])  # raw 값 그대로
 
 
 def test_my_hold_force_refresh(client):

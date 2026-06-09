@@ -15,8 +15,8 @@ def _ev(**kwargs) -> LotChangeEventDTO:
     base = dict(
         lot_id="LOT-1",
         change_type="status",
-        previous_status="wait",
-        new_status="hold",
+        previous_status="PreActive",
+        new_status="Hold",
         new_hold_comment=None,
         occurred_at=datetime.now(tz=timezone.utc),
         event_id="01TEST",
@@ -26,18 +26,18 @@ def _ev(**kwargs) -> LotChangeEventDTO:
 
 
 def test_severity_status_to_hold_is_critical():
-    ev = _ev(previous_status="wait", new_status="hold")
+    ev = _ev(previous_status="PreActive", new_status="Hold")
     assert StreamHoldChanges._classify_severity(ev) == "critical"
 
 
 def test_severity_hold_to_hold_is_info():
-    """동일 hold → hold 전환은 critical 아님 (재진입 방지)."""
-    ev = _ev(previous_status="hold", new_status="hold")
+    """동일 Hold → Hold 전환은 critical 아님 (재진입 방지)."""
+    ev = _ev(previous_status="Hold", new_status="Hold")
     assert StreamHoldChanges._classify_severity(ev) == "info"
 
 
-def test_severity_run_to_wait_is_info():
-    ev = _ev(previous_status="run", new_status="wait")
+def test_severity_active_to_preactive_is_info():
+    ev = _ev(previous_status="Active", new_status="PreActive")
     assert StreamHoldChanges._classify_severity(ev) == "info"
 
 

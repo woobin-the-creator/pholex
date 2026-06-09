@@ -11,7 +11,7 @@ from app.ports.dto import LotChangeEventDTO, LotRowDTO
 def _base_row(**overrides):
     payload = dict(
         lot_id="L001",
-        status="hold",
+        status="Hold",
         equipment=None,
         process_step=None,
         hold_comment=None,
@@ -40,9 +40,12 @@ def test_lot_row_dto_is_frozen():
         row.lot_id = "L999"  # type: ignore[misc]
 
 
-def test_lot_row_dto_rejects_invalid_status():
-    with pytest.raises(ValidationError):
-        LotRowDTO(**_base_row(status="review"))
+def test_lot_row_dto_accepts_arbitrary_status():
+    # status는 열린 집합 — 사내 MES의 새 raw 값을 변환·드랍 없이 그대로 받는다.
+    # (closed Literal이던 시절엔 reject했지만, unknown→wait 위조를 막기 위해 개방함)
+    row = LotRowDTO(**_base_row(status="SomeNewMesValue"))
+    assert row.status == "SomeNewMesValue"
+    assert LotRowDTO(**_base_row(status="PreActive")).status == "PreActive"
 
 
 def test_change_event_dto_rejects_naive_datetime():

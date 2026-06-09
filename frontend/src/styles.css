@@ -805,6 +805,13 @@ body[data-theme='light'] .pill--hold { color: var(--hold); }
 body[data-theme='dark']  .pill--hold { background: var(--hold-soft); color: var(--hold); }
 body[data-theme='light'] .pill--ok   { color: var(--ink); }
 body[data-theme='dark']  .pill--ok   { background: rgba(110, 163, 210, 0.1); color: #6ea3d2; }
+/* status 레지스트리 — 아는 raw 값(Active/PreActive)엔 색, 모르는 값(pill--unknown)은 중립 */
+body[data-theme='light'] .pill--active    { color: #2f8f5b; }
+body[data-theme='dark']  .pill--active    { background: rgba(63, 185, 122, 0.12); color: #5fcf95; }
+body[data-theme='light'] .pill--preactive { color: #b07a16; }
+body[data-theme='dark']  .pill--preactive { background: rgba(224, 168, 64, 0.12); color: #e0b65a; }
+body[data-theme='light'] .pill--unknown   { color: var(--ink-mute); }
+body[data-theme='dark']  .pill--unknown   { background: rgba(150, 150, 150, 0.12); color: var(--ink-mute); }
 
 /* ---------- Placeholder card content -------------------------- */
 .placeholder-block { display: grid; gap: 0; flex: 1; }

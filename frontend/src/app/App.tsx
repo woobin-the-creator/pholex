@@ -13,7 +13,8 @@ import { LotHoldPanel } from '../components/panels/LotHoldPanel'
 import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
 import { useMyHoldTable } from '../hooks/useMyHoldTable'
 import { getSession, logout, UnauthorizedError } from '../services/api'
-import { filterLotRows, type LotFilters } from '../utils/filterLots'
+import { collectStatusOptions, filterLotRows, type LotFilters } from '../utils/filterLots'
+import { HOLD_STATUS } from '../utils/statusDisplay'
 import type { SessionUser } from '../types/auth'
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
@@ -87,10 +88,11 @@ function DashboardApp() {
     ...filters,
     lotIdQuery: deferredLotIdQuery,
   })
+  const statusOptions = useMemo(() => collectStatusOptions(rows), [rows])
 
   const kpis = useMemo<KpiSpec[]>(() => {
     const activeCount = rows.length
-    const holdCount = rows.filter((row) => row.status === 'hold').length
+    const holdCount = rows.filter((row) => row.status === HOLD_STATUS).length
     return [
       { label: 'Active', value: activeCount },
       { label: 'Hold', value: holdCount, tone: 'hold' },
@@ -176,6 +178,7 @@ function DashboardApp() {
     <div className="shell">
       <SideNav
         filters={filters}
+        statusOptions={statusOptions}
         totalRows={rows.length}
         visibleRows={filteredRows.length}
         onFiltersChange={handleFiltersChange}

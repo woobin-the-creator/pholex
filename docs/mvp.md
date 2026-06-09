@@ -41,7 +41,7 @@
 ```sql
 SELECT *
 FROM lot_status
-WHERE status = 'hold'
+WHERE status = 'Hold'
   AND hold_operator_id = :logged_in_operator_id
 ```
 
@@ -66,7 +66,7 @@ WHERE status = 'hold'
 
 - 페이지 진입 시 REST API로 초기 데이터 로드
 - 이후 WebSocket `table_update` 메시지 수신 시 해당 슬롯만 갱신
-- `status = 'hold'`인 행: Critical Red(`#e53e3e`) 하이라이트 적용
+- `status = 'Hold'`인 행: Critical Red(`#e53e3e`) 하이라이트 적용
 - `TableHeader`: 테이블명("내 lot hold") + 리프레시 버튼 + 마지막 갱신 시간
 
 ---
@@ -86,7 +86,7 @@ WHERE status = 'hold'
 - [ ] SSO 로그인 후 메인 페이지 진입
 - [ ] 2x3 그리드 렌더링 — 슬롯 [0],[2]~[5]는 빈 슬롯 UI 표시
 - [ ] 슬롯 [1]에 로그인 사용자의 hold 랏 목록 표시
-- [ ] hold 조건: `status = 'hold'` AND `hold_operator_id = 로그인 사번`
+- [ ] hold 조건: `status = 'Hold'` AND `hold_operator_id = 로그인 사번`
 - [ ] 행에 Critical Red 하이라이트 적용
 - [ ] 리프레시 버튼 클릭 시 데이터 즉시 갱신
 - [ ] WebSocket 연결 유지 및 `table_update` 수신 시 슬롯 [1] 갱신

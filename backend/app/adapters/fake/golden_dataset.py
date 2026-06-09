@@ -28,7 +28,7 @@ _T = lambda iso: datetime.fromisoformat(iso).replace(tzinfo=timezone.utc)
 GOLDEN_ROWS: list[GoldenRow] = [
     {
         "lot_id": "LOT-A2948",
-        "status": "hold",
+        "status": "Hold",
         "equipment": "CMP-03",
         "process_step": "CMP / 슬러리 모니터",
         "hold_comment": "Pad life 초과 의심 — 측정값 확인 필요",
@@ -37,7 +37,7 @@ GOLDEN_ROWS: list[GoldenRow] = [
     },
     {
         "lot_id": "LOT-B1175",
-        "status": "hold",
+        "status": "Hold",
         "equipment": "ETCH-11",
         "process_step": "Dry Etch / Poly",
         "hold_comment": None,  # nullable comment edge
@@ -46,7 +46,7 @@ GOLDEN_ROWS: list[GoldenRow] = [
     },
     {
         "lot_id": "LOT-C3320",
-        "status": "hold",
+        "status": "Hold",
         "equipment": None,  # nullable equipment edge
         "process_step": "Implant / NWell",
         "hold_comment": "Dose 검증 재측정 요청",
@@ -55,7 +55,7 @@ GOLDEN_ROWS: list[GoldenRow] = [
     },
     {
         "lot_id": "LOT-X9999",
-        "status": "hold",
+        "status": "Hold",
         "equipment": "LITHO-04",
         "process_step": "Photo / Mask 4",
         "hold_comment": "다른 사용자 hold (cross-contamination 검증용)",

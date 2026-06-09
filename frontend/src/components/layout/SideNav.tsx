@@ -2,6 +2,7 @@ import type { LotFilters } from '../../utils/filterLots'
 
 interface SideNavProps {
   filters: LotFilters
+  statusOptions: string[]
   totalRows: number
   visibleRows: number
   onFiltersChange: (nextFilters: Partial<LotFilters>) => void
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
 
 export function SideNav({
   filters,
+  statusOptions,
   totalRows,
   visibleRows,
   onFiltersChange,
@@ -75,14 +77,14 @@ export function SideNav({
               id="lot-status"
               className="field__input field__select"
               value={filters.status}
-              onChange={(event) =>
-                onFiltersChange({ status: event.target.value as LotFilters['status'] })
-              }
+              onChange={(event) => onFiltersChange({ status: event.target.value })}
             >
               <option value="all">전체</option>
-              <option value="hold">Hold</option>
-              <option value="wait">Wait</option>
-              <option value="run">Run</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
             </select>
           </label>
 

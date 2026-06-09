@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from app.domain.lot import LotStatus
 from app.ports.dto import ChangeWithSeverity, LotRowDTO, WatchlistRowDTO
 
 
@@ -98,6 +99,6 @@ def change_to_wire(envelope: ChangeWithSeverity) -> dict[str, Any]:
 
 def _alert_message(envelope: ChangeWithSeverity) -> str:
     e = envelope.event
-    if e.change_type == "status" and e.new_status == "hold":
-        return f"{e.lot_id}: {e.previous_status or '?'} → hold"
+    if e.change_type == "status" and e.new_status == LotStatus.HOLD:
+        return f"{e.lot_id}: {e.previous_status or '?'} → {LotStatus.HOLD}"
     return f"{e.lot_id}: {e.change_type}"

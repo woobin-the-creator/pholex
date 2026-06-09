@@ -23,7 +23,7 @@ class LotSource(Protocol):
 
         Contract:
         - 반환된 모든 row의 `is_held_by_me`는 True여야 한다.
-        - 반환된 모든 row의 `status`는 "hold"이다.
+        - 반환된 모든 row의 `status`는 raw "Hold"이다(매핑 없음).
         - 정렬: lot_id ASC (deterministic).
         - 동일 사번 반복 호출은 동일 결과(idempotent).
         """
