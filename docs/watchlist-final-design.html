@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Pholex — 내 관심 랏 / 02 fallback 최종 설계</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2430; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff;
+    --keep:#58a6ff; --new:#3fb950; --danger:#f85149; --purple:#bc8cff;
+    --yellow:#e3b341; --green:#3fb950; --amber:#e3b341; --red:#f85149;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Apple SD Gothic Neo",sans-serif;
+    line-height:1.55;padding:34px 30px 70px;font-size:14px}
+  h1{font-size:25px;margin:0 0 4px;letter-spacing:-.3px}
+  .sub{color:var(--muted);margin:0 0 8px;font-size:13px}
+  h2{font-size:17px;margin:30px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+  h2 .n{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;background:var(--accent);color:#04121f;border-radius:7px;font-size:13px;font-weight:700}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:980px){.row{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .card.keep{border-left:3px solid var(--keep)}
+  .card.new{border-left:3px solid var(--new)}
+  .card h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .pill{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700}
+  .pill.keep{background:rgba(88,166,255,.16);color:var(--keep)}
+  .pill.new{background:rgba(63,185,80,.16);color:var(--new)}
+  .card .meta{font-size:11.5px;color:var(--accent);font-family:ui-monospace,Menlo,monospace;margin-bottom:8px;word-break:break-all}
+  .card ul{margin:7px 0 0;padding-left:17px}
+  .card li{margin-bottom:5px;font-size:12.7px}
+  .flow{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+  .step{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:12.3px}
+  .step b{color:var(--text)}
+  .step .f{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent)}
+  .arrow{text-align:center;color:var(--muted);font-size:13px;line-height:1}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:6px}
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);font-size:12.7px;vertical-align:top}
+  th{background:var(--panel2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  td:first-child{font-weight:600;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  code{background:#21262d;padding:1px 6px;border-radius:5px;font-size:11.5px;font-family:ui-monospace,Menlo,monospace}
+  .light{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .lg{background:var(--green)} .la{background:var(--amber)} .lr{background:var(--red)}
+  pre{background:#0a0e14;border:1px solid var(--border);border-radius:9px;padding:13px 15px;overflow-x:auto;font-size:11.7px;line-height:1.5;font-family:ui-monospace,Menlo,monospace;color:#c9d1d9;margin:8px 0 0}
+  .k{color:#ff7b72} .s{color:#a5d6ff} .c{color:#8b949e}
+  .contract{background:linear-gradient(180deg,rgba(248,81,73,.06),transparent);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:10px;padding:4px 0}
+  .contract td:first-child{color:var(--danger)}
+  .touch{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:12.7px}
+  .touch b{color:var(--yellow)}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:4px 0 0}
+  .tag3{display:inline-flex;gap:5px;align-items:center;font-size:12px}
+</style>
+</head>
+<body>
+  <h1>Pholex — "내 관심 랏" 신규 + "내 lot hold" Fallback · 최종 설계</h1>
+  <p class="sub">grill-me 결론 · 2026-06-06 · 옵션A 기반(완전 대체 아님 — 02 유지 + 03 신규 공존)</p>
+
+  <!-- ===== 1. 두 섹션 ===== -->
+  <h2><span class="n">A</span> 두 섹션 구조</h2>
+  <div class="row">
+    <div class="card keep">
+      <h3>02 · 내 lot hold <span class="pill keep">유지 + 보강</span></h3>
+      <div class="meta">LotHoldPanel.tsx · tableId=1 · /api/lots/my-hold + WS</div>
+      <ul>
+        <li><b>실시간 자동조회 유지</b> — <code>hold_operator = 나</code>인 lot (LotSource + WebSocket)</li>
+        <li><b>추가</b>: 🚦 3상태 신호등 + 캐시 fallback</li>
+        <li>읽기 전용 (입력 UI 없음)</li>
+      </ul>
+    </div>
+    <div class="card new">
+      <h3>03 · 내 관심 랏 <span class="pill new">신규</span></h3>
+      <div class="meta">PlaceholderPanel "수율 계측"(slot-2) 교체 · App.tsx:215 · tableId=2(신규) · WS 미사용</div>
+      <ul>
+        <li><b>수동 watchlist</b> — 유저가 lot_id 직접 입력·저장</li>
+        <li>"+" 빈 row 추가 / "저장" 일괄 / lot_id만 편집(나머지 readonly)</li>
+        <li>상태 무관 등록 lot <b>전부</b> 표시 — 컬럼은 02와 동일 6개</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 2. 02 신호등 + fallback ===== -->
+  <h2><span class="n">B</span> 02 신호등 + Fallback (백엔드 주도 · 프론트는 응답값만 따름)</h2>
+  <div class="row">
+    <div class="card">
+      <h3>데이터 플로우</h3>
+      <div class="flow">
+        <div class="step"><b>FetchMyHolds UC</b> — <span class="f">LotSource.fetch_my_holds(나)</span> 시도</div>
+        <div class="arrow">│ 성공 → 🟢 / 실패 ↓</div>
+        <div class="step"><b>Fallback</b> — <span class="f">lots WHERE hold_operator=나</span> 캐시 조회</div>
+        <div class="arrow">↓</div>
+        <div class="step">응답 payload에 <code>health</code> + <code>dataSource</code> + <code>lastUpdated</code> 실어 보냄</div>
+        <div class="arrow">↓</div>
+        <div class="step"><b>Frontend</b> — <code>health</code> 값만 보고 등 색 결정 (타임스탬프 계산 ✕)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>3상태 정의</h3>
+      <table>
+        <tr><th>등</th><th>의미 (응답 health)</th></tr>
+        <tr><td><span class="light lg"></span>Live</td><td><code>live</code> — LotSource 실시간 성공</td></tr>
+        <tr><td><span class="light la"></span>Cache</td><td><code>cache</code> — 실시간 실패 → lots 캐시로 응답 (≤30분)</td></tr>
+        <tr><td><span class="light lr"></span>Down</td><td><code>stale/down</code> — 캐시마저 오래됨(<code>lot_dump_meta</code>로 백엔드 판정, 주기 2배≈60분↑) 또는 완전 실패</td></tr>
+      </table>
+      <ul><li>판정 책임 = <b>백엔드</b>. 프론트는 "멍청하게" 응답 enum만 렌더.</li></ul>
+    </div>
+  </div>
+
+  <!-- ===== 3. 03 동작 ===== -->
+  <h2><span class="n">C</span> 03 "내 관심 랏" 동작</h2>
+  <div class="row">
+    <div class="card">
+      <h3>저장 (전체 교체 · set semantics)</h3>
+      <ul>
+        <li>화면의 lot_id 리스트 = 내 watchlist <b>전체</b>. 저장 시 내 행 전부 삭제 후 재삽입(<code>UnitOfWork</code> 원자성)</li>
+        <li>row 지우고 저장 → watchlist에서 빠짐 (멱등)</li>
+        <li>빈 row <b>drop</b> · 중복 lot_id <b>dedupe</b> · <code>order_index</code>로 <b>입력 순서 보존</b></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>검증 · 표시 (저장 허용 → 표시 시 해석)</h3>
+      <ul>
+        <li>lot_id <b>무조건 저장</b>(유저 의도 보존). 표시 시 <code>lots</code> live JOIN</li>
+        <li>매칭 ✓ → status/step 등 채움 · 매칭 ✕ → "조회 대기/없음" 행 유지</li>
+        <li><b>다음 dump에서 자동 채워짐</b> (JOIN이 매번 최신 lots 참조)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <h3>갱신 트리거 (합본)</h3>
+    <div class="legend">
+      <span class="tag3">① <b>저장 직후</b> 재조회</span>
+      <span class="tag3">② <b>탭 포커스 복귀</b> 재조회 (백그라운드 throttle 보완)</span>
+      <span class="tag3">③ <code>lot_dump_meta.last_run_at</code> <b>가벼운 폴링 → 변경 시에만</b> watchlist 재조회 (dump 위상 정렬)</span>
+    </div>
+    <ul style="margin-top:9px">
+      <li>blind 30분 타이머 ✕ (위상 어긋남·백그라운드 throttle 회피) → heartbeat 추종으로 <b>dump 완료 직후 자동 반영</b></li>
+      <li>03 신선도 = <b>"데이터 기준: HH:MM"</b> 라벨 (= last_run_at), dump 죽으면 <b>⚠️</b>. (02 같은 신호등 아님)</li>
+    </ul>
+  </div>
+
+  <!-- ===== 4. 테이블 / DDL ===== -->
+  <h2><span class="n">D</span> 테이블 & DDL (pholex가 docs+seed에 정의 → 사내 AI가 적용)</h2>
+  <pre><span class="c">-- 30분 dump 마스터 캐시 (사내 AI 소유 · pholex는 읽기만). 02 fallback + 03 공용 소스</span>
+<span class="k">CREATE TABLE</span> lots (
+  lot_id        <span class="k">VARCHAR</span> <span class="k">PRIMARY KEY</span>,
+  status        <span class="k">VARCHAR</span>,           <span class="c">-- run | wait | hold</span>
+  equipment     <span class="k">VARCHAR</span>,
+  process_step  <span class="k">VARCHAR</span>,
+  hold_comment  <span class="k">TEXT</span>,
+  hold_operator <span class="k">VARCHAR</span>,           <span class="c">-- ⚠ CONTRACT-1: 실제 컬럼명 다름(예 lot_hold_user_id), 값=사번</span>
+  updated_at    <span class="k">TIMESTAMPTZ</span>
+);
+
+<span class="c">-- pholex 고유 도메인 (dump와 무관). 유저↔lot 매칭</span>
+<span class="k">CREATE TABLE</span> user_lot_watchlist (
+  employee_number <span class="k">VARCHAR</span>,         <span class="c">-- 사번 (users FK)</span>
+  lot_id          <span class="k">VARCHAR</span>,
+  order_index     <span class="k">INT</span>,             <span class="c">-- 입력 순서 보존</span>
+  <span class="k">PRIMARY KEY</span> (employee_number, lot_id)
+);
+
+<span class="c">-- dump 생존 heartbeat. 1행 고정. 신선도 판정 단일 소스</span>
+<span class="k">CREATE TABLE</span> lot_dump_meta (
+  id          <span class="k">INT</span> <span class="k">PRIMARY KEY DEFAULT</span> <span class="s">1</span>,
+  last_run_at <span class="k">TIMESTAMPTZ</span> <span class="k">NOT NULL</span>,    <span class="c">-- ⚠ CONTRACT-4: 사내 dump가 매 실행 now로 upsert</span>
+  row_count   <span class="k">INT</span>,
+  status      <span class="k">VARCHAR</span> <span class="k">DEFAULT</span> <span class="s">'ok'</span>
+);</pre>
+
+  <!-- ===== 5. 계약 ===== -->
+  <h2><span class="n">E</span> 🔴 사내 AI ↔ pholex 계약 (추후 반드시 매칭)</h2>
+  <table class="contract">
+    <tr><th>ID</th><th>내용</th><th>영향</th></tr>
+    <tr><td>CONTRACT-1</td><td><code>lots.hold_operator</code> 실제 컬럼명(예 <code>lot_hold_user_id</code>) + 값이 <b>사번</b> 형식</td><td>02 fallback "내 것" 필터가 이걸로 매칭</td></tr>
+    <tr><td>CONTRACT-2</td><td><code>lot_id</code> 형식(자릿수/접두어 패턴)</td><td>03 클라이언트 형식 검증(오타 방지)</td></tr>
+    <tr><td>CONTRACT-3</td><td><code>lots</code> dump 컬럼셋 = lot_id, status, equipment, process_step, hold_comment, updated_at, hold_operator</td><td>02·03 표시 readonly 컬럼</td></tr>
+    <tr><td>CONTRACT-4</td><td><code>lot_dump_meta.last_run_at</code> 매 dump 실행마다 upsert (lot 변경 무관)</td><td>02 🟡/🔴 + 03 신선도 판정</td></tr>
+  </table>
+
+  <!-- ===== 6. 구현 터치포인트 ===== -->
+  <h2><span class="n">F</span> 구현 터치포인트</h2>
+  <div class="row">
+    <div class="touch">
+      <b>Backend</b>
+      <ul>
+        <li>신규 <code>api/watchlist.py</code> — GET/POST (require_session)</li>
+        <li>신규 UC <code>SaveWatchlist</code> + 포트 <code>LotWatchlistRepository</code> (fake/real 어댑터)</li>
+        <li><code>FetchMyHolds</code> UC에 fallback + <code>health</code> 필드 추가</li>
+        <li><code>lots</code> 읽기 repo · <code>lot_dump_meta</code> 조회</li>
+        <li>새 <code>TABLE_ID</code>=2 상수 · <code>wire.py</code> health 직렬화</li>
+      </ul>
+    </div>
+    <div class="touch">
+      <b>Frontend</b>
+      <ul>
+        <li><code>App.tsx:215</code> PlaceholderPanel(slot-2) → 새 "내 관심 랏" 패널 교체 (라벨 "내 관심 랏")</li>
+        <li>신규 패널 컴포넌트(LotHoldPanel 기반 + 편집 row) · 신규 hook · tableAtoms 추가</li>
+        <li><code>api.ts</code>에 watchlist GET/POST + heartbeat 폴링</li>
+        <li>02에 🚦 신호등 컴포넌트(health 기반) · 03에 "데이터 기준 HH:MM" 라벨</li>
+      </ul>
+    </div>
+  </div>
+  <div class="touch" style="margin-top:14px">
+    <b>경계 / 외부</b>
+    <ul style="margin:7px 0 0">
+      <li>dump 잡(bigdataquery → lots + lot_dump_meta) = <b>사내 AI 소유, 레포 바깥</b>, 사내 스케줄러 30분. pholex는 push 없이 읽기만.</li>
+      <li>DDL 3종은 <code>docs/backend.md</code> + <code>scripts/seed_dev.sql</code>에 권위 정의 → 사내 AI 적용. 사외 dev는 fake/seed로 개발.</li>
+    </ul>
+  </div>
+
+</body>
+</html>

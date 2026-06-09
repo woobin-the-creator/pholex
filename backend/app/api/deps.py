@@ -9,6 +9,7 @@ from app.di.container import (
     get_clock,
     get_lot_repository,
     get_lot_source,
+    get_lot_watchlist_repository,
     get_mail_sender,
     get_sso_verifier,
     get_unit_of_work,
@@ -18,11 +19,14 @@ from app.domain.session import SessionUser
 from app.ports.clock import Clock
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
+from app.ports.lot_watchlist_repository import LotWatchlistRepository
 from app.ports.mail_sender import MailSender
 from app.ports.sso_verifier import SsoVerifier
 from app.ports.unit_of_work import UnitOfWork
 from app.ports.user_repository import UserRepository
 from app.usecases.fetch_my_holds import FetchMyHolds
+from app.usecases.get_watchlist import GetWatchlist
+from app.usecases.save_watchlist import SaveWatchlist
 from app.usecases.sso import VerifySessionToken
 from app.usecases.stream_hold_changes import StreamHoldChanges
 
@@ -33,6 +37,10 @@ def lot_source_dep() -> LotSource:
 
 def lot_repository_dep() -> LotRepository:
     return get_lot_repository()
+
+
+def lot_watchlist_repository_dep() -> LotWatchlistRepository:
+    return get_lot_watchlist_repository()
 
 
 def mail_sender_dep() -> MailSender:
@@ -61,6 +69,20 @@ def fetch_my_holds_uc(
     uow: Annotated[UnitOfWork, Depends(unit_of_work_dep)],
 ) -> FetchMyHolds:
     return FetchMyHolds(source=source, repo=repo, uow=uow)
+
+
+def save_watchlist_uc(
+    repo: Annotated[LotWatchlistRepository, Depends(lot_watchlist_repository_dep)],
+    uow: Annotated[UnitOfWork, Depends(unit_of_work_dep)],
+) -> SaveWatchlist:
+    return SaveWatchlist(repo=repo, uow=uow)
+
+
+def get_watchlist_uc(
+    watchlist: Annotated[LotWatchlistRepository, Depends(lot_watchlist_repository_dep)],
+    lots: Annotated[LotRepository, Depends(lot_repository_dep)],
+) -> GetWatchlist:
+    return GetWatchlist(watchlist=watchlist, lots=lots)
 
 
 def stream_hold_changes_uc(

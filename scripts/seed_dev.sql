@@ -7,19 +7,22 @@
 --     psql -U pholex -d pholex -f /dev/stdin < scripts/seed_dev.sql
 --
 -- 전제조건:
---   - Alembic 마이그레이션 완료 후 실행
---   - DEV_SSO_USER_ID=test001, DEV_SSO_EMPLOYEE_NUMBER=99999 기준
+--   - Alembic 마이그레이션 완료 후 실행 (lot_dump_meta·user_lots reconcile 반영본)
+--   - DEV_SSO_EMPLOYEE_NUMBER=99999 기준 (employee_id 제거 — 사번 단일키)
 -- =============================================================================
 
 -- 기존 시드 데이터 초기화 (재실행 안전)
+DELETE FROM user_lots;
+DELETE FROM lot_dump_meta;
 DELETE FROM lot_status;
-DELETE FROM users WHERE employee_id = 'test001';
+DELETE FROM users WHERE employee_number = '99999';
 
 -- =============================================================================
 -- 테스트 사용자 (DEV_SSO_BYPASS 계정과 동일)
 -- =============================================================================
-INSERT INTO users (employee_id, employee_number, username, email, auth)
-VALUES ('test001', '99999', '테스트엔지니어', 'test@dev.local', 'ENGINEER');
+-- employee_id 컬럼 제거(decisions 2026-06-05) — 사번(employee_number) 단일키
+INSERT INTO users (employee_number, username, email, auth)
+VALUES ('99999', '테스트엔지니어', 'test@dev.local', 'ENGINEER');
 
 -- =============================================================================
 -- 슬롯 [1] "내 lot hold" 에 표시되어야 하는 행
@@ -51,6 +54,24 @@ VALUES
     ('LOT-WAIT-002', 'wait', 'EQ-CMP-03',  'CMP-POLISH-1',  99999, NOW() - INTERVAL '45 minutes');
 
 -- =============================================================================
+-- 슬롯 [2] "내 관심 랏" watchlist — 유저(99999)가 수동 등록한 lot 목록
+--   표시 시 user_lots ⨝ lot_status live JOIN. order_index 순서대로.
+--   LOT-NOTYET-001은 lot_status에 없음 → "조회 대기/없음" 행 데모 (다음 dump에서 채워짐)
+-- =============================================================================
+INSERT INTO user_lots (employee_number, lot_id, order_index)
+VALUES
+    ('99999', 'LOT-HOLD-001',   0),   -- 내 hold (매칭됨)
+    ('99999', 'LOT-RUN-001',    1),   -- 상태 무관 표시 (run, 매칭됨)
+    ('99999', 'LOT-HOLD-OTHER-001', 2), -- 남의 hold도 관심 등록 가능 (매칭됨)
+    ('99999', 'LOT-NOTYET-001', 3);   -- lot_status에 없음 → 조회 대기 행
+
+-- =============================================================================
+-- dump heartbeat — 1행 고정. 신선도 판정 소스. 시드는 방금 dump한 것으로 간주
+-- =============================================================================
+INSERT INTO lot_dump_meta (id, last_run_at, row_count, status)
+VALUES (1, NOW() - INTERVAL '3 minutes', 14, 'ok');
+
+-- =============================================================================
 -- 확인 쿼리 (실행 후 결과로 시드 성공 여부 확인)
 -- =============================================================================
 SELECT '=== 전체 lot_status ===' AS info;
@@ -61,3 +82,13 @@ SELECT lot_id, equipment, process_step, hold_comment, hold_operator_id
 FROM lot_status
 WHERE status = 'hold' AND hold_operator_id = 99999
 ORDER BY updated_at DESC;
+
+SELECT '=== 슬롯 [2] "내 관심 랏" 표시 예상 (4건, LOT-NOTYET-001은 status NULL) ===' AS info;
+SELECT ul.order_index, ul.lot_id, ls.status, ls.equipment, ls.process_step
+FROM user_lots ul
+LEFT JOIN lot_status ls ON ls.lot_id = ul.lot_id
+WHERE ul.employee_number = '99999'
+ORDER BY ul.order_index;
+
+SELECT '=== dump heartbeat ===' AS info;
+SELECT id, last_run_at, row_count, status FROM lot_dump_meta;

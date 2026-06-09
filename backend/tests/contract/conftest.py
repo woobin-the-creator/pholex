@@ -6,10 +6,12 @@ import pytest
 
 from app.adapters.fake.lot_repository import InMemoryLotRepository
 from app.adapters.fake.lot_source import InMemoryLotSource
+from app.adapters.fake.lot_watchlist_repository import InMemoryLotWatchlistRepository
 from app.adapters.fake.mail_sender import LogMailSender
 from app.adapters.fake.sso_verifier import DevSsoVerifier
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
+from app.ports.lot_watchlist_repository import LotWatchlistRepository
 from app.ports.mail_sender import MailSender
 from app.ports.sso_verifier import SsoVerifier
 
@@ -51,6 +53,13 @@ def lot_source(request) -> LotSource:
 def lot_repository(request) -> LotRepository:
     if request.param == "fake":
         return InMemoryLotRepository()
+    raise NotImplementedError(f"Adapter '{request.param}' not configured in this repo")
+
+
+@pytest.fixture(params=ADAPTER_PARAMS)
+def lot_watchlist_repository(request) -> LotWatchlistRepository:
+    if request.param == "fake":
+        return InMemoryLotWatchlistRepository()
     raise NotImplementedError(f"Adapter '{request.param}' not configured in this repo")
 
 

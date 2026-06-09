@@ -34,6 +34,29 @@ class LotRowDTO(BaseModel):
     _validate_updated_at = field_validator("updated_at")(_require_tz_aware)
 
 
+class WatchlistRowDTO(BaseModel):
+    """슬롯[2] "내 관심 랏" 표시 행. watchlist lot_id ⨝ lot_status 결과.
+
+    `found=False`는 등록한 lot_id가 아직 `lot_status`(30분 dump 캐시)에 없는 상태("조회 대기/없음").
+    다음 dump에서 채워지면 found=True로 바뀐다. found=False면 lot 데이터 필드는 모두 None.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    lot_id: str
+    found: bool
+    status: LotStatusLiteral | None = None
+    equipment: str | None = None
+    process_step: str | None = None
+    hold_comment: str | None = None
+    updated_at: datetime | None = None
+
+    @field_validator("updated_at")
+    @classmethod
+    def _tz_aware_if_present(cls, value: datetime | None) -> datetime | None:
+        return _require_tz_aware(value) if value is not None else None
+
+
 class LotChangeEventDTO(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

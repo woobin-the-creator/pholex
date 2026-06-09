@@ -18,16 +18,18 @@
 ### 4.2 PostgreSQL 스키마
 
 ```sql
--- 사용자-랏 매핑
+-- 사용자-랏 매핑 — 슬롯[2] "내 관심 랏" watchlist (유저가 수동 등록한 lot 목록)
+-- 식별자는 사번(employee_number) 단일키 정책에 정렬 (employee_id 제거 결정과 일관)
 CREATE TABLE user_lots (
     id SERIAL PRIMARY KEY,
-    user_id VARCHAR(100) NOT NULL,  -- SSO 사용자 ID
+    employee_number VARCHAR(50) NOT NULL,  -- 사번 (users.employee_number 참조), 기존 user_id 대체
     lot_id VARCHAR(100) NOT NULL,
-    team_id VARCHAR(100),
+    order_index INT NOT NULL DEFAULT 0,    -- 입력 순서 보존 (저장=전체교체 시 화면 순서대로 재표시)
+    team_id VARCHAR(100),                  -- (예약) 현재 스코프 미사용, NULL 허용
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id, lot_id)
+    UNIQUE(employee_number, lot_id)
 );
-CREATE INDEX idx_user_lots_user_id ON user_lots(user_id);  -- 로그인 시 사용자 랏 목록 조회
+CREATE INDEX idx_user_lots_employee_number ON user_lots(employee_number);  -- 내 관심 랏 목록 조회
 
 -- 랏 상태 (수집된 데이터) — lot_id가 유니크하므로 PK로 직접 사용
 CREATE TABLE lot_status (
@@ -36,14 +38,23 @@ CREATE TABLE lot_status (
     equipment VARCHAR(100),
     process_step VARCHAR(100),
     hold_comment TEXT,                -- hold 상태일 때 홀드 사유
-    hold_operator_id BIGINT,          -- hold 담당자 사번 (number type, 실제 컬럼명은 사내 확인 필요)
+    hold_operator_id BIGINT,          -- hold 담당자 사번 [CONTRACT-1] 실제 dump 컬럼명 사내 확인 필요(예 lot_hold_user_id), 값=employee_number(사번). 도메인은 문자열 hold_operator_employee_number 사용 → 타입 매핑 주의
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'
 );
--- 수집 시: INSERT ... ON CONFLICT (lot_id) DO UPDATE SET ...
+-- 수집 시: INSERT ... ON CONFLICT (lot_id) DO UPDATE SET ...  [CONTRACT-3] dump 컬럼셋 = 위 lot_status 컬럼 전체
 CREATE INDEX idx_lot_status_updated_at ON lot_status(updated_at);
 CREATE INDEX idx_lot_status_status ON lot_status(status);
-CREATE INDEX idx_lot_status_hold_operator ON lot_status(hold_operator_id) WHERE status = 'hold';
+CREATE INDEX idx_lot_status_hold_operator ON lot_status(hold_operator_id) WHERE status = 'hold';  -- 슬롯[1] "내 lot hold" fallback 필터
+
+-- dump 생존 heartbeat — 행 1개 고정(id=1). "내 lot hold" 신선도(🟡/🔴) + "내 관심 랏" 갱신 판정의 단일 소스
+-- ⚠ lot_status 행의 updated_at으로 dump 생존을 추론하지 말 것: 변동 없는 lot은 updated_at이 정상적으로 오래됨 → 거짓 stale
+CREATE TABLE lot_dump_meta (
+    id          INT PRIMARY KEY DEFAULT 1,        -- 단일 행
+    last_run_at TIMESTAMPTZ NOT NULL,             -- [CONTRACT-4] 사내 dump가 매 실행 끝에 now로 upsert (lot 변경 유무와 무관)
+    row_count   INT,                              -- (옵션) 이번 dump가 처리한 lot 수
+    status      VARCHAR(20) DEFAULT 'ok'          -- (옵션) ok | partial | error
+);
 
 -- 필터 프리셋 (사용자별 저장)
 CREATE TABLE filter_presets (
@@ -65,6 +76,36 @@ CREATE TABLE table_configs (
     UNIQUE(user_id, slot_index)
 );
 ```
+
+### 4.3 "내 관심 랏"(슬롯[2]) + "내 lot hold"(슬롯[1]) fallback — 데이터 흐름
+
+> 전체 설계 시각화: `docs/watchlist-final-design.html`
+
+**배경**: 슬롯[2]는 placeholder "수율 계측" → "내 관심 랏"으로 교체. 기존 슬롯[1] "내 lot hold"는 유지하되 신호등 + 캐시 fallback 추가. `lot_status`는 30분 dump 마스터 캐시로, 두 슬롯의 공용 소스가 된다.
+
+**슬롯[1] "내 lot hold" (유지 + 보강)** — 실시간 LotSource(`hold_operator=나` 자동) primary. 실패 시 `lot_status WHERE hold_operator_id=나`로 캐시 fallback. 응답 payload에 `health` 필드(백엔드 주도, 프론트는 값만 따름):
+
+| health | 의미 |
+|--------|------|
+| `live` | LotSource 실시간 성공 (🟢) |
+| `cache` | 실시간 실패 → lot_status 캐시 응답, ≤30분 (🟡) |
+| `stale`/`down` | `lot_dump_meta.last_run_at`이 dump 주기 2배(≈60분) 초과 또는 완전 실패 (🔴) |
+
+**슬롯[2] "내 관심 랏" (신규)** — 유저가 lot_id 수동 입력·저장하는 watchlist.
+- **저장**: 전체 교체(set semantics) — 화면 리스트가 곧 watchlist 전체. `user_lots`에서 내 행 전부 삭제 후 재삽입(UnitOfWork 원자성). 빈 row drop / 중복 dedupe / `order_index`로 순서 보존.
+- **검증/표시**: lot_id 무조건 저장(유저 의도). 표시 시 `user_lots ⨝ lot_status` live JOIN — 매칭 안 되면 "조회 대기/없음" 행 유지, 다음 dump에서 자동 채워짐.
+- **갱신**: 저장 직후 + 탭 포커스 복귀 + `lot_dump_meta.last_run_at` 변경 시(가벼운 폴링). 신선도는 "데이터 기준 HH:MM(+stale ⚠️)" 라벨. WS 미사용.
+
+**🔴 사내 AI ↔ pholex 계약** (real dump 구현 시 반드시 매칭):
+
+| ID | 내용 |
+|----|------|
+| CONTRACT-1 | `lot_status.hold_operator_id` 실제 dump 컬럼명(예 `lot_hold_user_id`) + 값=employee_number(사번). 도메인 문자열 `hold_operator_employee_number`와 타입 매핑 주의 |
+| CONTRACT-2 | `lot_id` 형식(자릿수/접두어 패턴) — 슬롯[2] 클라이언트 형식 검증용 |
+| CONTRACT-3 | `lot_status` dump 컬럼셋 = lot_id, status, equipment, process_step, hold_comment, hold_operator_id, updated_at |
+| CONTRACT-4 | `lot_dump_meta.last_run_at` 매 dump 실행마다 upsert (lot 변경 무관) — 신선도 판정 소스 |
+
+> **dump 소유**: bigdataquery → `lot_status` + `lot_dump_meta` 적재 잡은 **사내 AI 소유·레포 바깥**, 사내 스케줄러 30분 주기. pholex는 push 없이 읽기만. 신선도는 `lot_dump_meta`로 추론(콜백 결합 없음). 단, 30분 dump cadence는 §7의 기존 5~30초 스케줄러 모델과 상충 → §7 후속 갱신 필요.
 
 ---
 
@@ -118,6 +159,11 @@ backend/
 ---
 
 ## 7. 실시간 데이터 흐름
+
+> ⚠️ **§4.3과의 cadence reconciliation (2026-06-06)** — 아래 흐름은 "5~30초 collector가 `lot_status`를 갱신 → WS push" 모델인데, §4.3에서 `lot_status`의 writer를 **사내 AI 소유 30분 dump(레포 바깥)** 로 바꿨다. **MVP/goal 범위로 정리** (실시간 redesign은 미해결 blocker가 아니라 의식적으로 연기한 stretch goal):
+> - **MVP 범위 = "랏 데이터를 보여준다"** (30분 dump 데이터로 충분). 이 경로는 다 결정됨 → 슬롯[1] "내 lot hold"는 **기존 실시간 LotSource/WS 코드를 그대로 유지**하고, 거기에 `lot_status`(30분) fallback + `lot_dump_meta` heartbeat 신선도만 **추가**한다. 작동하는 코드를 뜯지 않으므로 "live가 30분보다 신선한가"라는 사내 사실은 **MVP에선 moot**.
+> - **goal 범위 = "실시간/준실시간 랏 데이터"** (stretch). LotSource가 **포트**라 MVP는 30분 캐시 어댑터로 두고, 나중에 빠른 live 어댑터를 같은 포트에 꽂으면 된다 — 그래서 아래 항목은 지금 정하지 않아도 build가 안 막힌다.
+> - **goal로 연기된 항목**: 30분 dump가 `lot_status`의 유일 writer일 때 WS 실시간 push의 트리거 정의, 슬롯[1] "실시간"의 실제 cadence, ①사내 REST API가 30분 dump보다 신선한지, collector(api/db) 역할이 dump로 흡수되는지. 본 §7 트레이드오프 표·아래 흐름도는 **과거 결정 기록으로 보존**하며, 실시간 goal 착수 시 갱신한다.
 
 ```
 1. [Scheduler] 5~30초 주기로 Data Collector 실행

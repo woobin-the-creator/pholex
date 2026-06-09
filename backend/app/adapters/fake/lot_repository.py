@@ -25,6 +25,9 @@ class InMemoryLotRepository:
             self._by_lot = snapshot
             raise
 
+    async def get_lots_by_ids(self, lot_ids: list[str]) -> dict[str, LotRowDTO]:
+        return {lid: self._by_lot[lid] for lid in lot_ids if lid in self._by_lot}
+
     async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None:
         cached = self._cache_by_employee.get(employee_number)
         if cached is None:

@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-05 (SSO users 식별자 단일화 · UserRepository 분리)";
+  const LAST_UPDATED = "2026-06-06 (내 관심 랏 watchlist + 내 lot hold 캐시 fallback 설계 — DDL/계약 문서화)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -503,6 +503,34 @@
         { name: "employee_id=Django auto PK(jfpage 방식)", rejected: "Pholex는 id SERIAL이 이미 surrogate PK 역할" }
       ],
       note: "함께 정리: (1) SSO provisioning을 UnitOfWork/lot_repository에서 빼 별도 UserRepository port(+fake)로 분리. (2) IdP claim key 매핑 확정 — email→mail, employee_number→sabun, username→username, auth는 IdP 미제공이라 'ENGINEER' 하드코딩(추후 ADMIN_EMAILS 산정). 사내 real 구현이 external 정본 ports/dto에 conform."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-06",
+      status: "revisit",
+      title: "prod Postgres 5432 외부 노출 유지 (dev 편의 → prod까지 확대)",
+      decision: "docker-compose.prod.yml에서 postgres 5432:5432 포트 외부 노출을 prod에서도 유지하기로 했어요. 원래 '5432 노출은 dev 편의, prod 금지' 방침을 뒤집어, 운영 환경에서도 노출을 열어 둬요.",
+      rationale: "사내 폐쇄망이라 5432가 인터넷에 직접 닿지 않고, 운영 중 lot_status·users 데이터를 DBeaver/VSCode로 즉석 조회할 일이 잦아 편의를 우선했어요. origin/dev 머지(1947fc0) 때 우리(HEAD) compose의 노출 설정을 그대로 살리는 선택이에요.",
+      alternatives: [
+        { name: "prod 5432 미노출(원래 방침)", rejected: "운영 DB 직접 조회 편의를 잃음 — 사내망이라 위험도가 낮다고 판단" },
+        { name: "bastion/SSH 터널 경유 조회", rejected: "현 단계엔 과한 운영 부담" }
+      ],
+      note: "revisit 사유: 사내망이라도 DB 직접 노출은 보안 표면이라, 운영 안정화 후 bastion/터널로 좁히는 걸 재검토. 확정은 머지 커밋 1947fc0(origin/dev 통합)에서."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-06",
+      status: "future",
+      title: "슬롯[2] '내 관심 랏' watchlist + 슬롯[1] '내 lot hold' 캐시 fallback",
+      decision: "placeholder 슬롯[2] '수율 계측'을 '내 관심 랏'(유저가 lot_id 수동 등록·저장하는 watchlist)으로 교체. lot_status를 30분 dump 마스터 캐시로 삼아, 슬롯[1] '내 lot hold'는 실시간 LotSource primary + lot_status 캐시 fallback(3상태 신호등 🟢live/🟡cache/🔴stale)으로 보강. 신선도는 신규 lot_dump_meta(1행 heartbeat)로 판정. 테이블은 기존 lot_status·user_lots 재사용(user_lots는 user_id→employee_number, order_index 추가).",
+      rationale: "실시간 hold 자동조회(슬롯1)는 유지하되, 유저마다 모니터링 대상이 달라 수동 watchlist(슬롯2)를 별도 슬롯으로 분리 — 자동/수동을 한 섹션에 섞으면 데이터 충돌. fallback은 primary와 '같은 lot 집합'에 답해야 성립하므로 슬롯1은 hold_operator 기준으로 통일. 신선도를 lot_status.updated_at로 추론하면 변동 없는 lot이 거짓 stale을 유발 → dump 생존만 알려주는 heartbeat 1행으로 분리. 프론트는 API 응답의 health 값만 따르고 타임스탬프 계산은 백엔드가.",
+      alternatives: [
+        { name: "옵션A 완전 대체(슬롯1을 watchlist로 교체)", rejected: "실시간 자동 hold 조회를 잃음 — 30분 캐시로 성격이 바뀜" },
+        { name: "한 섹션에서 자동+수동 fallback 전환", rejected: "primary(내 hold)와 fallback(내 watchlist)이 다른 lot 집합 → fallback이 아니라 기능 교체, 유저 혼란" },
+        { name: "lot_status.updated_at max로 신선도 판정", rejected: "diff-only dump의 조용한 시간대에 거짓 stale. heartbeat 1행이 O(1)·정확" },
+        { name: "신규 lots/user_lot_watchlist 테이블 신설", rejected: "동일 역할의 lot_status/user_lots가 이미 docs에 존재 — 재사용" }
+      ],
+      note: "설계 시각화: docs/watchlist-final-design.html. 스키마/계약: docs/backend.md §4.2~4.3 (lot_dump_meta 신규, user_lots reconcile). 사내 AI 계약 4건(CONTRACT-1~4: hold_operator 컬럼명·값, lot_id 형식, dump 컬럼셋, lot_dump_meta heartbeat). dump 잡은 사내 소유·레포 바깥(30분). 범위 정리: MVP='랏 데이터를 보여준다'(30분 dump로 충분)는 다 결정 — 슬롯1은 기존 실시간 LotSource/WS 코드 유지 + lot_status fallback·heartbeat만 추가(작동 코드 안 뜯음, 'live가 30분보다 신선한가'는 MVP에선 moot). 실시간/준실시간은 stretch goal로 의식적 연기 — LotSource 포트라 나중에 빠른 live 어댑터를 꽂으면 됨(§7 cadence/WS push 트리거/REST API 신선도/collector 흡수는 goal 착수 시 결정). status=future(미구현, DDL/계약 문서화만 완료)."
     }
   ];
 
