@@ -134,7 +134,7 @@ VM 서버 1대
 │   └── 대상: 클로즈 베타 사용자 (제한 접근)
 │
 └── pholex-dev (Docker Compose 프로젝트)
-    ├── 포트: 8080 (Nginx) / 8081 (FastAPI HMR) / 8082 (Vite HMR)
+    ├── 포트: 10014 (Nginx) / 8081 (FastAPI HMR) / 8082 (Vite HMR)
     ├── 브랜치: 현재 작업 브랜치 (main 제외)
     ├── 설정: .env.dev
     └── 대상: 개발자 (소스 마운트, 핫 리로드)
@@ -238,7 +238,7 @@ volumes:
 services:
   nginx:
     ports:
-      - "8080:80"
+      - "10014:80"   # 사내 방화벽 개방 대역(10000~20) + prod=10004 회피
     volumes: !override
       - ./docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
 
@@ -293,7 +293,7 @@ Behavior:
   - main branch   → beta 모드: frontend 빌드 + beta 오버레이 + .env.beta
                     project: pholex-beta  (포트 80/443)
   - other branch  → dev 모드:  소스 마운트 + hot reload + .env.dev
-                    project: pholex-dev   (포트 8080/8081/8082)
+                    project: pholex-dev   (포트 10014/8081/8082)
 
 Options:
   --yes, -y   beta 배포 확인 프롬프트 생략

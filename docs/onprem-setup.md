@@ -23,7 +23,7 @@ docker compose version
 
 # 방화벽 포트 오픈
 # beta 환경: 80, 443
-# dev 환경:  8080 (nginx), 8081 (FastAPI), 8082 (Vite HMR)
+# dev 환경:  10014 (nginx), 8081 (FastAPI), 8082 (Vite HMR)
 ```
 
 ---
@@ -119,7 +119,7 @@ docker pull ${DOCKER_REGISTRY}redis:7-alpine
 ## Step 5. 배포 실행
 
 ```bash
-# dev 환경 (현재 브랜치 기준, 포트 8080)
+# dev 환경 (현재 브랜치 기준, 포트 10014)
 scripts/deploy.sh
 
 # beta 환경 (main 브랜치에서, 포트 80)

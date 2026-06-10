@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-09 (lot status raw 그대로 저장 — canonical 매핑 폐기, 열린 집합 + hold 앵커)";
+  const LAST_UPDATED = "2026-06-10 (dev nginx 접속 포트 10014로 환경 무관 통일)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -557,6 +557,19 @@
         { name: "closed Literal 유지하고 unknown은 reject", rejected: "검증 실패한 lot이 통째로 누락 — 모니터링 누락 버그" }
       ],
       note: "변경: backend dto.py(LotStatusLiteral 제거→str), domain/lot.py(LotStatus=Active/Hold/PreActive 상수+HOLD 앵커, Lot.status:str), pg_lot_source.py(_STATUS_MAP 제거, raw verbatim), lot_source.py(hold 필터=LotStatus.HOLD), golden_dataset(hold→Hold), stream_hold_changes·wire(hold 앵커=LotStatus.HOLD), docs/backend.md §4.2(CHECK 제거), seed_dev.sql(run/wait/hold→Active/PreActive/Hold), docs/mvp.md. frontend: filterLots(동적 옵션 collectStatusOptions), statusDisplay.ts(색 레지스트리+HOLD_STATUS), SideNav(동적 드롭다운), App KPI/LotHoldPanel(앵커 'Hold'), styles.css(pill--active/preactive/unknown). 사내 회신: status 매핑 지시 철회, lot_status_seg raw verbatim 적재 + SELECT DISTINCT 전수보고. 백엔드 76 + 프론트 3 tests green."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-10",
+      status: "done",
+      title: "dev nginx 접속 포트 10014로 환경 무관 통일 (사내 방화벽 + prod 충돌 회피)",
+      decision: "dev 스택 nginx의 host 발행 포트를 8080→10014로 바꾸고 노트북/사내 구분 없이 단일 리터럴로 고정했어요. docker-compose.dev.yml에 \"10014:80\" 하드코딩 + 근거 주석. 환경별 분기(노트북 8080 / 사내 10014)는 채택하지 않았어요.",
+      rationale: "사내에서 외부로 열린 포트가 10000~10020뿐이라, IP로 직접 접속해 dev 스택을 e2e 검증하려면 nginx가 그 대역 안에 있어야 해요. prod nginx가 이미 10004(HTTPS_PORT)를 쓰므로 회피해 10014를 골랐어요(1000x=prod / 1001x=dev 대역 컨벤션). 값을 환경마다 다르게 두면 '왜 다른지'를 나중에 반복 추적해야 하는 인지 부채가, 단일 값의 '왜 10014?' 1회 의문보다 커요 — 미스매치 비용 > 단일 호기심 비용.",
+      alternatives: [
+        { name: "노트북 8080 / 사내 10014 환경 분기(env 변수)", rejected: "두 값이 어긋나 '어느 게 맞나/왜 다른가'를 반복 추적 → 인지 부채. 충돌 escape hatch 실익도 희박(사내 dev=10014/prod=10004 비충돌, 노트북 10014 점유 희박)" },
+        { name: "리터럴 대신 ${DEV_HTTP_PORT:-10014} env 기본값", rejected: "'이 변수 어디서 세팅되나' 류의 새 의심을 심음 — 단일 진실 원칙 약화" }
+      ],
+      note: "host 발행 포트만 변경(컨테이너 listen 80·dev.conf 불변). 외부 노출은 nginx 1개로 충분(dev.conf가 /·/api·/ws 단일 포트 커버). IP 접속이라 Vite 7 allowedHosts 우회 불필요(IP 리터럴 기본 허용). 함께: backend.environment 에 DEV_USER_EMPLOYEE_NUMBER 주입(dev override) + python-multipart 를 backend/Dockerfile 설치 목록에 추가(pyproject 와 동기화 — SSO callback Form 파싱). 갱신: docker-compose.dev.yml, scripts/deploy.sh, docs/infra.md, docs/onprem-setup.md. 과거 기록물(ai-prompts/260527 핸드오프, .omc/plans)은 시간선 보존 위해 미변경."
     }
   ];
 
