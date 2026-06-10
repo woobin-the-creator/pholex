@@ -18,6 +18,8 @@ RUN if [ -n "$APT_MIRROR" ]; then \
 WORKDIR /app
 
 COPY pyproject.toml ./
+# 아래 설치 목록은 pyproject.toml [project].dependencies 와 동기화 유지할 것.
+# (캐시 효율 위해 명시 설치 — pyproject 에 추가한 패키지는 여기에도 더해야 이미지에 들어감)
 RUN pip install --upgrade pip \
     ${PIP_INDEX_URL:+--index-url $PIP_INDEX_URL} \
     ${PIP_TRUSTED_HOST:+--trusted-host $PIP_TRUSTED_HOST} \
@@ -25,7 +27,8 @@ RUN pip install --upgrade pip \
     ${PIP_INDEX_URL:+--index-url $PIP_INDEX_URL} \
     ${PIP_TRUSTED_HOST:+--trusted-host $PIP_TRUSTED_HOST} \
     "fastapi>=0.115" "uvicorn[standard]>=0.32" "pydantic>=2.9" "pydantic-settings>=2.6" \
-    "sqlalchemy[asyncio]>=2.0" "asyncpg>=0.30" "python-ulid>=3.0" "httpx>=0.27"
+    "sqlalchemy[asyncio]>=2.0" "asyncpg>=0.30" "python-ulid>=3.0" "httpx>=0.27" \
+    "python-multipart>=0.0.9"
 
 COPY app ./app
 

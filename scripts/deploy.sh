@@ -98,7 +98,7 @@ docker compose "${COMPOSE_ARGS[@]}" --env-file "$ENV_FILE" up -d --build
 cat <<'INFO'
 
 [deploy] dev stack is up.
-  Frontend (via nginx)   http://localhost:8080
+  Frontend (via nginx)   http://localhost:10014
   Backend (direct)       http://localhost:8081
   Frontend Vite (direct) http://localhost:8082
   Postgres (host port)   localhost:5433

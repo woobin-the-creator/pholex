@@ -1,7 +1,9 @@
 services:
   nginx:
     ports:
-      - "8080:80"
+      # host 발행 포트 10014 — 사내 방화벽이 외부에 10000~20만 개방 + prod nginx=10004 회피.
+      # 환경 무관 단일 값(미스매치 부채 제거). 상세 근거: history/decisions.html
+      - "10014:80"
 
   backend:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -9,6 +11,13 @@ services:
       - "8081:8000"
     volumes:
       - ./backend/app:/app/app
+    environment:
+      # bypass 로그인 사번 — ADAPTER_MODE=real 실데이터 검증 시 .env.dev 로 실 hold 사번 주입.
+      # prod(DEV_SSO_BYPASS=false)에선 무시됨. dev 전용이라 base 가 아닌 여기 둠.
+      DEV_USER_EMPLOYEE_NUMBER: ${DEV_USER_EMPLOYEE_NUMBER:-99999}
+    extra_hosts:
+      # ADAPTER_MODE=real 검증 시 host 의 실데이터 postgres 접근(DATABASE_URL=host.docker.internal).
+      - "host.docker.internal:host-gateway"
 
   frontend:
     ports:
