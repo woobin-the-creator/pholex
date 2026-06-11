@@ -51,6 +51,16 @@ services:
       SSO_CERT_PATH: ${SSO_CERT_PATH:-/app/certs/sso.cert}
       APP_BASE_URL: ${APP_BASE_URL:-}
       SSO_RETURN_URL: ${SSO_RETURN_URL:-/}
+      # IdP/세션 값은 .env.prod 에 있어도, 여기 environment: 에 명시해야 컨테이너에 주입된다.
+      # (deploy.sh 의 --env-file 은 compose 의 ${VAR} 치환용일 뿐 컨테이너 주입이 아님.)
+      # 누락 시 config.py 기본값(빈 client_id 등)으로 폴백 → authorize URL 깨짐 → callback 미도달 → 무한 리다이렉트.
+      IDP_LOGIN_URL: ${IDP_LOGIN_URL:-}
+      IDP_LOGOUT_URL: ${IDP_LOGOUT_URL:-}
+      IDP_CLIENT_ID: ${IDP_CLIENT_ID:-}
+      IDP_JWKS_URI: ${IDP_JWKS_URI:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     volumes:
       # IdP 공개 인증서(sso.cert)를 backend 컨테이너에 마운트 (host certs/ 는 gitignore).
       - ./certs:/app/certs:ro
