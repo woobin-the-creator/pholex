@@ -20,6 +20,10 @@ services:
       DEV_SSO_BYPASS: ${DEV_SSO_BYPASS:-true}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://pholex:pholex@postgres:5432/pholex}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      # 쿠키 이름. 기본은 pholex_session(prod). dev는 .env.dev 에서 pholex_dev_session 으로 분리한다 —
+      # dev/prod 가 같은 사내 IP(포트만 다름)라 쿠키 저장소를 공유하는데, prod 가 심은 Secure 쿠키를
+      # dev(HTTP)의 non-Secure 동명 쿠키가 덮어쓸 수 없어(브라우저 정책) 저장 거부→무한 리다이렉트가 났다.
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-pholex_session}
     depends_on:
       - postgres
 
