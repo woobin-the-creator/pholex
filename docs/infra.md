@@ -2,6 +2,11 @@
 
 > Docker Swarm · Nginx · 환경 분리 (Beta / Dev) · 배포 스크립트
 
+> ⚠️ **현재 운영 현실은 §16을 먼저 보라.** 아래 §9·§14의 Docker Swarm / `beta` 환경 /
+> LDAP / `.env.beta` 표기는 **초기 설계(로드맵·레거시)**이며 실제 가동 중인 구성과 다르다.
+> 실제는 **prod(10004 HTTPS) + dev(10014 HTTP)** Compose 2스택이고, 3자(사외/사무실 PC/VM)
+> Git 동기화로 코드가 흐른다 — §16에 정리했다.
+
 ---
 
 ## 9. Docker Swarm 배포
@@ -540,3 +545,110 @@ RUN npm ci
 | 사내 beta | `.env.beta`에 미러 주소 입력 | `registry.internal/redis:7-alpine` |
 
 > **주의**: `DOCKER_REGISTRY` 값 끝에 `/`를 포함해야 한다. 예: `registry.internal/` (O), `registry.internal` (X)
+
+---
+
+## 16. 운영 현실 — Git 동기화 토폴로지 & 환경 (2026-06 기준)
+
+> §9·§14의 Swarm/`beta` 초안과 달리, 실제 가동 중인 구성과 Pholex 특유의 **3자 협업 + 폐쇄망
+> Git 중계** 구조를 여기 정리한다. 사내 작업(opencode)에 지시할 때 이 절이 기준이다.
+
+### 16.1 3자 협업 & Git 동기화 토폴로지
+
+Pholex는 **사용자 ↔ 사외 Claude ↔ 사내 opencode** 3자로 개발/배포된다.
+
+- **사외(개발 PC, Claude)**: canonical 코드 + **fake 어댑터만**. `backend/app/adapters/real/`은
+  비어 있고(실데이터 없음), 평소 컨테이너를 띄우지 않는다. 여기서 개발 → PR.
+- **사내(VM, opencode)**: real 어댑터 구현(대개 uncommitted) + 백필된 실데이터 Postgres +
+  Alembic 마이그레이션. 실제 dev/prod 스택을 여기서 돌리고 E2E 검증한다.
+
+**폐쇄망 제약**: 서버 호스팅 사내 VM은 외부 GitHub에 **직접 접속할 수 없다.** 그래서 사무실 PC가
+중계한다. 같은 GitHub 리포를 **위치마다 다른 remote 이름**으로 부르는 점에 주의:
+
+```
+   ┌─────────────────────┐   PR 머지    ┌──────────────────────────┐
+   │ 사외 개발 PC (Claude) │ ──────────▶ │  GitHub 리포 (정본)        │
+   │  remote: origin      │             │  - 사외에선  origin/main   │
+   └─────────────────────┘             │  - 사무실 PC에선 external/main │
+                                        └────────────┬─────────────┘
+                                                     │ git pull external main
+                                                     ▼
+                                        ┌──────────────────────────┐
+                                        │  사무실 PC (중계)          │
+                                        │  git push origin dev      │
+                                        └────────────┬─────────────┘
+                                                     │ git pull origin dev
+                                                     ▼
+                                        ┌──────────────────────────┐
+                                        │  사내 VM (opencode/배포)   │
+                                        │  remote: origin (사내)     │
+                                        └──────────────────────────┘
+```
+
+**브랜치 의미(사내 origin 기준)**:
+| 브랜치 | 의미 |
+|--------|------|
+| `external/main` | 외부 GitHub 정본 = 사외 Claude PR이 머지되는 곳 (사외에선 `origin/main`) |
+| `origin/dev` | 사내 개발 브랜치 = **현재 데모/배포 대상** |
+| `origin/main` | 사내 미사용 — 데모 성공 후 `origin/dev → origin/main` 병합 예정 |
+
+**⚠️ 사내 작업 지시 시 가드레일**:
+- VM에 "정본으로 되돌려라" 지시할 때 **`external/main` checkout은 불가**(VM이 external에 접속 못 함).
+  → canonical 코드를 **프롬프트에 직접 박아** 파일을 맞추게 하거나, 동기화 끝난 `origin/dev` 기준으로.
+- VM에서 **`git clean`/`git reset --hard` 금지** — uncommitted real 어댑터가 날아간다.
+- `.env.dev`/`.env.prod`/실데이터 Postgres는 사내 자산. 사외에서 손대지 않는다.
+
+### 16.2 현재 환경 (Compose 2스택)
+
+| | **prod** (`pholex`) | **dev** (`pholex-dev`) |
+|---|---|---|
+| 진입 포트 | **10004** (HTTPS, nginx→443) | **10014** (HTTP, nginx→80) |
+| 기동 | `scripts/deploy.sh --prod` | `scripts/deploy.sh` |
+| compose | `docker-compose.yml` + `docker-compose.prod.yml` | `docker-compose.yml` + `docker-compose.dev.yml` |
+| env | `.env.prod` | `.env.dev` |
+| 어댑터 | `ADAPTER_MODE=real`, `DEV_SSO_BYPASS=false` (실 ADFS 로그인) | 자급자족 real 모드(아래 16.4) |
+| 쿠키 | `pholex_session` (Secure) | `pholex_dev_session` (non-Secure) |
+| frontend | 빌드된 dist를 nginx가 직접 서빙 | Vite dev 서버(HMR) |
+
+> **포트 근거**: 사내 방화벽이 **10000~10020만** 외부 개방한다. prod=10004, dev=10014로 회피.
+> dev는 환경 무관 단일 포트(10014)로 고정해 미스매치 부채를 없앴다.
+>
+> **쿠키 이름 분리 이유**: dev/prod가 같은 사내 IP(포트만 다름)라 브라우저 쿠키 저장소를
+> 공유한다. prod의 Secure 쿠키를 dev(HTTP)의 non-Secure 동명 쿠키가 못 덮어써(브라우저 정책)
+> 저장 거부 → 무한 리다이렉트가 났다. 그래서 dev 쿠키 이름을 분리한다(상세: `docs/auth.md` §5).
+
+### 16.3 환경변수 주입 — `env_file` (footgun 차단)
+
+`deploy.sh`의 `--env-file`은 compose 안의 `${VAR}` **치환용일 뿐 컨테이너로 주입하지 않는다.**
+예전엔 변수마다 `backend.environment:`에 `${VAR}` 패스스루를 나열해야 했고, `.env`에 새 키를
+넣고 그걸 깜빡하면 빈값 폴백으로 장애가 났다(IDP_* 무한 리다이렉트, SESSION_COOKIE_NAME 등 3회).
+
+→ backend 서비스에 **`env_file:`(`.env.prod` / `.env.dev`)** 을 두어 해당 파일의 **모든 키를
+컨테이너에 자동 주입**한다. **새 변수는 `.env` 파일에만 추가하면 도달한다.** `environment:`에는
+운영 기본값(폴백)만 남기며, `environment:`가 `env_file`보다 우선하되 `${VAR:-기본값}`이 `.env`
+값으로 치환되므로 결과는 동일하다.
+
+### 16.4 dev 데이터 — 자급자족 real 모드
+
+dev는 호스트 Postgres(`host.docker.internal:5432`) 의존을 버리고 **자급자족 real 모드**로 돈다:
+prod DB를 `pg_dump`(prod 읽기전용)로 떠서 **dev Postgres 컨테이너로 restore**(스냅샷 ~13.8k행),
+`.env.dev`의 `DATABASE_URL=...@postgres:5432`(dev 컨테이너)를 가리킨다.
+
+- host.docker.internal 방식은 호스트 Postgres가 죽으면 `ConnectionRefused`로 깨져서 폐기.
+- 데이터 갱신은 **prod→dev 재스냅샷**으로만(방향 고정: prod는 읽기전용, dev로만 쓴다).
+
+### 16.5 Nginx 동적 업스트림 (502 방지)
+
+backend/frontend 업스트림은 `upstream{}`(기동 시 1회 resolve) 대신 **Docker 내장 DNS로 요청마다
+재resolve** 한다. 컨테이너 재배포로 IP가 바뀌어도 옛 IP를 물고 502 내지 않게:
+
+```nginx
+resolver 127.0.0.11 valid=10s ipv6=off;       # Docker 내장 DNS
+location /api/ {
+    set $backend backend:8000;                 # 변수로 proxy_pass → 요청 시점 재resolve
+    proxy_pass http://$backend;
+}
+```
+
+conf는 bind-mount라 변경 시 nginx reload가 필요하다. (실파일: `docker/nginx/prod.conf`,
+`docker/nginx/dev.conf`)
