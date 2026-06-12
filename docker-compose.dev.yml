@@ -11,6 +11,11 @@ services:
       - "8081:8000"
     volumes:
       - ./backend/app:/app/app
+    # .env.dev 의 모든 키를 컨테이너에 직접 주입한다(prod 와 동일한 footgun 차단).
+    # FAKE_LOT_SOURCE, SESSION_COOKIE_NAME(=pholex_dev_session) 등 dev 전용 키가
+    # environment: 누락으로 컨테이너에 안 닿던 문제를 env_file 이 일괄 해결한다.
+    env_file:
+      - .env.dev
     environment:
       # bypass 로그인 사번 — ADAPTER_MODE=real 실데이터 검증 시 .env.dev 로 실 hold 사번 주입.
       # prod(DEV_SSO_BYPASS=false)에선 무시됨. dev 전용이라 base 가 아닌 여기 둠.
