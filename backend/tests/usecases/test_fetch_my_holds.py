@@ -62,3 +62,30 @@ async def test_unknown_employee_returns_empty():
     uc, _, _ = _make_uc()
     rows = await uc.execute("00000")
     assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_empty_holds_does_not_call_batch_ops(monkeypatch):
+    # hold 0건이면 upsert_lots_batch/cache_my_holds 를 호출하면 안 된다.
+    # real 어댑터에서 빈 INSERT VALUES 가 lot_id NOT NULL 위반(500)을 냈던 회귀 방지.
+    # (fake 어댑터는 인메모리라 이 SQL 함정이 없어 test_unknown_employee_returns_empty 로는 못 잡힌다.)
+    uc, _, repo = _make_uc()
+    called = {"upsert": 0, "cache": 0}
+    orig_upsert, orig_cache = repo.upsert_lots_batch, repo.cache_my_holds
+
+    async def spy_upsert(rows):
+        called["upsert"] += 1
+        return await orig_upsert(rows)
+
+    async def spy_cache(employee_number, rows):
+        called["cache"] += 1
+        return await orig_cache(employee_number, rows)
+
+    monkeypatch.setattr(repo, "upsert_lots_batch", spy_upsert)
+    monkeypatch.setattr(repo, "cache_my_holds", spy_cache)
+
+    rows = await uc.execute("00000")  # 없는 사번 → source 가 [] 반환
+
+    assert rows == []
+    assert called["upsert"] == 0
+    assert called["cache"] == 0
