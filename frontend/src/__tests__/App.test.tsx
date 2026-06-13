@@ -109,7 +109,7 @@ describe('App', () => {
     expect(screen.getAllByTestId('dashboard-panel')).toHaveLength(6)
     expect(await screen.findByText('LOT-A2948-01')).toBeInTheDocument()
     expect(await screen.findByText('LOT-B5532-19')).toBeInTheDocument()
-    expect(screen.getAllByText('MVP 이후')).toHaveLength(5)
+    expect(screen.getAllByText('MVP 이후')).toHaveLength(4)
 
     const pageNavigation = screen.getByRole('navigation', { name: 'Primary' })
     expect(within(pageNavigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()

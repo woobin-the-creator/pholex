@@ -895,3 +895,43 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   ); background-size: 100% 1px; background-position: bottom; }
   .card--span2 { grid-row: auto; }
 }
+
+/* ── 슬롯[5] Special hold — 키워드 모니터 ── */
+.kw-editor { display: flex; gap: 8px; align-items: center; margin: 4px 0 10px; flex-wrap: wrap; }
+.kw-select { background: var(--panel, rgba(127,127,127,.08)); color: inherit;
+  border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 8px; padding: 6px 8px;
+  font-size: 13px; font-family: inherit; }
+.kw-value { min-width: 160px; flex: 0 1 200px; }
+.kw-num { width: 60px; text-align: center; }
+.kw-btn { border: 1px solid var(--border, rgba(127,127,127,.35)); background: transparent; color: inherit;
+  border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.kw-btn:hover:not(:disabled) { border-color: var(--accent, #58a6ff); color: var(--accent, #58a6ff); }
+.kw-btn:disabled { opacity: .4; cursor: not-allowed; }
+.kw-btn--primary { background: var(--accent, #2563eb); color: #fff; border-color: transparent; }
+.kw-btn--primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
+.kw-btn--ghost { font-weight: 500; }
+.kw-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 38px; padding: 8px;
+  border: 1px dashed var(--border, rgba(127,127,127,.3)); border-radius: 10px; margin-bottom: 8px; }
+.kw-hint { color: var(--ink-mute, rgba(127,127,127,.9)); font-size: 12.5px; }
+.kw-group { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 10px;
+  background: var(--panel2, rgba(127,127,127,.10)); border: 1px solid var(--border, rgba(127,127,127,.28)); }
+.kw-and { color: var(--ink-mute, #888); font-size: 12px; font-weight: 700; }
+.kw-or { margin: 0 6px; color: #f0883e; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.kw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px;
+  border: 1px solid var(--border, rgba(127,127,127,.4)); background: transparent; color: inherit;
+  font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.kw-chip.is-selected { border-color: var(--accent, #58a6ff); box-shadow: 0 0 0 2px rgba(88,166,255,.25); }
+.kw-chip.is-exact .kw-chip__f { color: #bc8cff; }
+.kw-chip__f { opacity: .65; font-family: ui-monospace, monospace; font-size: 11.5px; }
+.kw-chip__x { opacity: .5; font-weight: 700; padding-left: 2px; }
+.kw-chip__x:hover { opacity: 1; color: #f85149; }
+.kw-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.kw-spacer { flex: 1 1 auto; }
+.kw-size { font-size: 12px; color: var(--ink-mute, #888); display: inline-flex; align-items: center; }
+.kw-dnf { font-family: ui-monospace, monospace; font-size: 12px; color: var(--ink-mute, #999);
+  padding: 4px 8px; background: var(--panel, rgba(127,127,127,.08)); border-radius: 6px;
+  overflow-x: auto; white-space: nowrap; max-width: 100%; }
+.kw-result-meta { font-size: 13px; margin: 2px 0 8px; color: var(--ink-mute, #888); }
+.kw-result-meta strong { color: var(--accent, #58a6ff); font-size: 15px; }
+.kw-pages { justify-content: center; align-items: center; gap: 16px; margin-top: 10px; }
+.kw-pageno { font-size: 13px; color: var(--ink-mute, #888); font-variant-numeric: tabular-nums; }
