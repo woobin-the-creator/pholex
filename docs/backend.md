@@ -236,7 +236,13 @@ def get_severity(status_from: str, status_to: str) -> str:
 
 // 서버 → 클라이언트
 { type: "table_update", payload: { tableId: 0, rows: [...], diff: true } }
-{ type: "alert", payload: { lotId: "...", message: "...", severity: "warning"|"critical" } }
+{ type: "change", payload: { lotId, changeType, previousStatus, newStatus, newHoldComment, eventId, occurredAt } }  // severity=info
+{ type: "alert", payload: { lotId, severity: "warning"|"critical", changeType, previousStatus, newStatus, eventId, occurredAt, message } }
 { type: "session_info", payload: { activeUsers: 23 } }
 { type: "heartbeat_ack" }
 ```
+
+> `change`(info)와 `alert`(warning/critical)는 한 변경 이벤트의 severity별 분기다(`change_to_wire`).
+> 둘 다 `eventId`(dedup 키)와 `occurredAt`(타임라인 정렬)을 싣는다 — 프론트 알람 박스가
+> 재연결 시 중복 적립을 막고 시간순으로 쌓기 위해 필요. critical은 오직 `alert`로만 오므로
+> alert에도 두 필드가 반드시 있어야 한다.

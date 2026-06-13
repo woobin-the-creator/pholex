@@ -1,7 +1,8 @@
 import { useAtom, useAtomValue } from 'jotai'
 import { Provider } from 'jotai/react'
-import { useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
+import { Toaster, toast } from 'sonner'
 import { authAtom } from '../atoms/authAtom'
 import { themeAtom } from '../atoms/themeAtom'
 import { TopNav } from '../components/layout/TopNav'
@@ -11,7 +12,9 @@ import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
 import { SystemFooter } from '../components/layout/SystemFooter'
 import { LotHoldPanel } from '../components/panels/LotHoldPanel'
 import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
+import { AlarmDock } from '../components/alarms/AlarmDock'
 import { useMyHoldTable } from '../hooks/useMyHoldTable'
+import { useAlarms } from '../hooks/useAlarms'
 import { getSession, logout, UnauthorizedError } from '../services/api'
 import { collectStatusOptions, filterLotRows, type LotFilters } from '../utils/filterLots'
 import { HOLD_STATUS } from '../utils/statusDisplay'
@@ -57,7 +60,15 @@ function DashboardApp() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [filters, setFilters] = useState<LotFilters>(DEFAULT_FILTERS)
   const [maximized, setMaximized] = useState<PanelId | null>(null)
-  const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user)
+  const [alarmsOpen, setAlarmsOpen] = useState(false)
+  const [focusLotId, setFocusLotId] = useState<string | null>(null)
+
+  // 순환 끊기: useAlarms→focusLot→filteredRows→rows→useMyHoldTable→handleAlarm.
+  // focusLot은 최신 filteredRows를 ref로 읽고, useAlarms엔 안정 래퍼만 넘긴다.
+  const focusLotRef = useRef<(lotId: string) => void>(() => {})
+  const stableFocusLot = useRef((lotId: string) => focusLotRef.current(lotId)).current
+  const { alarms, unread, handleAlarm, markAllRead, clearAlarms } = useAlarms(stableFocusLot)
+  const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user, handleAlarm)
 
   const toggleMaximize = (id: PanelId) => {
     const update = () => {
@@ -89,6 +100,29 @@ function DashboardApp() {
     lotIdQuery: deferredLotIdQuery,
   })
   const statusOptions = useMemo(() => collectStatusOptions(rows), [rows])
+
+  // 알람 클릭 → 테이블 점프. 필터에 가려져 있으면 필터를 풀고(안내) 이동시킨다.
+  const focusLot = (lotId: string) => {
+    setAlarmsOpen(false)
+    if (!filteredRows.some((row) => row.lotId === lotId)) {
+      setFilters(DEFAULT_FILTERS)
+      toast('필터를 해제하고 이동했습니다', { description: lotId })
+    }
+    setFocusLotId(lotId)
+  }
+  focusLotRef.current = focusLot
+
+  // (A) 박스를 열면 전부 읽음 처리 — 배지가 0으로. 항목별 읽음은 추후 read 플래그로 승격.
+  const openAlarms = () => {
+    setAlarmsOpen(true)
+    markAllRead()
+  }
+
+  useEffect(() => {
+    if (!focusLotId) return undefined
+    const timer = window.setTimeout(() => setFocusLotId(null), 3000)
+    return () => window.clearTimeout(timer)
+  }, [focusLotId])
 
   const kpis = useMemo<KpiSpec[]>(() => {
     const activeCount = rows.length
@@ -181,9 +215,19 @@ function DashboardApp() {
         statusOptions={statusOptions}
         totalRows={rows.length}
         visibleRows={filteredRows.length}
+        unreadAlarms={unread}
+        onOpenAlarms={openAlarms}
         onFiltersChange={handleFiltersChange}
         onResetFilters={handleResetFilters}
         onLogout={handleLogout}
+      />
+
+      <AlarmDock
+        open={alarmsOpen}
+        alarms={alarms}
+        onClose={() => setAlarmsOpen(false)}
+        onClear={clearAlarms}
+        onSelect={focusLot}
       />
 
       <div className="main">
@@ -211,6 +255,7 @@ function DashboardApp() {
             error={error}
             lastUpdated={lastUpdated}
             onRefresh={refresh}
+            focusLotId={focusLotId}
             isMaximized={maximized === 'live'}
             onToggleMaximize={() => toggleMaximize('live')}
             vtName="card-live"
@@ -260,6 +305,7 @@ export default function App() {
     <Provider>
       <ThemeBinder />
       <DashboardApp />
+      <Toaster position="top-center" />
     </Provider>
   )
 }

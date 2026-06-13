@@ -115,10 +115,16 @@ export const tableLoadingAtomFamily = atomFamily((tableId: number) =>
 
 // 서버 → 클라이언트 (프론트엔드에서 수신하는 메시지)
 { type: "table_update", payload: { tableId: 0, rows: [...], diff: true } }
-{ type: "alert", payload: { lotId: "...", message: "...", severity: "warning"|"critical" } }
+{ type: "change", payload: { lotId, changeType, previousStatus, newStatus, newHoldComment, eventId, occurredAt } }  // info → 알람 박스 직행
+{ type: "alert", payload: { lotId, severity: "warning"|"critical", changeType, previousStatus, newStatus, eventId, occurredAt, message } }  // critical → 순간 팝 + 적립
 { type: "session_info", payload: { activeUsers: 23 } }
 { type: "heartbeat_ack" }
 ```
+
+> **알람 박스(좌측 사이드바 "Lot tracking" 자리)**: `services/ws.ts`의 `parseAlarmMessage`가 `change`/`alert`를
+> `AlarmItem`으로 변환 → `atoms/alarmAtoms.ts`(localStorage 영속, 상한 50, eventId dedup)에 적립.
+> critical/warning은 `sonner` 순간 팝(~10초) + 적립, info는 팝 없이 적립. 항목 클릭 → 테이블 행 점프
+> (필터에 가려지면 필터 자동 해제 + 안내). 순수 로직은 `atoms/alarmStore.ts`에 분리되어 단위 테스트된다.
 
 > 전체 프로토콜 정의(서버 처리 로직 포함)는 `backend.md` Section 8 참고.
 

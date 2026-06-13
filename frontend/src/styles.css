@@ -895,3 +895,111 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   ); background-size: 100% 1px; background-position: bottom; }
   .card--span2 { grid-row: auto; }
 }
+
+/* ── 알람 박스 (Lot tracking 버튼 → 알람 dock) ───────────────────── */
+.nav-item--alarms { position: relative; }
+.nav-item__badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--hold);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.alarm-dock {
+  position: fixed;
+  top: 64px;
+  left: 20px;
+  width: 340px;
+  max-height: 72vh;
+  overflow-y: auto;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  animation: fadeRight 240ms var(--ease-out) backwards;
+}
+.alarm-dock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.alarm-dock__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.alarm-dock__head-actions { display: flex; align-items: center; gap: 8px; }
+.alarm-dock__clear {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--ink-soft);
+}
+.alarm-dock__clear:disabled { opacity: 0.4; cursor: default; }
+.alarm-dock__close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; line-height: 1; color: var(--ink-mute);
+}
+.alarm-dock__empty { padding: 28px 16px; text-align: center; color: var(--ink-mute); font-size: 13px; }
+.alarm-dock__list { list-style: none; margin: 0; padding: 6px; display: grid; gap: 4px; }
+.alarm-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  background: var(--soft);
+  cursor: pointer;
+  text-align: left;
+}
+.alarm-item:hover { background: var(--tint); }
+.alarm-item--critical { border-left-color: var(--hold); }
+.alarm-item--warning { border-left-color: #dd5b00; }
+.alarm-item.is-unread { background: var(--hold-soft); }
+.alarm-item__lot { font-size: 12px; font-weight: 600; color: var(--ink); }
+.alarm-item__desc {
+  font-size: 12px; color: var(--ink-soft);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.alarm-item__time { font-size: 11px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+
+/* critical 순간 팝 (sonner toast.custom) */
+.alarm-pop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 280px;
+  padding: 12px 14px;
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--hold);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+.alarm-pop--warning { border-left-color: #dd5b00; }
+.alarm-pop__body { display: flex; flex-direction: column; gap: 2px; }
+.alarm-pop__lot { font-size: 13px; font-weight: 600; color: var(--ink); }
+.alarm-pop__desc { font-size: 12px; color: var(--ink-soft); }
+.alarm-pop__actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.alarm-pop__jump {
+  padding: 5px 12px; border: none; border-radius: 6px;
+  background: var(--hold); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.alarm-pop__close { background: none; border: none; font-size: 18px; line-height: 1; color: var(--ink-mute); cursor: pointer; }
+
+/* 알람 클릭 점프 시 행 하이라이트 */
+.lot-table tr.is-focused { animation: alarmFocusFlash 3s var(--ease-out); }
+@keyframes alarmFocusFlash {
+  0%, 30% { background: var(--hold-soft); box-shadow: inset 3px 0 0 var(--hold); }
+  100% { background: transparent; box-shadow: none; }
+}

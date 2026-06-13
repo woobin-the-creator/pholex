@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { formatDateTime } from '../../utils/format'
 import { HOLD_STATUS, statusPillClass } from '../../utils/statusDisplay'
 import type { LotRow } from '../../types/lot'
@@ -9,6 +9,7 @@ interface LotHoldPanelProps {
   error: string | null
   lastUpdated: string | null
   onRefresh: () => void
+  focusLotId?: string | null
   isMaximized?: boolean
   onToggleMaximize?: () => void
   vtName?: string
@@ -31,11 +32,18 @@ export function LotHoldPanel({
   error,
   lastUpdated,
   onRefresh,
+  focusLotId,
   isMaximized = false,
   onToggleMaximize,
   vtName,
 }: LotHoldPanelProps) {
   const [spinning, setSpinning] = useState(false)
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
+
+  useEffect(() => {
+    if (!focusLotId) return
+    rowRefs.current.get(focusLotId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusLotId])
 
   const handleRefresh = () => {
     setSpinning(true)
@@ -68,7 +76,11 @@ export function LotHoldPanel({
       return (
         <tr
           key={row.lotId}
-          className={isHold ? 'is-hold' : ''}
+          ref={(el) => {
+            if (el) rowRefs.current.set(row.lotId, el)
+            else rowRefs.current.delete(row.lotId)
+          }}
+          className={`${isHold ? 'is-hold' : ''}${focusLotId === row.lotId ? ' is-focused' : ''}`.trim()}
           data-status={row.status}
         >
           <td className="lot-table__lot-id" title={row.lotId}>{row.lotId}</td>

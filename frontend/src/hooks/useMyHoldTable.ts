@@ -8,6 +8,7 @@ import {
 } from '../atoms/tableAtoms'
 import { getMyHoldPayload } from '../services/api'
 import { connectTableSocket } from '../services/ws'
+import type { AlarmItem } from '../types/alarm'
 import type { SessionUser } from '../types/auth'
 import type { SlotPayload } from '../types/lot'
 
@@ -48,12 +49,15 @@ function fallbackLastUpdated(payload: SlotPayload): string {
   return payload.lastUpdated ?? payload.rows[0]?.updatedAt ?? new Date().toISOString()
 }
 
-export function useMyHoldTable(user: SessionUser | null) {
+export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: AlarmItem) => void) {
   const [rows, setRows] = useAtom(lotHoldRowsAtom)
   const [loading, setLoading] = useAtom(lotHoldLoadingAtom)
   const [error, setError] = useAtom(lotHoldErrorAtom)
   const [lastUpdated, setLastUpdated] = useAtom(lotHoldLastUpdatedAtom)
   const socketRef = useRef<ReturnType<typeof connectTableSocket> | null>(null)
+  // onAlarm 식별자가 바뀌어도 소켓 effect([user])를 다시 띄우지 않도록 ref로 최신값을 읽는다.
+  const onAlarmRef = useRef(onAlarm)
+  onAlarmRef.current = onAlarm
 
   const applyPayload = useEffectEvent((payload: SlotPayload) => {
     startTransition(() => {
@@ -92,6 +96,7 @@ export function useMyHoldTable(user: SessionUser | null) {
     const connection = connectTableSocket({
       tableId: 1,
       onTableUpdate: applyPayload,
+      onAlarm: (alarm) => onAlarmRef.current?.(alarm),
     })
 
     socketRef.current = connection
