@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-10 (dev nginx 접속 포트 10014로 환경 무관 통일)";
+  const LAST_UPDATED = "2026-06-13 (슬롯[5] Special hold = 키워드 기반 hold 모니터 설계 확정)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -570,6 +570,23 @@
         { name: "리터럴 대신 ${DEV_HTTP_PORT:-10014} env 기본값", rejected: "'이 변수 어디서 세팅되나' 류의 새 의심을 심음 — 단일 진실 원칙 약화" }
       ],
       note: "host 발행 포트만 변경(컨테이너 listen 80·dev.conf 불변). 외부 노출은 nginx 1개로 충분(dev.conf가 /·/api·/ws 단일 포트 커버). IP 접속이라 Vite 7 allowedHosts 우회 불필요(IP 리터럴 기본 허용). 함께: backend.environment 에 DEV_USER_EMPLOYEE_NUMBER 주입(dev override) + python-multipart 를 backend/Dockerfile 설치 목록에 추가(pyproject 와 동기화 — SSO callback Form 파싱). 갱신: docker-compose.dev.yml, scripts/deploy.sh, docs/infra.md, docs/onprem-setup.md. 과거 기록물(ai-prompts/260527 핸드오프, .omc/plans)은 시간선 보존 위해 미변경."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-13",
+      status: "future",
+      title: "슬롯[5] 'Special hold' = 키워드 기반 hold 모니터 (watchlist 보류, 키워드 매칭으로 전환)",
+      decision: "placeholder 슬롯[5] 'Special hold'(SPC/FDC 등 특정 hold code)를 사용자 정의 키워드로 일반화해요. 유저가 (필드, 값) 키워드를 해시태그처럼 등록·저장하고, lot_status에서 매칭되는 lot을 보여줘요. '내 lot hold'(사번 매칭)의 자매 슬롯 — 매칭 기준만 키워드, 단 status 무관 전체 lot 우주가 대상. 필드는 equipment/process_step/hold_comment/lot_id(대소문자무시 substring) + status(exact, distinct 동적 선택지). 여러 키워드는 DNF(그룹 안 AND, 그룹끼리 OR)로 조합. 결과는 lot_id dedup + updated_at DESC + 100건 offset 페이지네이션. 저장은 유저별 명명 프리셋(keyword_presets 신규, config JSONB) + 드래프트/명시저장. 데이터 소스는 lot_status 30분 캐시(실시간 아님), 수동 새로고침.",
+      rationale: "데이터플로우 옵션(watchlist '내 관심 랏')은 보류하고 더 일반적인 키워드 모니터로 방향을 틀었어요. lot_status가 pholex 자체 Postgres라 real adapter까지 외부에서 전부 구현 가능 — 사내 위임 불필요한 자기완결 기능이에요. status는 열린 집합(2026-06-09 결정)이라 선택지를 distinct로 동적 생성하고 exact 매칭해요(substring이면 Active가 PreActive를 오매칭). 키워드 구성은 항상 프리셋 단위로 통째 읽고/써서 정규화 대신 JSONB 문서. my-hold(한 사람 holds)와 달리 키워드는 수천 행을 잡을 수 있어 페이지네이션이 필수예요.",
+      alternatives: [
+        { name: "watchlist '내 관심 랏'(lot_id 수동 등록) 계속", rejected: "보류 — 키워드 매칭이 더 일반적이고 실시간 의존도 없음" },
+        { name: "전역 OR/AND 토글(혼합 불가)", rejected: "'특정 키워드끼리 AND'를 표현 못 함 — DNF 필요" },
+        { name: "status 선택지 하드코딩 enum", rejected: "열린 집합 결정과 충돌, 미래 status 값 누락" },
+        { name: "필드 '전체 텍스트' 기본값 허용", rejected: "필드 강제 지정으로 노이즈·모호성 제거(사용자 선택)" },
+        { name: "프리셋 정규화 테이블(조건 1행)", rejected: "개별 조건 SQL 질의 불필요 — JSONB 문서가 원자적·단순" },
+        { name: "행별 매칭 키워드 배지 v1 포함", rejected: "DNF 구조 보존 시 나중에 additive로 싸게 추가 → v2" }
+      ],
+      note: "설계 문서: docs/special-hold-keyword.md (grill-me 12문 합의). 위치 slotIndex 4(표시 05), 이름 Special hold 유지(부제만 갱신). 신규 테이블 keyword_presets(employee_number, name, config JSONB, is_default; UNIQUE(employee_number,name)). 백엔드: KeywordPresetRepository 포트 + LotRepository.search(dnf, limit, offset)→(rows,total) + usecases(List/Save/Delete/SearchSpecialHold) + /api/keyword-presets, fake-first TDD → real(pholex Postgres). 쿼리빌더는 그룹 predicate 개별 접근 유지(v2 배지 보험). status=future(설계 확정, 백엔드 착수 중). v2 연기: 매칭 배지·일반 field:value 문법·자동 폴링."
     }
   ];
 
