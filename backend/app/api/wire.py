@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from app.domain.lot import LotStatus
-from app.ports.dto import ChangeWithSeverity, LotRowDTO, WatchlistRowDTO
+from app.ports.dto import ChangeWithSeverity, KeywordPresetDTO, LotRowDTO, WatchlistRowDTO
 
 
 def _iso(dt: datetime) -> str:
@@ -65,6 +65,35 @@ def slot_payload(
         "tableId": table_id,
         "rows": [lot_row_to_wire(r) for r in rows],
         "diff": diff,
+        "lastUpdated": _iso(last_updated),
+    }
+
+
+def keyword_preset_to_wire(preset: KeywordPresetDTO) -> dict[str, Any]:
+    return {
+        "id": preset.id,
+        "name": preset.name,
+        "config": preset.config,
+        "isDefault": preset.is_default,
+        "createdAt": _iso(preset.created_at) if preset.created_at is not None else None,
+    }
+
+
+def special_hold_payload(
+    *,
+    table_id: int,
+    rows: list[LotRowDTO],
+    total: int,
+    page: int,
+    page_size: int,
+    last_updated: datetime,
+) -> dict[str, Any]:
+    return {
+        "tableId": table_id,
+        "rows": [lot_row_to_wire(r) for r in rows],
+        "total": total,
+        "page": page,
+        "pageSize": page_size,
         "lastUpdated": _iso(last_updated),
     }
 
