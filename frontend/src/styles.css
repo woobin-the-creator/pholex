@@ -912,6 +912,7 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   text-align: center;
 }
 
+/* Liquid Glass (macOS Tahoe 차용): 반투명 + backdrop blur/saturate + specular 엣지 + 소프트 깊이 */
 .alarm-dock {
   position: fixed;
   top: 64px;
@@ -922,10 +923,16 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   z-index: 200;
   display: flex;
   flex-direction: column;
-  background: var(--canvas);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.22)),
+    rgba(244, 246, 251, 0.55);
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 22px;
+  box-shadow:
+    0 18px 48px rgba(17, 17, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   animation: fadeRight 240ms var(--ease-out) backwards;
 }
 .alarm-dock__head {
@@ -933,7 +940,7 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
 }
 .alarm-dock__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
 .alarm-dock__head-actions { display: flex; align-items: center; gap: 8px; }
@@ -955,17 +962,28 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: none;
-  border-left: 3px solid transparent;
-  border-radius: 8px;
-  background: var(--soft);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
   cursor: pointer;
   text-align: left;
+  transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
-.alarm-item:hover { background: var(--tint); }
-.alarm-item--critical { border-left-color: var(--hold); }
-.alarm-item--warning { border-left-color: #dd5b00; }
-.alarm-item.is-unread { background: var(--hold-soft); }
+.alarm-item:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.alarm-item.is-unread { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55); }
+/* 심각도 = pill 전체 색상 (좌측 바 제거) */
+.alarm-item--critical {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.12)),
+    rgba(198, 57, 39, 0.24);
+  border-color: rgba(198, 57, 39, 0.4);
+}
+.alarm-item--warning {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.12)),
+    rgba(221, 91, 0, 0.22);
+  border-color: rgba(221, 91, 0, 0.38);
+}
 .alarm-item__lot { font-size: 12px; font-weight: 600; color: var(--ink); }
 .alarm-item__desc {
   font-size: 12px; color: var(--ink-soft);
@@ -973,33 +991,157 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
 }
 .alarm-item__time { font-size: 11px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 
-/* critical 순간 팝 (sonner toast.custom) */
+/* critical 순간 팝 (sonner toast.custom) — Liquid Glass */
 .alarm-pop {
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 280px;
-  padding: 12px 14px;
-  background: var(--canvas);
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--hold);
-  border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  padding: 14px 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.3)),
+    rgba(244, 246, 251, 0.5);
+  backdrop-filter: blur(20px) saturate(185%);
+  -webkit-backdrop-filter: blur(20px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 18px;
+  box-shadow:
+    0 12px 32px rgba(17, 17, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
-.alarm-pop--warning { border-left-color: #dd5b00; }
+/* 심각도 = 팝업 전체 색상 (좌측 바 제거) */
+.alarm-pop--critical {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    rgba(198, 57, 39, 0.26);
+  border-color: rgba(198, 57, 39, 0.42);
+}
+.alarm-pop--warning {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    rgba(221, 91, 0, 0.24);
+  border-color: rgba(221, 91, 0, 0.4);
+}
 .alarm-pop__body { display: flex; flex-direction: column; gap: 2px; }
 .alarm-pop__lot { font-size: 13px; font-weight: 600; color: var(--ink); }
 .alarm-pop__desc { font-size: 12px; color: var(--ink-soft); }
 .alarm-pop__actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .alarm-pop__jump {
-  padding: 5px 12px; border: none; border-radius: 6px;
+  padding: 6px 14px; border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 999px;
   background: var(--hold); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .alarm-pop__close { background: none; border: none; font-size: 18px; line-height: 1; color: var(--ink-mute); cursor: pointer; }
 
-/* 알람 클릭 점프 시 행 하이라이트 */
-.lot-table tr.is-focused { animation: alarmFocusFlash 3s var(--ease-out); }
-@keyframes alarmFocusFlash {
-  0%, 30% { background: var(--hold-soft); box-shadow: inset 3px 0 0 var(--hold); }
-  100% { background: transparent; box-shadow: none; }
+/* 다크 테마 글래스 톤 */
+body[data-theme='dark'] .alarm-dock {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(18, 20, 26, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+body[data-theme='dark'] .alarm-dock__head { border-bottom-color: rgba(255, 255, 255, 0.08); }
+body[data-theme='dark'] .alarm-item {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+body[data-theme='dark'] .alarm-item:hover { filter: brightness(1.18); }
+body[data-theme='dark'] .alarm-item.is-unread { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
+body[data-theme='dark'] .alarm-item--critical {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(232, 123, 109, 0.22);
+  border-color: rgba(232, 123, 109, 0.36);
+}
+body[data-theme='dark'] .alarm-item--warning {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(221, 120, 60, 0.2);
+  border-color: rgba(221, 120, 60, 0.34);
+}
+body[data-theme='dark'] .alarm-pop {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(18, 20, 26, 0.52);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+body[data-theme='dark'] .alarm-pop--critical {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(232, 123, 109, 0.28);
+  border-color: rgba(232, 123, 109, 0.4);
+}
+body[data-theme='dark'] .alarm-pop--warning {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(221, 120, 60, 0.26);
+  border-color: rgba(221, 120, 60, 0.4);
+}
+
+/* 접근성: 투명도/고대비 선호 시 글래스 해제 (텍스트를 blur 뒤에 가두지 않음) */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .alarm-dock, .alarm-pop {
+    background: var(--canvas);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: var(--rule);
+  }
+  .alarm-dock__head { border-bottom-color: var(--rule); }
+  .alarm-item { background: var(--soft); border-color: var(--rule); }
+  .alarm-item:hover { background: var(--tint); filter: none; }
+  /* 심각도 색은 폴백에서도 pill 전체 유지 */
+  .alarm-item--critical, .alarm-pop--critical { background: rgba(198, 57, 39, 0.14); border-color: rgba(198, 57, 39, 0.4); }
+  .alarm-item--warning, .alarm-pop--warning { background: rgba(221, 91, 0, 0.13); border-color: rgba(221, 91, 0, 0.38); }
+}
+
+/* 알람 클릭 점프 시 행 하이라이트 — 코멧이 테두리를 따라 일정 속도로 1회전 */
+.lot-table tbody tr.is-focused {
+  position: relative;
+  z-index: 2;
+}
+/* 잔잔한 배경 강조(빠르게 사라짐) */
+.lot-table tbody tr.is-focused td {
+  animation: alarmFocusBg 1.7s ease-out 1 both;
+}
+@keyframes alarmFocusBg {
+  0% { background: var(--hold-soft); }
+  100% { background: transparent; }
+}
+/* 코멧: 짧은 발광 바가 모션 패스(행 테두리, 상단 중앙 출발 시계방향)를 따라 연속 1회전.
+   offset-path(path)는 행 크기에 맞춰 LotHoldPanel이 inline으로 주입한다. */
+.lot-trace-comet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--hold) 70%, #ff9b82 100%);
+  filter: drop-shadow(0 0 5px var(--hold));
+  offset-rotate: auto;
+  offset-anchor: center;
+  pointer-events: none;
+  z-index: 3;
+  /* 출발·도착은 느리게, 중간은 빠르게(가속감) — easeInOutQuart */
+  animation: alarmTraceRun 1.7s cubic-bezier(0.76, 0, 0.24, 1) 1 both;
+}
+@keyframes alarmTraceRun {
+  0% { offset-distance: 0%; opacity: 1; }
+  90% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+/* 모션 최소화 선호 시: 트래블 없이 정적 링만 */
+@media (prefers-reduced-motion: reduce) {
+  .lot-table tbody tr.is-focused td {
+    animation: none;
+    background: var(--hold-soft);
+    box-shadow: inset 0 2px 0 var(--hold), inset 0 -2px 0 var(--hold);
+  }
+  .lot-table tbody tr.is-focused td:first-child { box-shadow: inset 0 2px 0 var(--hold), inset 0 -2px 0 var(--hold), inset 2px 0 0 var(--hold); }
+  .lot-table tbody tr.is-focused td:last-child { box-shadow: inset 0 2px 0 var(--hold), inset 0 -2px 0 var(--hold), inset -2px 0 0 var(--hold); }
+  .lot-trace-comet { display: none; }
 }

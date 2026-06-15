@@ -38,11 +38,29 @@ export function LotHoldPanel({
   vtName,
 }: LotHoldPanelProps) {
   const [spinning, setSpinning] = useState(false)
+  const [cometPath, setCometPath] = useState<string | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
 
   useEffect(() => {
-    if (!focusLotId) return
-    rowRefs.current.get(focusLotId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!focusLotId) {
+      setCometPath(null)
+      return
+    }
+    const row = rowRefs.current.get(focusLotId)
+    row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!row) {
+      setCometPath(null)
+      return
+    }
+    // 행 크기에 맞춘 둥근 사각 경로 — 상단 중앙(w/2, 0)에서 시작해 시계방향 1회전.
+    const w = row.offsetWidth
+    const h = row.offsetHeight
+    const r = Math.min(9, h / 2)
+    setCometPath(
+      `path('M ${w / 2} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} ` +
+        `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
+        `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z')`,
+    )
   }, [focusLotId])
 
   const handleRefresh = () => {
@@ -83,7 +101,16 @@ export function LotHoldPanel({
           className={`${isHold ? 'is-hold' : ''}${focusLotId === row.lotId ? ' is-focused' : ''}`.trim()}
           data-status={row.status}
         >
-          <td className="lot-table__lot-id" title={row.lotId}>{row.lotId}</td>
+          <td className="lot-table__lot-id" title={row.lotId}>
+            {focusLotId === row.lotId && cometPath ? (
+              <span
+                className="lot-trace-comet"
+                style={{ offsetPath: cometPath }}
+                aria-hidden="true"
+              />
+            ) : null}
+            {row.lotId}
+          </td>
           <td>
             <span className={`pill ${statusPillClass(row.status)}`}>
               {row.status}
