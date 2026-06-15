@@ -109,6 +109,8 @@ def change_to_wire(envelope: ChangeWithSeverity) -> dict[str, Any]:
                 "changeType": e.change_type,
                 "previousStatus": e.previous_status,
                 "newStatus": e.new_status,
+                "eventId": e.event_id,
+                "occurredAt": _iso(e.occurred_at),
                 "message": _alert_message(envelope),
             },
         }
