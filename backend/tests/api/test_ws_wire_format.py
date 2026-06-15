@@ -68,6 +68,10 @@ def test_change_to_wire_alert_format():
     assert wire["payload"]["severity"] == "critical"
     assert wire["payload"]["previousStatus"] == "wait"
     assert wire["payload"]["newStatus"] == "hold"
+    # eventId/occurredAt must ride the alert too — the alarm dock dedupes by
+    # eventId and orders its log by occurredAt, and criticals arrive only as alerts.
+    assert wire["payload"]["eventId"] == "01ABC"
+    assert wire["payload"]["occurredAt"] == _DT.isoformat()
 
 
 def test_change_to_wire_info_uses_change_type():

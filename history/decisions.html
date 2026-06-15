@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-10 (dev nginx 접속 포트 10014로 환경 무관 통일)";
+  const LAST_UPDATED = "2026-06-13 (알람 박스: critical 순간 팝 + localStorage 적립)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -570,6 +570,21 @@
         { name: "리터럴 대신 ${DEV_HTTP_PORT:-10014} env 기본값", rejected: "'이 변수 어디서 세팅되나' 류의 새 의심을 심음 — 단일 진실 원칙 약화" }
       ],
       note: "host 발행 포트만 변경(컨테이너 listen 80·dev.conf 불변). 외부 노출은 nginx 1개로 충분(dev.conf가 /·/api·/ws 단일 포트 커버). IP 접속이라 Vite 7 allowedHosts 우회 불필요(IP 리터럴 기본 허용). 함께: backend.environment 에 DEV_USER_EMPLOYEE_NUMBER 주입(dev override) + python-multipart 를 backend/Dockerfile 설치 목록에 추가(pyproject 와 동기화 — SSO callback Form 파싱). 갱신: docker-compose.dev.yml, scripts/deploy.sh, docs/infra.md, docs/onprem-setup.md. 과거 기록물(ai-prompts/260527 핸드오프, .omc/plans)은 시간선 보존 위해 미변경."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-13",
+      status: "done",
+      title: "알람 박스(notification dock): critical 순간 팝 + localStorage 적립",
+      decision: "데이터 변경(새 row/삭제/컬럼 변경)을 좌측 사이드바 'Lot tracking' 자리의 알람 박스에 적립해요. critical(→hold)은 sonner 순간 팝(~10초)으로 시선을 끈 뒤 적립, info는 팝 없이 직행. 백엔드가 이미 보내던 change/alert WS 메시지를 재사용하고(프론트가 버리고 있었음), 순수 적립 로직(dedup·상한 50·읽음)은 atoms/alarmStore.ts로 분리해 단위 테스트했어요. 적립분은 localStorage 영속.",
+      rationale: "이 도구의 본질은 '내 랏이 hold 걸렸나' 감시라, critical은 놓치면 안 돼요(팝) — 하지만 30분 dump로 변경이 몰려 오므로 떴다 사라지는 토스트만으론 놓친 걸 못 봐요. 그래서 '안 사라지는 dock'에 누적하고 새로고침에도 살아남게 영속화했어요(백엔드는 과거 이벤트를 replay 안 하므로 클라이언트가 유일한 기록). critical은 오직 alert로만 와서 alert wire에 eventId/occurredAt이 빠져 있던 걸 4줄로 보강(dedup·정렬 기둥).",
+      alternatives: [
+        { name: "프론트에서 직접 row diff", rejected: "백엔드가 이미 계산하는 change 스트림 중복 구현 + 스냅샷 교체라 두 푸시 사이 변경 유실" },
+        { name: "안 사라지는 sonner 토스트 더미", rejected: "코너에 쌓여 테이블을 가림 — dock(접으면 배지 하나)이 dock-bar 모델에 맞음" },
+        { name: "메모리(Jotai)만, 비영속", rejected: "실수로 F5 한 번에 놓친 critical 증발 → 기능 목적 붕괴" },
+        { name: "랏별 묶음 2단 아코디언", rejected: "30분 배치라 dump당 랏당 1이벤트 → 묶음 압축 이득 거의 0, 시간순 평면 로그가 배치 리듬에 더 맞음" }
+      ],
+      note: "TDD로 구현(store 6 + parse 3 + dock 통합 3 = 신규 12 테스트, 기존 그린 유지). sonner +1 의존성(critical 팝 전용, 무의존 철학에서 1회 예외). 항목별 read 플래그를 미리 심어 추후 '개별 읽음'으로 값싸게 승격 가능. 클릭→테이블 점프(필터에 가려지면 필터 자동 해제 + 안내). 갱신: backend/app/api/wire.py(alert에 eventId/occurredAt), docs/backend.md·docs/frontend.md §8. 브랜치 feat/alarm-dock."
     }
   ];
 

@@ -5,14 +5,16 @@ interface SideNavProps {
   statusOptions: string[]
   totalRows: number
   visibleRows: number
+  unreadAlarms: number
+  onOpenAlarms: () => void
   onFiltersChange: (nextFilters: Partial<LotFilters>) => void
   onResetFilters: () => void
   onLogout: () => void
 }
 
+// "Lot tracking"(과거 빈 버튼) 자리를 알람 박스로 교체 — 배지 + 클릭 시 dock 패널을 연다.
 const NAV_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', active: true },
-  { icon: 'view_list', label: 'Lot tracking' },
   { icon: 'precision_manufacturing', label: 'Equipment' },
   { icon: 'analytics', label: 'Yield analytics' },
   { icon: 'description', label: 'Reports' },
@@ -23,6 +25,8 @@ export function SideNav({
   statusOptions,
   totalRows,
   visibleRows,
+  unreadAlarms,
+  onOpenAlarms,
   onFiltersChange,
   onResetFilters,
   onLogout,
@@ -40,6 +44,24 @@ export function SideNav({
       <div className="nav-section">
         <p className="nav-section__label">Workspace</p>
         <ul className="nav-list">
+          <li>
+            <button
+              type="button"
+              className="nav-item nav-item--alarms"
+              onClick={onOpenAlarms}
+              aria-label={`알람 박스${unreadAlarms > 0 ? ` (안읽음 ${unreadAlarms})` : ''}`}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                notifications
+              </span>
+              <span>알람 박스</span>
+              {unreadAlarms > 0 ? (
+                <span className="nav-item__badge" data-testid="alarm-badge">
+                  {unreadAlarms > 99 ? '99+' : unreadAlarms}
+                </span>
+              ) : null}
+            </button>
+          </li>
           {NAV_ITEMS.map((item) => (
             <li key={item.label}>
               <button
