@@ -7,6 +7,7 @@ from fastapi import Cookie, Depends, HTTPException, status
 from app.config import settings
 from app.di.container import (
     get_clock,
+    get_keyword_preset_repository,
     get_lot_repository,
     get_lot_source,
     get_lot_watchlist_repository,
@@ -17,6 +18,7 @@ from app.di.container import (
 )
 from app.domain.session import SessionUser
 from app.ports.clock import Clock
+from app.ports.keyword_preset_repository import KeywordPresetRepository
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
 from app.ports.lot_watchlist_repository import LotWatchlistRepository
@@ -24,9 +26,13 @@ from app.ports.mail_sender import MailSender
 from app.ports.sso_verifier import SsoVerifier
 from app.ports.unit_of_work import UnitOfWork
 from app.ports.user_repository import UserRepository
+from app.usecases.delete_keyword_preset import DeleteKeywordPreset
 from app.usecases.fetch_my_holds import FetchMyHolds
 from app.usecases.get_watchlist import GetWatchlist
+from app.usecases.list_keyword_presets import ListKeywordPresets
+from app.usecases.save_keyword_preset import SaveKeywordPreset
 from app.usecases.save_watchlist import SaveWatchlist
+from app.usecases.search_special_hold import SearchSpecialHold
 from app.usecases.sso import VerifySessionToken
 from app.usecases.stream_hold_changes import StreamHoldChanges
 
@@ -96,6 +102,34 @@ def verify_session_uc(
     sso: Annotated[SsoVerifier, Depends(sso_verifier_dep)],
 ) -> VerifySessionToken:
     return VerifySessionToken(sso)
+
+
+def keyword_preset_repository_dep() -> KeywordPresetRepository:
+    return get_keyword_preset_repository()
+
+
+def list_keyword_presets_uc(
+    repo: Annotated[KeywordPresetRepository, Depends(keyword_preset_repository_dep)],
+) -> ListKeywordPresets:
+    return ListKeywordPresets(repo)
+
+
+def save_keyword_preset_uc(
+    repo: Annotated[KeywordPresetRepository, Depends(keyword_preset_repository_dep)],
+) -> SaveKeywordPreset:
+    return SaveKeywordPreset(repo)
+
+
+def delete_keyword_preset_uc(
+    repo: Annotated[KeywordPresetRepository, Depends(keyword_preset_repository_dep)],
+) -> DeleteKeywordPreset:
+    return DeleteKeywordPreset(repo)
+
+
+def search_special_hold_uc(
+    lots: Annotated[LotRepository, Depends(lot_repository_dep)],
+) -> SearchSpecialHold:
+    return SearchSpecialHold(lots)
 
 
 async def require_session(

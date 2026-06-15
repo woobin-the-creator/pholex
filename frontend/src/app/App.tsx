@@ -12,6 +12,7 @@ import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
 import { SystemFooter } from '../components/layout/SystemFooter'
 import { LotHoldPanel } from '../components/panels/LotHoldPanel'
 import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
+import { SpecialHoldPanel } from '../components/panels/SpecialHoldPanel'
 import { AlarmDock } from '../components/alarms/AlarmDock'
 import { useMyHoldTable } from '../hooks/useMyHoldTable'
 import { useAlarms } from '../hooks/useAlarms'
@@ -276,10 +277,7 @@ function DashboardApp() {
             onToggleMaximize={() => toggleMaximize('slot-3')}
             vtName="card-slot-3"
           />
-          <PlaceholderPanel
-            slotIndex={4}
-            title="Special hold"
-            subtitle="SPC/FDC 등 특정 hold code lot"
+          <SpecialHoldPanel
             isMaximized={maximized === 'slot-4'}
             onToggleMaximize={() => toggleMaximize('slot-4')}
             vtName="card-slot-4"

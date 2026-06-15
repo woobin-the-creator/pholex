@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 
+from app.domain.keyword import KeywordQuery
 from app.ports.dto import LotRowDTO
 
 
@@ -27,6 +28,30 @@ class InMemoryLotRepository:
 
     async def get_lots_by_ids(self, lot_ids: list[str]) -> dict[str, LotRowDTO]:
         return {lid: self._by_lot[lid] for lid in lot_ids if lid in self._by_lot}
+
+    async def search(
+        self, query: KeywordQuery, *, limit: int, offset: int
+    ) -> tuple[list[LotRowDTO], int]:
+        if query.is_empty:
+            return [], 0
+        matched = [
+            row
+            for row in self._by_lot.values()  # dict keyed by lot_id → 이미 lot_id dedup
+            if query.matches(
+                {
+                    "lot_id": row.lot_id,
+                    "status": row.status,
+                    "equipment": row.equipment,
+                    "process_step": row.process_step,
+                    "hold_comment": row.hold_comment,
+                }
+            )
+        ]
+        # updated_at DESC, 동률 lot_id ASC — stable sort 2단(2차 키 먼저, 1차 키 나중)
+        matched.sort(key=lambda r: r.lot_id)
+        matched.sort(key=lambda r: r.updated_at, reverse=True)
+        total = len(matched)
+        return matched[offset : offset + limit], total
 
     async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None:
         cached = self._cache_by_employee.get(employee_number)

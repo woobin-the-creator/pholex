@@ -1,5 +1,6 @@
 import type { SessionResponse } from '../types/auth'
 import type { LotRow, SlotPayload } from '../types/lot'
+import type { KeywordConfig, KeywordPreset, SpecialHoldResult } from '../types/keyword'
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -66,4 +67,54 @@ export async function logout(): Promise<void> {
     method: 'POST',
     body: JSON.stringify({}),
   })
+}
+
+// ── 슬롯[5] Special hold — 키워드 모니터 ──
+
+export async function searchSpecialHold(
+  config: KeywordConfig,
+  page = 1,
+  pageSize = 100,
+): Promise<SpecialHoldResult> {
+  const payload = await requestJson<Record<string, unknown>>('/api/special-hold/search', {
+    method: 'POST',
+    body: JSON.stringify({ config, page, pageSize }),
+  })
+  const rawRows = Array.isArray(payload.rows) ? payload.rows : []
+  return {
+    tableId: Number(payload.tableId ?? 5),
+    rows: rawRows.map((row) => normalizeLotRow((row ?? {}) as Record<string, unknown>)),
+    total: Number(payload.total ?? 0),
+    page: Number(payload.page ?? 1),
+    pageSize: Number(payload.pageSize ?? pageSize),
+    lastUpdated: payload.lastUpdated ? String(payload.lastUpdated) : null,
+  }
+}
+
+function normalizeKeywordPreset(raw: Record<string, unknown>): KeywordPreset {
+  return {
+    id: Number(raw.id ?? 0),
+    name: String(raw.name ?? ''),
+    config: (raw.config ?? { groups: [] }) as KeywordConfig,
+    isDefault: Boolean(raw.isDefault),
+    createdAt: raw.createdAt ? String(raw.createdAt) : null,
+  }
+}
+
+export async function listKeywordPresets(): Promise<KeywordPreset[]> {
+  const payload = await requestJson<{ presets?: unknown[] }>('/api/keyword-presets')
+  const arr = Array.isArray(payload.presets) ? payload.presets : []
+  return arr.map((p) => normalizeKeywordPreset((p ?? {}) as Record<string, unknown>))
+}
+
+export async function saveKeywordPreset(
+  name: string,
+  config: KeywordConfig,
+  isDefault = false,
+): Promise<KeywordPreset> {
+  const payload = await requestJson<Record<string, unknown>>('/api/keyword-presets', {
+    method: 'POST',
+    body: JSON.stringify({ name, config, isDefault }),
+  })
+  return normalizeKeywordPreset(payload)
 }

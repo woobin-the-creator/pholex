@@ -4,6 +4,7 @@ import importlib
 from functools import lru_cache
 
 from app.adapters.fake.clock import SystemClock
+from app.adapters.fake.keyword_preset_repository import InMemoryKeywordPresetRepository
 from app.adapters.fake.lot_repository import InMemoryLotRepository
 from app.adapters.fake.lot_source import InMemoryLotSource
 from app.adapters.fake.lot_watchlist_repository import InMemoryLotWatchlistRepository
@@ -13,6 +14,7 @@ from app.adapters.fake.unit_of_work import InMemoryUnitOfWork
 from app.adapters.fake.user_repository import InMemoryUserRepository
 from app.config import settings
 from app.ports.clock import Clock
+from app.ports.keyword_preset_repository import KeywordPresetRepository
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
 from app.ports.lot_watchlist_repository import LotWatchlistRepository
@@ -28,6 +30,7 @@ ADAPTER_NAMING: dict[str, tuple[str, str]] = {
     "LotSource":             ("lot_source",             "LotSource"),
     "LotRepository":         ("lot_repository",         "LotRepository"),
     "LotWatchlistRepository": ("lot_watchlist_repository", "LotWatchlistRepository"),
+    "KeywordPresetRepository": ("keyword_preset_repository", "KeywordPresetRepository"),
     "MailSender":            ("mail_sender",            "MailSender"),
     "SsoVerifier":    ("sso_verifier",    "SsoVerifier"),
     "UserRepository": ("user_repository", "UserRepository"),
@@ -68,6 +71,13 @@ def get_lot_watchlist_repository() -> LotWatchlistRepository:
     if _is_fake():
         return InMemoryLotWatchlistRepository()
     return _load_real("LotWatchlistRepository")
+
+
+@lru_cache(maxsize=1)
+def get_keyword_preset_repository() -> KeywordPresetRepository:
+    if _is_fake():
+        return InMemoryKeywordPresetRepository()
+    return _load_real("KeywordPresetRepository")
 
 
 @lru_cache(maxsize=1)
@@ -118,6 +128,7 @@ def reset_for_tests() -> None:
     get_lot_source.cache_clear()
     get_lot_repository.cache_clear()
     get_lot_watchlist_repository.cache_clear()
+    get_keyword_preset_repository.cache_clear()
     get_mail_sender.cache_clear()
     get_sso_verifier.cache_clear()
     get_user_repository.cache_clear()

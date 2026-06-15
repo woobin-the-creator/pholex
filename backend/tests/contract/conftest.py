@@ -4,11 +4,13 @@ import os
 
 import pytest
 
+from app.adapters.fake.keyword_preset_repository import InMemoryKeywordPresetRepository
 from app.adapters.fake.lot_repository import InMemoryLotRepository
 from app.adapters.fake.lot_source import InMemoryLotSource
 from app.adapters.fake.lot_watchlist_repository import InMemoryLotWatchlistRepository
 from app.adapters.fake.mail_sender import LogMailSender
 from app.adapters.fake.sso_verifier import DevSsoVerifier
+from app.ports.keyword_preset_repository import KeywordPresetRepository
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
 from app.ports.lot_watchlist_repository import LotWatchlistRepository
@@ -74,4 +76,11 @@ def mail_sender(request) -> MailSender:
 def sso_verifier(request) -> SsoVerifier:
     if request.param == "fake":
         return DevSsoVerifier()
+    raise NotImplementedError(f"Adapter '{request.param}' not configured in this repo")
+
+
+@pytest.fixture(params=ADAPTER_PARAMS)
+def keyword_preset_repository(request) -> KeywordPresetRepository:
+    if request.param == "fake":
+        return InMemoryKeywordPresetRepository()
     raise NotImplementedError(f"Adapter '{request.param}' not configured in this repo")

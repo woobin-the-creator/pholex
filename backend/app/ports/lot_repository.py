@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from app.domain.keyword import KeywordQuery
 from app.ports.dto import LotRowDTO
 
 
@@ -24,6 +25,18 @@ class LotRepository(Protocol):
 
         슬롯[2] "내 관심 랏"이 watchlist lot_id를 lot 데이터와 JOIN할 때 사용. 없는 lot_id는
         결과에서 빠진다(호출 측이 "조회 대기"로 표시). Real adapter: SELECT … WHERE lot_id = ANY(:ids).
+        """
+        ...
+
+    async def search(
+        self, query: KeywordQuery, *, limit: int, offset: int
+    ) -> tuple[list[LotRowDTO], int]:
+        """슬롯[5] "Special hold" — DNF 키워드로 lot_status 검색.
+
+        반환: (페이지 행, 총 매칭 건수). 정렬 updated_at DESC, 동률 lot_id ASC. lot_id 기준
+        dedup(한 행은 한 번). 빈 쿼리(그룹 0개)는 ([], 0). Real adapter:
+        WHERE (그룹1 AND…) OR (그룹2 AND…) … ORDER BY updated_at DESC, lot_id ASC
+        LIMIT :limit OFFSET :offset + 별도 COUNT(*).
         """
         ...
 

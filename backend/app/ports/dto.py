@@ -109,3 +109,15 @@ class MailSendResult(BaseModel):
     success: bool
     message_id: str | None = None
     error: str | None = None
+
+
+class KeywordPresetDTO(BaseModel):
+    """슬롯[5] 'Special hold' 키워드 프리셋. config = DNF 직렬화(JSONB, domain.keyword 형식)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: int
+    name: str
+    config: dict
+    is_default: bool
+    created_at: datetime | None = None
