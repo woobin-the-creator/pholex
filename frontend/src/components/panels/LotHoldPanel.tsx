@@ -38,29 +38,30 @@ export function LotHoldPanel({
   vtName,
 }: LotHoldPanelProps) {
   const [spinning, setSpinning] = useState(false)
-  const [cometPath, setCometPath] = useState<string | null>(null)
+  const [cometGeo, setCometGeo] = useState<{ w: number; h: number; d: string } | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
 
   useEffect(() => {
     if (!focusLotId) {
-      setCometPath(null)
+      setCometGeo(null)
       return
     }
     const row = rowRefs.current.get(focusLotId)
     row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     if (!row) {
-      setCometPath(null)
+      setCometGeo(null)
       return
     }
-    // 행 크기에 맞춘 둥근 사각 경로 — 상단 중앙(w/2, 0)에서 시작해 시계방향 1회전.
+    // 행 테두리를 따르는 둥근 경로 — 상단 중앙(w/2, 0)에서 시작해 시계방향 1회전.
+    // r=h/2면 짧은 변이 반원(stadium). 코멧은 이 경로 위 stroke-dash라 모서리에서 곡선으로 휜다.
     const w = row.offsetWidth
     const h = row.offsetHeight
-    const r = Math.min(9, h / 2)
-    setCometPath(
-      `path('M ${w / 2} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} ` +
-        `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
-        `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z')`,
-    )
+    const r = h / 2
+    const d =
+      `M ${w / 2} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} ` +
+      `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
+      `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
+    setCometGeo({ w, h, d })
   }, [focusLotId])
 
   const handleRefresh = () => {
@@ -102,12 +103,19 @@ export function LotHoldPanel({
           data-status={row.status}
         >
           <td className="lot-table__lot-id" title={row.lotId}>
-            {focusLotId === row.lotId && cometPath ? (
-              <span
-                className="lot-trace-comet"
-                style={{ offsetPath: cometPath }}
+            {focusLotId === row.lotId && cometGeo ? (
+              <svg
+                className="lot-trace-svg"
+                width={cometGeo.w}
+                height={cometGeo.h}
+                viewBox={`0 0 ${cometGeo.w} ${cometGeo.h}`}
+                fill="none"
                 aria-hidden="true"
-              />
+              >
+                <path className="lot-trace-comet lot-trace-comet--tail" pathLength={100} d={cometGeo.d} />
+                <path className="lot-trace-comet lot-trace-comet--mid" pathLength={100} d={cometGeo.d} />
+                <path className="lot-trace-comet lot-trace-comet--head" pathLength={100} d={cometGeo.d} />
+              </svg>
             ) : null}
             {row.lotId}
           </td>
