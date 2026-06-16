@@ -533,7 +533,8 @@ FROM ${DOCKER_REGISTRY}node:20-alpine
 # npm 레지스트리 설정 (미설정 시 registry.npmjs.org 사용)
 ARG NPM_REGISTRY_URL
 RUN if [ -n "$NPM_REGISTRY_URL" ]; then npm config set registry "$NPM_REGISTRY_URL"; fi
-RUN npm ci
+# 락 동기화면 npm ci(재현가능), 없거나 어긋나면 npm install 로 폴백
+RUN npm ci || npm install
 ```
 
 ### 15.5 운용 절차

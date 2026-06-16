@@ -74,8 +74,14 @@ if [[ "$MODE" == "prod" ]]; then
     exit 1
   fi
 
-  echo "[deploy] 1/2 frontend 빌드 (npm ci && npm run build)"
-  npm --prefix frontend ci
+  # 락이 package.json 과 동기화돼 있으면 npm ci(재현가능·빠름),
+  # 락이 없거나(미커밋 관례) 어긋나면(예: 새 devDep 추가) npm install 로 자동 폴백.
+  # → package.json 변경 후에도 수동 npm install 없이 deploy.sh --prod 한 번으로 끝난다.
+  echo "[deploy] 1/2 frontend 빌드 (npm ci, 실패 시 npm install 폴백)"
+  npm --prefix frontend ci || {
+    echo "[deploy] npm ci 불가(락 부재/불일치) → npm install 로 폴백"
+    npm --prefix frontend install
+  }
   npm --prefix frontend run build
 
   echo "[deploy] 2/2 prod stack up (project=$PROJECT, env-file=$ENV_FILE)"

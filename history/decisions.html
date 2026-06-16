@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-16 (타이포 정책 전환: 프론트엔드 전역 단일 mono — JetBrains Mono)";
+  const LAST_UPDATED = "2026-06-16 (deploy 프론트 빌드 self-heal: npm ci || npm install)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -616,6 +616,20 @@
         { name: "stylelint+husky로 강제", rejected: "현 레포에 린트/CI/husky 부재 — 의존성·설정 과다. 이미 도는 npm test에 가드 테스트를 얹는 게 가벼움" }
       ],
       note: "강제 수단: vitest 가드 fontPolicy.test.ts — 비-mono font-family를 박으면 npm test 실패(아이콘 폰트만 allowlist). @types/node devDep 추가(가드가 파일을 읽음, tsconfig types에 node 추가). 갱신: frontend/src/styles.css, index.html, tsconfig.json, docs/frontend.md §13.2. 브랜치 chore/frontend-mono-font-policy. (이전 정책: Era1 'React+Vite' 시기의 Inter sans 기본.)"
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-16",
+      status: "done",
+      title: "deploy 프론트 빌드: npm ci → 'npm ci || npm install' self-heal",
+      decision: "deploy.sh --prod 의 호스트 빌드와 frontend/Dockerfile 의 의존성 설치를 모두 `npm ci || npm install` 로 바꿨어요. 락이 package.json과 동기화면 npm ci(재현가능·완전설치), 락이 없거나(미커밋 관례) 새 devDep 추가로 어긋나면 npm install로 자동 폴백해요. git pull 후 수동 단계 없이 deploy.sh --prod 한 번으로 끝나요.",
+      rationale: "package-lock.json은 환경별 npm 미러 차이 때문에 git에 커밋하지 않는데(미러 URL이 락에 박힘), prod 빌드는 호스트에서 무조건 npm ci를 써서 — 락이 없거나 package.json이 바뀌면(예: @types/node 추가) npm ci가 동기화 오류로 깨졌어요. 매번 수동 npm install을 끼우는 건 잊기 쉬운 부채라, 빌드 스텝이 스스로 복구하도록 했어요. npm install도 클린 상태에선 완전 설치라 '부분설치 금지' 원칙을 깨지 않아요(폴백은 ci가 불가능할 때만).",
+      alternatives: [
+        { name: "package-lock.json git 커밋", rejected: "사내 npm 미러 URL이 락에 박혀 환경 간 불일치/방화벽 충돌 위험 — 미커밋 관례를 둔 이유" },
+        { name: "수동 npm install 선행 절차로 문서화", rejected: "deploy.sh --prod 한 번이라는 단순함이 깨지고, 잊으면 또 깨짐" },
+        { name: "빌드 tsc에서 테스트 제외해 @types/node 제거", rejected: "근본인 '락 미동기화 시 npm ci 실패'는 그대로 남음" }
+      ],
+      note: "갱신: scripts/deploy.sh(prod 1/2 빌드), frontend/Dockerfile(RUN npm ci || npm install), docs/troubleshooting.md #5, docs/infra.md §15.4. 첫 폴백 때 npm install이 호스트 락을 갱신하므로 다음 배포부턴 npm ci가 바로 성공(자기 안정화). 브랜치 chore/deploy-prod-npm-selfheal."
     }
   ];
 
