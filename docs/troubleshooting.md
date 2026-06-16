@@ -80,8 +80,8 @@
   docker compose -p pholex-dev -f docker-compose.yml -f docker-compose.dev.yml run --rm frontend npm ci
   docker compose -p pholex-dev -f docker-compose.yml -f docker-compose.dev.yml up -d
   ```
-- **prod**: `deploy.sh --prod`가 호스트에서 `npm run build` 하므로, 빌드 전에 호스트에서 **`npm ci`**(부분설치 금지).
-- **재발방지**: 의존성은 컨테이너 플랫폼에서 `npm ci`로 완전 설치. 호스트 node_modules를 컨테이너에 bind-mount하지 않는다.
+- **prod**: `deploy.sh --prod`가 호스트에서 빌드한다. 빌드 단계는 **`npm ci || npm install`** 로 self-heal — 락이 package.json과 동기화면 `npm ci`(재현가능·완전설치), 락이 없거나(미커밋 관례) 새 devDep 추가로 어긋나면 `npm install` 로 자동 폴백한다. 그래서 `git pull` 후 **수동 단계 없이 `deploy.sh --prod` 한 번**으로 끝난다(예전엔 무조건 `npm ci`라 package.json 변경 시 수동 `npm install` 선행이 필요했다).
+- **재발방지**: 의존성은 항상 **완전 설치**(`npm ci` 또는 폴백 `npm install`) — 부분설치 금지. 호스트 node_modules를 컨테이너에 bind-mount하지 않는다. 락은 환경별 npm 미러 차이로 git에 커밋하지 않으므로, 락 동기화 책임은 빌드 스텝의 폴백이 진다.
 
 ## <a id="6"></a>#6 — `socket.gaierror: postgres` / DB 연결 실패
 - **증상**: pytest/alembic/앱이 `socket.gaierror: [Errno -3] ... postgres`.

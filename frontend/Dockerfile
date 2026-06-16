@@ -9,7 +9,8 @@ WORKDIR /app
 RUN if [ -n "$NPM_REGISTRY_URL" ]; then npm config set registry "$NPM_REGISTRY_URL"; fi
 
 COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# 락이 동기화돼 있으면 npm ci(재현가능), 없거나(미커밋 관례) 어긋나면 npm install 로 폴백.
+RUN npm ci || npm install
 
 COPY . .
 
