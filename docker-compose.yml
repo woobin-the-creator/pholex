@@ -30,6 +30,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      target: dev                    # 기본=dev(vite). prod 오버레이가 prod-dist 로 교체.
       args:
         DOCKER_REGISTRY: ${DOCKER_REGISTRY:-}
         NPM_REGISTRY_URL: ${NPM_REGISTRY_URL:-}

@@ -524,18 +524,38 @@ RUN pip install --upgrade pip \
     ${PIP_TRUSTED_HOST:+--trusted-host $PIP_TRUSTED_HOST}
 ```
 
-### 15.4 frontend/Dockerfile (node:20-alpine 기반)
+### 15.4 frontend/Dockerfile (멀티스테이지)
+
+설치·빌드가 전부 docker 안에서 일어난다. **호스트 node/npm/lock 의존 없음.**
+- `dev` 타깃: vite dev 서버(HMR). `docker-compose.dev.yml`에서 사용(base `target: dev`).
+- `prod-dist` 타깃: 빌드된 dist만 담은 경량 이미지. 공유 볼륨에 복사 후 종료. `docker-compose.prod.yml`에서 `target: prod-dist`.
 
 ```dockerfile
 ARG DOCKER_REGISTRY=""
-FROM ${DOCKER_REGISTRY}node:20-alpine
 
-# npm 레지스트리 설정 (미설정 시 registry.npmjs.org 사용)
-ARG NPM_REGISTRY_URL
+FROM ${DOCKER_REGISTRY}node:20-alpine AS deps
+ARG NPM_REGISTRY_URL=""
+WORKDIR /app
 RUN if [ -n "$NPM_REGISTRY_URL" ]; then npm config set registry "$NPM_REGISTRY_URL"; fi
-# 락 동기화면 npm ci(재현가능), 없거나 어긋나면 npm install 로 폴백
+COPY package.json package-lock.json* ./
+# 락 동기화면 npm ci(재현가능), 없거나(미커밋) 어긋나면 npm install 로 폴백
 RUN npm ci || npm install
+
+FROM deps AS dev          # vite dev 서버 (소스는 런타임에 bind-mount)
+COPY . .
+CMD ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]
+
+FROM deps AS build        # 정적 빌드
+COPY . .
+RUN npm run build
+
+FROM ${DOCKER_REGISTRY}alpine:3.20 AS prod-dist   # dist 만 공유 볼륨에 복사
+COPY --from=build /app/dist /built-dist
+CMD ["sh","-c","cp -R /built-dist/. /frontend_dist/"]
 ```
+
+> prod 빌드가 호스트에서 일어나던 이전 방식(`deploy.sh --prod`가 `npm run build`)은 폐기.
+> 이제 `deploy.sh --prod`는 `docker compose up -d --build` 한 번으로 docker 빌더가 dist 까지 만든다.
 
 ### 15.5 운용 절차
 

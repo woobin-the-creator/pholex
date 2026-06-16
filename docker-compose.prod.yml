@@ -32,14 +32,13 @@ services:
       - frontend_dist:/usr/share/nginx/html:ro
 
   frontend:
-    # 운영에서는 dev 서버를 띄우지 않고, 미리 빌드된 dist 를 공유 볼륨에 복사만 하고 종료.
-    # (frontend/dist 는 scripts/deploy.sh --prod 가 배포 전에 npm run build 로 생성)
-    build: !reset null
-    image: ${DOCKER_REGISTRY:-}alpine:3.20
-    command: sh -c "cp -R /built-dist/. /frontend_dist/"
+    # 운영에서는 dev 서버를 띄우지 않고, Dockerfile prod-dist 스테이지(빌드된 dist 만 담은
+    # 경량 이미지)를 빌드해 공유 볼륨에 복사만 하고 종료한다. 빌드는 docker 안에서 수행되므로
+    # 호스트 node/npm/lock 의존이 없다. (prod-dist 의 CMD 가 dist 를 frontend_dist 로 복사)
+    build:
+      target: prod-dist
     restart: "no"
     volumes:
-      - ./frontend/dist:/built-dist:ro
       - frontend_dist:/frontend_dist
 
   backend:
