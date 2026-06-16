@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pholex 데이터 플로우 비교 — 기존 vs 옵션A</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2430; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff;
+    --old:#f0883e; --new:#3fb950; --danger:#f85149; --purple:#bc8cff;
+    --yellow:#e3b341;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Apple SD Gothic Neo",sans-serif;
+    line-height:1.5; padding:32px 24px 80px;
+  }
+  h1{font-size:26px; margin:0 0 6px; letter-spacing:-.3px}
+  .sub{color:var(--muted); margin:0 0 28px; font-size:14px}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin-bottom:26px; font-size:12.5px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:22px}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+  .col{background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden}
+  .col.old{border-top:3px solid var(--old)}
+  .col.new{border-top:3px solid var(--new)}
+  .col-head{padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between}
+  .col-head h2{margin:0; font-size:17px}
+  .tag{font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600}
+  .tag.old{background:rgba(240,136,62,.15); color:var(--old)}
+  .tag.new{background:rgba(63,185,80,.15); color:var(--new)}
+  .flow{padding:20px}
+  .node{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 14px; margin:0; position:relative;
+  }
+  .node .role{font-size:10.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:3px}
+  .node .title{font-size:14px; font-weight:600}
+  .node .file{font-size:11.5px; color:var(--accent); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-top:4px; word-break:break-all}
+  .node .note{font-size:12px; color:var(--muted); margin-top:5px}
+  .node.fe{border-left:3px solid var(--purple)}
+  .node.api{border-left:3px solid var(--accent)}
+  .node.core{border-left:3px solid var(--yellow)}
+  .node.db{border-left:3px solid var(--new)}
+  .node.ext{border-left:3px solid var(--old)}
+  .node.gone{opacity:.4; text-decoration:line-through; text-decoration-color:var(--danger)}
+  .node.fresh{box-shadow:0 0 0 1px var(--new) inset}
+  .badge-new{position:absolute; top:-9px; right:10px; background:var(--new); color:#04240d; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px}
+  .badge-gone{position:absolute; top:-9px; right:10px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px}
+  .arrow{display:flex; justify-content:center; padding:4px 0; color:var(--muted); font-size:16px}
+  .arrow small{font-size:11px; margin-left:7px; color:var(--muted)}
+  .arrow.two::after{content:"⇅"}
+  .section-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin:14px 0 8px; padding-left:2px}
+  .section-label:first-child{margin-top:0}
+  table.diff{width:100%; border-collapse:collapse; margin-top:34px; background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden}
+  table.diff th,table.diff td{padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-size:13.5px; vertical-align:top}
+  table.diff th{background:var(--panel2); font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted)}
+  table.diff td:first-child{font-weight:600; color:var(--text); width:160px}
+  table.diff .o{color:var(--old)}
+  table.diff .n{color:var(--new)}
+  table.diff tr:last-child td{border-bottom:none}
+  .open{margin-top:34px; background:linear-gradient(180deg,rgba(227,179,65,.08),transparent); border:1px solid var(--border); border-left:3px solid var(--yellow); border-radius:12px; padding:20px 24px}
+  .open h3{margin:0 0 12px; font-size:16px}
+  .open ol{margin:0; padding-left:20px}
+  .open li{margin-bottom:9px; font-size:13.5px}
+  .open li b{color:var(--yellow)}
+  code{background:#21262d; padding:1px 6px; border-radius:5px; font-size:12px; font-family:ui-monospace,Menlo,monospace}
+  .clock{display:inline-flex; align-items:center; gap:5px; background:rgba(63,185,80,.12); color:var(--new); font-size:11px; padding:2px 8px; border-radius:8px; font-weight:600}
+</style>
+</head>
+<body>
+  <h1>Pholex 데이터 플로우 — 기존 구조 vs 옵션A(완전 대체)</h1>
+  <p class="sub">코드베이스 실제 파일 기준 · 2026-06-06 · "내 lot hold" 섹션의 데이터 소스를 통째로 교체하는 변경</p>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--purple)"></i>Frontend (React/Jotai)</span>
+    <span><i class="dot" style="background:var(--accent)"></i>API / Route</span>
+    <span><i class="dot" style="background:var(--yellow)"></i>Core (UseCase·Port)</span>
+    <span><i class="dot" style="background:var(--new)"></i>Postgres</span>
+    <span><i class="dot" style="background:var(--old)"></i>외부/사내(bigdataquery)</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- ===================== 기존 ===================== -->
+    <div class="col old">
+      <div class="col-head"><h2>기존 구조</h2><span class="tag old">AS-IS · hold-operator 자동조회</span></div>
+      <div class="flow">
+
+        <div class="section-label">사용자 화면</div>
+        <div class="node fe">
+          <div class="role">Frontend</div>
+          <div class="title">내 lot hold 패널 (읽기 전용)</div>
+          <div class="file">components/panels/LotHoldPanel.tsx · hooks/useMyHoldTable.ts</div>
+          <div class="note">마운트 시 REST 1회 + WebSocket 실시간 구독. 입력 UI 없음 — 시스템이 채워줌.</div>
+        </div>
+
+        <div class="arrow">↓ <small>REST: 최초 로드 / 수동 refresh</small></div>
+
+        <div class="node api">
+          <div class="role">API</div>
+          <div class="title">GET /api/lots/my-hold</div>
+          <div class="file">api/lots.py → deps.require_session</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="node core">
+          <div class="role">UseCase</div>
+          <div class="title">FetchMyHolds.execute(employee_number)</div>
+          <div class="file">application/… → ports/lot_source.py · ports/lot_repository.py</div>
+          <div class="note">source.fetch_my_holds → upsert_lots_batch → cache_my_holds</div>
+        </div>
+
+        <div class="arrow">↓ <small>"hold_operator = 나"인 lot 자동 추출</small></div>
+
+        <div class="node core">
+          <div class="role">Port</div>
+          <div class="title">LotSource (실시간 소스)</div>
+          <div class="file">adapters/fake/pg_lot_source.py · PgSampleLotSource</div>
+          <div class="note">subscribe_changes(): 5초 폴링으로 snapshot diff → 변경 이벤트 생성</div>
+        </div>
+
+        <div class="arrow two"><small>WebSocket /ws — 실시간 push</small></div>
+
+        <div class="node db">
+          <div class="role">Postgres</div>
+          <div class="title">users · sample(lot) 테이블</div>
+          <div class="file">adapters/fake/pg_schema.py</div>
+          <div class="note">lot 데이터를 누가/언제 채우는지는 외부 의존. hold_operator 컬럼으로 "내 것" 판별.</div>
+        </div>
+
+        <div class="arrow"></div>
+        <div class="node fe">
+          <div class="role">WebSocket</div>
+          <div class="title">api/ws.py · connectTableSocket / ws.ts</div>
+          <div class="note">subscribe / refresh 메시지 ↔ table_update push (5초 단위 diff)</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 옵션A ===================== -->
+    <div class="col new">
+      <div class="col-head"><h2>옵션 A (완전 대체)</h2><span class="tag new">TO-BE · 수동 watchlist + 30분 dump</span></div>
+      <div class="flow">
+
+        <div class="section-label">① 백그라운드 적재 (사용자와 무관, 30분 주기)</div>
+        <div class="node ext fresh">
+          <span class="badge-new">NEW</span>
+          <div class="role">사내 AI · 외부</div>
+          <div class="title">bigdataquery → lots dump 잡 <span class="clock">⏱ 30분</span></div>
+          <div class="note">사내 전용 데이터 라이브러리로 lot 정보 조회 → lots 테이블 일괄 적재. 스케줄러 필요(현재 없음).</div>
+        </div>
+        <div class="arrow">↓ <small>upsert dump</small></div>
+        <div class="node db fresh">
+          <span class="badge-new">NEW TABLE</span>
+          <div class="role">Postgres</div>
+          <div class="title">lots 테이블 (lot 마스터 캐시)</div>
+          <div class="note">lot_id(PK) · status · step · equipment · … · updated_at. 30분마다 최신화.</div>
+        </div>
+
+        <div class="section-label">② 사용자 등록 흐름 (watchlist 저장)</div>
+        <div class="node fe fresh">
+          <span class="badge-new">UI 변경</span>
+          <div class="role">Frontend</div>
+          <div class="title">내 lot hold 패널 + "+" / "저장" 버튼</div>
+          <div class="file">LotHoldPanel.tsx (편집 가능 row로 개편)</div>
+          <div class="note">"+" → 빈 row 추가, lot_id만 입력 가능(나머지 readonly). "저장" → 일괄 전송.</div>
+        </div>
+        <div class="arrow">↓ <small>POST 일괄 저장 (lot_id 리스트)</small></div>
+        <div class="node api fresh">
+          <span class="badge-new">NEW</span>
+          <div class="role">API</div>
+          <div class="title">POST /api/watchlist (신규 라우터)</div>
+          <div class="file">api/watchlist.py · deps.require_session</div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="node core fresh">
+          <span class="badge-new">NEW PORT</span>
+          <div class="role">UseCase · Port</div>
+          <div class="title">SaveWatchlist → LotWatchlistRepository</div>
+          <div class="file">ports/lot_watchlist_repository.py</div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="node db fresh">
+          <span class="badge-new">NEW TABLE</span>
+          <div class="role">Postgres</div>
+          <div class="title">user_lot_watchlist (유저 ↔ lot 매칭)</div>
+          <div class="note">employee_number · lot_id · (순서/추가시각?). 저장 의미론 = 미결정.</div>
+        </div>
+
+        <div class="section-label">③ 조회 흐름 (저장된 리스트 표시)</div>
+        <div class="node api fresh">
+          <div class="role">API</div>
+          <div class="title">GET /api/watchlist</div>
+          <div class="note">watchlist의 lot_id ⨝ lots 테이블 JOIN → readonly 컬럼 채워서 반환</div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="node fe">
+          <div class="role">Frontend</div>
+          <div class="title">내 lot hold = 내가 등록한 lot + 최신 status/step</div>
+          <div class="note">lots에 없는 lot_id면? 표시 방법 미결정.</div>
+        </div>
+
+        <div class="section-label">제거 대상</div>
+        <div class="node core gone">
+          <span class="badge-gone">제거</span>
+          <div class="title">FetchMyHolds · LotSource.fetch_my_holds · subscribe_changes</div>
+        </div>
+        <div class="node fe gone">
+          <span class="badge-gone">제거?</span>
+          <div class="title">WebSocket 실시간 구독 (api/ws.py · connectTableSocket) — 질문2</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 핵심 차이 표 ===================== -->
+  <table class="diff">
+    <tr><th>관점</th><th class="o">기존 (AS-IS)</th><th class="n">옵션A (TO-BE)</th></tr>
+    <tr><td>"내 lot" 결정 방식</td><td class="o">자동 — <code>hold_operator = 나</code>인 lot</td><td class="n">수동 — 유저가 lot_id 직접 입력·저장</td></tr>
+    <tr><td>의미</td><td class="o">"내가 hold 건 lot"</td><td class="n">"내가 보고싶은 lot (watchlist)"</td></tr>
+    <tr><td>lot 데이터 소스</td><td class="o">LotSource (실시간 구독 포트)</td><td class="n">lots 테이블 (사내AI가 30분 dump)</td></tr>
+    <tr><td>갱신 주기</td><td class="o">5초 폴링 → 실시간 push</td><td class="n">30분 (dump 주기). 실시간성 사실상 사라짐</td></tr>
+    <tr><td>입력 UI</td><td class="o">없음 (읽기 전용)</td><td class="n">"+" / "저장" / lot_id 편집 row</td></tr>
+    <tr><td>새 테이블</td><td class="o">—</td><td class="n">lots · user_lot_watchlist</td></tr>
+    <tr><td>새 포트/라우터</td><td class="o">—</td><td class="n">LotWatchlistRepository · /api/watchlist</td></tr>
+    <tr><td>스케줄러</td><td class="o">불필요</td><td class="n">필요 (현재 코드베이스에 전무)</td></tr>
+    <tr><td>WebSocket</td><td class="o">핵심 인프라</td><td class="n">존치 의미 약함 → 제거/폴링 검토 (질문2)</td></tr>
+  </table>
+
+  <!-- ===================== 미결정 ===================== -->
+  <div class="open">
+    <h3>⚠ 옵션A 확정 전 아직 안 정해진 가지</h3>
+    <ol>
+      <li><b>실시간 갱신(질문2)</b> — WS 완전 제거 vs 30분 dump 완료 시 push vs 프론트 N분 폴링.</li>
+      <li><b>저장 의미론</b> — "일괄 저장"이 <code>전체 교체</code>(내 행 삭제 후 재삽입)인지 <code>증분 upsert</code>인지. 중복 lot_id·빈 row 처리.</li>
+      <li><b>존재하지 않는 lot_id</b> — 유저가 입력한 lot_id가 lots 테이블에 없을 때: 저장 거부 / 저장은 하되 "unknown" 표시 / dump 후 자동 매칭.</li>
+      <li><b>"hold" 개념 존치</b> — 섹션명이 "내 lot hold"인데, 이제 run/wait/hold 무관하게 모니터링인지, 여전히 hold 상태만 의미 있는지.</li>
+      <li><b>lots 테이블 스키마 = 사내AI 계약</b> — readonly로 보여줄 컬럼(status·step·equipment·…)을 dump 잡과 어떻게 합의할지.</li>
+    </ol>
+  </div>
+
+</body>
+</html>
