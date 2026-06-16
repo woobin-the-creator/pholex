@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-13 (슬롯[5] 키워드 Hold 설계 확정 + 알람 박스: critical 순간 팝)";
+  const LAST_UPDATED = "2026-06-16 (타이포 정책 전환: 프론트엔드 전역 단일 mono — JetBrains Mono)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -602,6 +602,20 @@
         { name: "랏별 묶음 2단 아코디언", rejected: "30분 배치라 dump당 랏당 1이벤트 → 묶음 압축 이득 거의 0, 시간순 평면 로그가 배치 리듬에 더 맞음" }
       ],
       note: "TDD로 구현(store 6 + parse 3 + dock 통합 3 = 신규 12 테스트, 기존 그린 유지). sonner +1 의존성(critical 팝 전용, 무의존 철학에서 1회 예외). 항목별 read 플래그를 미리 심어 추후 '개별 읽음'으로 값싸게 승격 가능. 클릭→테이블 점프(필터에 가려지면 필터 자동 해제 + 안내). 갱신: backend/app/api/wire.py(alert에 eventId/occurredAt), docs/backend.md·docs/frontend.md §8. 브랜치 feat/alarm-dock."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-16",
+      status: "done",
+      title: "타이포 정책 전환: 프론트엔드 전역 단일 mono (JetBrains Mono)",
+      decision: "본문 기본 폰트를 Inter sans → JetBrains Mono(mono)로 전환하고, 폰트는 :root 의 --font-mono 토큰 하나로만 지정해요. 컴포넌트는 폰트를 직접 박지 않고 inherit 하거나 토큰을 써요. 예외는 아이콘 폰트 Material Symbols Outlined 하나. styles.css의 흩어진 폰트 리터럴(Inter/JetBrains Mono)을 전부 토큰으로 합치고, index.html에서 미사용이 된 Inter 로드를 제거했어요.",
+      rationale: "키워드 Hold UI를 새로 넣으면서, 랏 데이터(고정폭 JetBrains Mono)와 입력 칩(Inter sans)이 한 화면에서 어긋나 보였어요. 이 도구는 랏 ID·상태코드·수치를 자리 맞춰 읽는 대시보드라, 입력값과 데이터가 같은 고정폭이면 '내가 친 값 = 저 데이터'가 시각적으로 붙어요. 전역 mono가 일관성·가독성 모두에 맞다고 판단했어요.",
+      alternatives: [
+        { name: "키워드 Hold 패널만 mono", rejected: "패널 경계에서 폰트가 또 갈려 같은 종류의 불일치가 반복됨" },
+        { name: "기존 Inter sans 유지", rejected: "랏 데이터 고정폭과 영구 불일치 — 사용자가 직접 지적한 문제" },
+        { name: "stylelint+husky로 강제", rejected: "현 레포에 린트/CI/husky 부재 — 의존성·설정 과다. 이미 도는 npm test에 가드 테스트를 얹는 게 가벼움" }
+      ],
+      note: "강제 수단: vitest 가드 fontPolicy.test.ts — 비-mono font-family를 박으면 npm test 실패(아이콘 폰트만 allowlist). @types/node devDep 추가(가드가 파일을 읽음, tsconfig types에 node 추가). 갱신: frontend/src/styles.css, index.html, tsconfig.json, docs/frontend.md §13.2. 브랜치 chore/frontend-mono-font-policy. (이전 정책: Era1 'React+Vite' 시기의 Inter sans 기본.)"
     }
   ];
 

@@ -212,7 +212,12 @@ export const tableLoadingAtomFamily = atomFamily((tableId: number) =>
 
 ### 13.2 타이포그래피
 
-**폰트**: `Inter, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif`
+**폰트**: `JetBrains Mono, monospace` — 프론트엔드 전역 단일 폰트.
+
+- CSS 변수 `--font-mono` 토큰(`:root`)으로만 지정한다. 컴포넌트/셀렉터에 폰트를 직접 박지 말고 `inherit` 하거나 `var(--font-mono)` 를 쓴다.
+- 유일한 예외는 아이콘 폰트 `Material Symbols Outlined`.
+- 이 정책은 `frontend/src/__tests__/fontPolicy.test.ts` 가 강제한다 — 비-mono 폰트를 박으면 `npm test` 가 실패한다.
+- 배경: 랏 데이터(고정폭)와 키워드 Hold 입력 UI(기존 Inter sans)가 한 화면에서 어긋나 보였다. 데이터·입력값 정렬 가독성이 중요한 대시보드라 전역 mono 로 통일했다. (이전 정책은 Inter sans-serif, `history/decisions.html` 참조)
 
 | 역할 | 크기 | 굵기 | 행간 | 자간 | 사용처 |
 |------|------|------|------|------|--------|
