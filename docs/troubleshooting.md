@@ -6,6 +6,8 @@
 
 사외(Claude)·사내(opencode) 모두 이 문서를 단일 기준으로 본다. 증거는 **터미널/파일**로만 남긴다(스크린샷 불가 환경).
 
+> **배포 후 "완료" 선언 전에 반드시 `scripts/verify-stack.sh dev` / `scripts/verify-stack.sh prod`를 돌린다.** 컨테이너 상태·ADAPTER_MODE·DB 행수·쿠키 secure·엔드포인트 500·프론트 번들 신선도·python-multipart·redis를 한 번에 검사하고, FAIL이 있으면 종료코드 1. 아래 항목들이 그 FAIL의 처치법이다.
+
 ---
 
 ## 0. 빠른 분류
