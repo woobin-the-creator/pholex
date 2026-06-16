@@ -80,8 +80,9 @@
   docker compose -p pholex-dev -f docker-compose.yml -f docker-compose.dev.yml run --rm frontend npm ci
   docker compose -p pholex-dev -f docker-compose.yml -f docker-compose.dev.yml up -d
   ```
-- **prod**: `deploy.sh --prod`가 호스트에서 빌드한다. 빌드 단계는 **`npm ci || npm install`** 로 self-heal — 락이 package.json과 동기화면 `npm ci`(재현가능·완전설치), 락이 없거나(미커밋 관례) 새 devDep 추가로 어긋나면 `npm install` 로 자동 폴백한다. 그래서 `git pull` 후 **수동 단계 없이 `deploy.sh --prod` 한 번**으로 끝난다(예전엔 무조건 `npm ci`라 package.json 변경 시 수동 `npm install` 선행이 필요했다).
-- **재발방지**: 의존성은 항상 **완전 설치**(`npm ci` 또는 폴백 `npm install`) — 부분설치 금지. 호스트 node_modules를 컨테이너에 bind-mount하지 않는다. 락은 환경별 npm 미러 차이로 git에 커밋하지 않으므로, 락 동기화 책임은 빌드 스텝의 폴백이 진다.
+- **prod**: 빌드가 **docker 멀티스테이지(Dockerfile `prod-dist`)** 안에서 일어난다. 호스트 npm 단계가 없으므로 `git pull` 후 **`deploy.sh --prod` 한 번**으로 끝난다(예전엔 호스트 `npm ci`라 락 불일치로 깨졌다). 의존성 설치는 `deps` 스테이지의 `npm ci || npm install`(락 동기화면 ci, 없거나 어긋나면 install 폴백).
+- **빌드가 멈춘 듯 보일 때**: docker 빌더의 `RUN npm ci || npm install` 이 네트워크로 전체 설치 중이라 출력이 안 보일 수 있다. 사내에서는 **`NPM_REGISTRY_URL`(필요시 `DOCKER_REGISTRY`)을 `.env`에 사내 미러로 설정**해야 public registry 차단으로 행 걸리지 않는다. 진단: `docker stats`로 NET I/O 확인, `--progress=plain` 으로 빌드.
+- **재발방지**: 의존성은 항상 **완전 설치**(`npm ci` 또는 폴백 `npm install`) — 부분설치 금지. 호스트 node_modules를 컨테이너에 bind-mount하지 않는다. 락은 환경별 npm 미러 차이로 git에 커밋하지 않으므로, 동기화 책임은 빌드 스텝의 폴백이 진다.
 
 ## <a id="6"></a>#6 — `socket.gaierror: postgres` / DB 연결 실패
 - **증상**: pytest/alembic/앱이 `socket.gaierror: [Errno -3] ... postgres`.

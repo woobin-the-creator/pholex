@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-16 (deploy 프론트 빌드 self-heal: npm ci || npm install)";
+  const LAST_UPDATED = "2026-06-16 (프론트 빌드 docker 멀티스테이지화 — prod-dist)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -629,7 +629,20 @@
         { name: "수동 npm install 선행 절차로 문서화", rejected: "deploy.sh --prod 한 번이라는 단순함이 깨지고, 잊으면 또 깨짐" },
         { name: "빌드 tsc에서 테스트 제외해 @types/node 제거", rejected: "근본인 '락 미동기화 시 npm ci 실패'는 그대로 남음" }
       ],
-      note: "갱신: scripts/deploy.sh(prod 1/2 빌드), frontend/Dockerfile(RUN npm ci || npm install), docs/troubleshooting.md #5, docs/infra.md §15.4. 첫 폴백 때 npm install이 호스트 락을 갱신하므로 다음 배포부턴 npm ci가 바로 성공(자기 안정화). 브랜치 chore/deploy-prod-npm-selfheal."
+      note: "갱신: scripts/deploy.sh(prod 1/2 빌드), frontend/Dockerfile(RUN npm ci || npm install), docs/troubleshooting.md #5, docs/infra.md §15.4. 첫 폴백 때 npm install이 호스트 락을 갱신하므로 다음 배포부턴 npm ci가 바로 성공(자기 안정화). 브랜치 chore/deploy-prod-npm-selfheal. (이 호스트 빌드 방식 자체는 바로 다음 결정에서 docker 멀티스테이지로 대체됨.)"
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-16",
+      status: "done",
+      title: "프론트 빌드를 호스트 → docker 멀티스테이지로 (prod-dist)",
+      decision: "frontend/Dockerfile 을 멀티스테이지(deps→dev/build→prod-dist)로 바꿨어요. dev 타깃은 vite HMR, prod-dist 타깃은 빌드된 dist 만 담은 경량 alpine 이미지로 공유 볼륨에 복사하고 종료해요. prod compose의 build:!reset null 과 호스트 dist 마운트를 제거하고 target: prod-dist 로 docker가 빌드하게 했어요. deploy.sh --prod 의 호스트 npm ci/build 단계는 삭제 — 이제 docker compose up --build 한 줄이에요.",
+      rationale: "이전엔 'prod 컨테이너에 node 안 넣기'를 호스트 빌드로 달성해서, 호스트 node/npm/lock 의존이라는 부채가 생겼어요(직전 self-heal 결정도 그 증상 대응). 빌드를 docker 안으로 넣으면 prod 컨테이너는 여전히 node 없이 dist 만 받으면서도(목표 유지), 호스트 의존이 사라지고 재현가능해져요. 설치/빌드가 Dockerfile 한 곳에 모여 'deploy.sh와 Dockerfile에 같은 npm 줄이 왜 둘 다 있나' 혼란도 사라져요.",
+      alternatives: [
+        { name: "호스트 빌드 + self-heal 유지(직전 결정)", rejected: "호스트 node/npm/lock 의존·툴체인 버전 의존이 남음. deploy.sh와 Dockerfile에 빌드가 이원화" },
+        { name: "prod 컨테이너에 node 포함해 런타임 빌드", rejected: "운영 이미지에 node·devDeps·소스가 들어가 표면적·크기 증가. dist만 서빙 원칙 위배" }
+      ],
+      note: "트레이드오프: 빌드가 docker 빌더 안에서 도니 빌더가 사내 npm 미러(NPM_REGISTRY_URL build-arg, 이미 배선)에 닿아야 함 — 미설정 시 public registry 차단으로 빌드가 멈춤(.env에 미러 설정). 직전 #38의 호스트 self-heal 부분은 이 결정으로 무효화(Dockerfile deps 스테이지의 npm ci||install 폴백은 유지). 갱신: frontend/Dockerfile, docker-compose.yml(target: dev), docker-compose.prod.yml(target: prod-dist), scripts/deploy.sh, docs/infra.md §15.4·troubleshooting.md #5. 브랜치 chore/frontend-dockerized-build."
     }
   ];
 
