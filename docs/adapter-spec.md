@@ -10,6 +10,8 @@
 
 처음 본 사람이라도 다음 순서로 따라가면 작업 시작 지점을 알 수 있다.
 
+> **배포·검증·운영 장애 대응 전에는 [`docs/troubleshooting.md`](troubleshooting.md)를 먼저 읽는다.** 500·SSO 리디렉션 루프·prod가 fake로 뜸·dev DB 초기화·node_modules·postgres 연결 등은 이미 해결된 증상이 많다. 추측 대신 런북의 수정안을 적용한다.
+
 1. **현재 상태 확인**
    - `ADAPTER_MODE=fake`로 `scripts/deploy.sh` 실행 → 골든 데이터셋 3행이 페이지에 표시되는지 확인
    - `cd backend && pytest` → 53/53 통과 확인
