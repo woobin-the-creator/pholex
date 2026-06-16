@@ -6,7 +6,7 @@
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; padding: 0; min-height: 100%; }
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'ss01';
   transition:
@@ -23,6 +23,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Typography — 프론트엔드 전역 폰트는 단일 토큰으로만 지정한다.
+     정책: 전체 mono (JetBrains Mono). 새 요소는 폰트를 직접 박지 말고
+     이 토큰을 쓰거나 inherit 할 것. src/__tests__/fontPolicy.test.ts 가 강제. */
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 /* ---------- Theme tokens --------------------------------------- */
@@ -589,13 +594,13 @@ body[data-theme='dark'] .card:hover {
   gap: 14px; margin-bottom: 18px;
 }
 body[data-theme='light'] .card__index {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  font-family: var(--font-mono); font-size: 10px;
   color: var(--ink-mute); letter-spacing: 0.1em; margin: 0 0 4px;
 }
 body[data-theme='dark'] .card__index {
   font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
   color: var(--accent); margin: 0 0 6px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-mono);
 }
 body[data-theme='light'] .card__title {
   margin: 0; font-size: 16px; font-weight: 500; letter-spacing: -0.015em;
@@ -765,7 +770,7 @@ body[data-theme='light'] .lot-table tbody tr:hover td { background-color: rgba(1
 body[data-theme='dark']  .lot-table tbody tr:hover td { background-color: rgba(236, 234, 230, 0.03); }
 
 .lot-table__lot-id {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px; padding-left: 0;
 }
 body[data-theme='dark'] .lot-table__lot-id { padding-left: 12px; }
@@ -824,7 +829,7 @@ body[data-theme='dark'] .placeholder-row { padding: 7px 0; }
 .placeholder-row:last-child { border-bottom: 0; }
 .placeholder-row__key { font-size: 12.5px; color: var(--ink-soft); }
 .placeholder-row__value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px; color: var(--ink);
 }
 body[data-theme='light'] .placeholder-row__value.is-warn { color: var(--hold); }
