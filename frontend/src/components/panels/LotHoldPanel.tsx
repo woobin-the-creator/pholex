@@ -5,19 +5,6 @@ import type { LotRow } from '../../types/lot'
 
 const DEFAULT_PAGE_SIZE = 15
 
-/** 번호 페이저 윈도잉 — 현재 페이지 주변 + 양끝, 사이는 줄임표(…). */
-function pageWindow(page: number, total: number): (number | '…')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const out: (number | '…')[] = [1]
-  const lo = Math.max(2, page - 1)
-  const hi = Math.min(total - 1, page + 1)
-  if (lo > 2) out.push('…')
-  for (let p = lo; p <= hi; p += 1) out.push(p)
-  if (hi < total - 1) out.push('…')
-  out.push(total)
-  return out
-}
-
 interface LotHoldPanelProps {
   rows: LotRow[]
   loading: boolean
@@ -66,6 +53,8 @@ export function LotHoldPanel({
   const start = (page - 1) * pageSize
   const pagedRows = useMemo(() => rows.slice(start, start + pageSize), [rows, start, pageSize])
   const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), totalPages))
+  const rangeFrom = total === 0 ? 0 : start + 1
+  const rangeTo = Math.min(start + pageSize, total)
 
   // rows/pageSize 변화로 현재 페이지가 범위를 벗어나면 보정.
   useEffect(() => {
@@ -186,6 +175,51 @@ export function LotHoldPanel({
         </div>
 
         <div className="card__meta">
+          {/* 인-헤더 범위 스테퍼 — 행 크기 + N–M / 전체 + 이전/다음. 푸터 없음(테이블 풀 높이). */}
+          {total > 0 ? (
+            <span className="lot-step">
+              <label className="lot-step__size">
+                행
+                <input
+                  className="field__input lot-step__sizeinput"
+                  type="number"
+                  min={1}
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Math.max(1, Number(e.target.value) || 1))
+                    setPage(1)
+                  }}
+                  aria-label="페이지 크기"
+                />
+              </label>
+              {totalPages > 1 ? (
+                <>
+                  <span className="lot-step__sep" aria-hidden="true">·</span>
+                  <span className="lot-step__range">
+                    {rangeFrom}–{rangeTo} <span className="lot-step__of">/</span> {total}
+                  </span>
+                  <button
+                    type="button"
+                    className="lot-step__btn"
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page <= 1}
+                    aria-label="이전 페이지"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="lot-step__btn"
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page >= totalPages}
+                    aria-label="다음 페이지"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
+            </span>
+          ) : null}
           <span>{shortClock(lastUpdated)}</span>
           <button
             type="button"
@@ -239,61 +273,6 @@ export function LotHoldPanel({
           <tbody>{renderBody()}</tbody>
         </table>
       </div>
-
-      {/* 번호 페이저 — 한 페이지에 다 들어오면 숨김. 기존 .pages/.page-link 토큰 재사용. */}
-      {totalPages > 1 ? (
-        <div className="pages pages--nums lot-pages">
-          <button
-            type="button"
-            className="page-link"
-            onClick={() => goToPage(page - 1)}
-            disabled={page <= 1}
-            aria-label="이전 페이지"
-          >
-            ‹
-          </button>
-          {pageWindow(page, totalPages).map((p, i) =>
-            p === '…' ? (
-              <span key={`gap-${i}`} className="page-gap" aria-hidden="true">…</span>
-            ) : (
-              <button
-                key={p}
-                type="button"
-                className={`page-link${p === page ? ' is-active' : ''}`}
-                onClick={() => goToPage(p)}
-                aria-label={`${p} 페이지`}
-                aria-current={p === page ? 'page' : undefined}
-              >
-                {p}
-              </button>
-            ),
-          )}
-          <button
-            type="button"
-            className="page-link"
-            onClick={() => goToPage(page + 1)}
-            disabled={page >= totalPages}
-            aria-label="다음 페이지"
-          >
-            ›
-          </button>
-          <span className="lot-pages__spacer" />
-          <label className="lot-pagesize">
-            행
-            <input
-              className="field__input lot-pagesize__input"
-              type="number"
-              min={1}
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Math.max(1, Number(e.target.value) || 1))
-                setPage(1)
-              }}
-              aria-label="페이지 크기"
-            />
-          </label>
-        </div>
-      ) : null}
     </article>
   )
 }
