@@ -341,6 +341,33 @@ body[data-theme='dark'] .page-link.is-active::after {
 .pages .page-link:nth-child(4) { animation-delay: 220ms; }
 .pages .page-link:nth-child(5) { animation-delay: 260ms; }
 
+/* ── '내 lot hold' 인-헤더 범위 스테퍼 — 행 크기 + N–M/전체 + 이전/다음. 푸터 없이 헤더에만. ── */
+.lot-step {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.lot-step__size {
+  font-size: 12px; color: var(--ink-mute);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.lot-step__sizeinput {
+  min-width: 44px; width: 48px; flex: 0 0 auto;
+  padding-top: 4px; padding-bottom: 4px; text-align: center;
+}
+.lot-step__sep { color: var(--ink-mute); opacity: 0.5; }
+.lot-step__range { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.02em; }
+.lot-step__of { opacity: 0.5; }
+.lot-step__btn {
+  border: 1px solid var(--rule); background: transparent; color: var(--ink);
+  font: inherit; font-size: 14px; line-height: 1;
+  width: 24px; height: 24px; border-radius: 7px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.lot-step__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.lot-step__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 .topnav__right { display: flex; align-items: center; gap: 14px; }
 .topnav__right > * { animation: fadeUp 540ms var(--ease-out) backwards; }
 .topnav__right > *:nth-child(1) { animation-delay: 200ms; }
