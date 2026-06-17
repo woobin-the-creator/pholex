@@ -31,6 +31,10 @@ class LotRowDTO(BaseModel):
     hold_comment: str | None = None
     updated_at: datetime
     is_held_by_me: bool
+    # hold를 건 담당자 사번 (raw 소스의 `lot_hold_user_id`). 캐노니컬 이름은 `hold_operator_id`
+    # (260606 watchlist spec CONTRACT-1/3). hold가 아니거나 담당자 미상이면 None.
+    # is_held_by_me(= hold_operator_id == 조회자 사번)와 공존한다 — 이건 "누가 걸었나"를 노출한다.
+    hold_operator_id: str | None = None
 
     _validate_updated_at = field_validator("updated_at")(_require_tz_aware)
 
