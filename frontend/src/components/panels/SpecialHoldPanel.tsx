@@ -335,35 +335,42 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                             </button>
                           </span>
                         ) : (
-                          // Editable ghost chip — ready to type.
-                          <span className="kw-chip kw-chip--ghost">
-                            <select
-                              className="kw-ghost__field"
-                              value={c.field}
-                              onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
-                              aria-label="필드"
-                            >
-                              {FIELDS.map((f) => (
-                                <option key={f} value={f}>{FIELD_LABEL[f]}</option>
-                              ))}
-                            </select>
-                            <span className={`kw-ghost__op${c.field === 'status' ? ' is-exact' : ''}`}>
-                              {opLabel(c.field)}
+                          // Field selector pill (click to choose) + dashed value pill.
+                          <Fragment>
+                            <span className="kw-fieldpill">
+                              <select
+                                className="kw-fieldpill__select"
+                                value={c.field}
+                                onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
+                                aria-label="필드 선택"
+                              >
+                                {FIELDS.map((f) => (
+                                  <option key={f} value={f}>{FIELD_LABEL[f]}</option>
+                                ))}
+                              </select>
+                              <span className="kw-fieldpill__caret material-symbols-outlined" aria-hidden="true">
+                                expand_more
+                              </span>
                             </span>
-                            <input
-                              className="kw-ghost__input"
-                              value={c.value}
-                              autoFocus={g.conditions.length > 1 || gi > 0}
-                              placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
-                              onChange={(e) => setValue(g.id, c.id, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                              }}
-                              onBlur={() => commitOrDiscard(g.id, c.id)}
-                              aria-label="값"
-                              size={6}
-                            />
-                          </span>
+                            <span className="kw-chip kw-chip--ghost">
+                              <span className={`kw-ghost__op${c.field === 'status' ? ' is-exact' : ''}`}>
+                                {opLabel(c.field)}
+                              </span>
+                              <input
+                                className="kw-ghost__input"
+                                value={c.value}
+                                autoFocus={g.conditions.length > 1 || gi > 0}
+                                placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
+                                onChange={(e) => setValue(g.id, c.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                                }}
+                                onBlur={() => commitOrDiscard(g.id, c.id)}
+                                aria-label="값"
+                                size={6}
+                              />
+                            </span>
+                          </Fragment>
                         )}
                       </Fragment>
                     )
@@ -379,15 +386,26 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 </div>
               </Fragment>
             ))}
-            <button type="button" className="kw-add-or" onClick={addGroup}>
-              + 또는(OR) 그룹
+            <button
+              type="button"
+              className="kw-add-or"
+              onClick={addGroup}
+              title="또는(OR) 그룹 추가"
+              aria-label="또는(OR) 그룹 추가"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className="kw-iconbtn kw-iconbtn--save"
+              onClick={() => void savePreset()}
+              disabled={busy || !presetName.trim() || !hasQuery}
+              title="프리셋 저장"
+              aria-label="프리셋 저장"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">save</span>
             </button>
           </div>
-
-          <p className="kw-preview" title={preview}>
-            <span className="kw-preview__tag">미리보기</span>
-            {preview}
-          </p>
 
           <div className="kw-editor">
             <button
@@ -420,14 +438,6 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
               onChange={(e) => setPresetName(e.target.value)}
               aria-label="프리셋 이름"
             />
-            <button
-              type="button"
-              className="kw-btn kw-btn--ghost"
-              onClick={() => void savePreset()}
-              disabled={busy || !presetName.trim() || !hasQuery}
-            >
-              프리셋 저장
-            </button>
             <select
               className="kw-select"
               value=""
@@ -438,7 +448,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
               }}
               aria-label="프리셋 불러오기"
             >
-              <option value="">프리셋…</option>
+              <option value="">필터 선택</option>
               {presets.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -446,8 +456,15 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 </option>
               ))}
             </select>
-            <button type="button" className="kw-btn kw-btn--ghost" onClick={clearAll} disabled={!hasQuery}>
-              비우기
+            <button
+              type="button"
+              className="kw-iconbtn"
+              onClick={clearAll}
+              disabled={!hasQuery}
+              title="초기화"
+              aria-label="초기화"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">restart_alt</span>
             </button>
           </div>
         </div>

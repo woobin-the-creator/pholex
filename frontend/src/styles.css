@@ -42,6 +42,7 @@ body[data-theme='light'] {
   --hold: #c63927;
   --hold-soft: #fff2f0;
   --accent: #111;
+  --save: #5fab3a;
 
   --ambient-h: linear-gradient(
     to bottom,
@@ -78,6 +79,7 @@ body[data-theme='dark'] {
   --hold: #e87b6d;
   --hold-soft: rgba(232, 123, 109, 0.1);
   --accent: #d6b870;
+  --save: #9ccc65;
   --champagne: #f5e9c4;
 
   --ambient-h: linear-gradient(
@@ -964,14 +966,6 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
 .kw-spacer { flex: 1 1 auto; }
 .kw-size { font-size: 12px; color: var(--ink-mute); display: inline-flex; align-items: center; }
 
-/* 미리보기 — 사람말 한 줄 */
-.kw-preview { margin: 0 0 14px; font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
-.kw-preview__tag {
-  display: inline-block; margin-right: 8px; font-size: 10px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--ink-mute);
-  border: 1px solid var(--rule); border-radius: 5px; padding: 1px 6px;
-}
-
 /* 인라인 고스트 칩 빌더 — 박스(AND) + 바깥 OR */
 .kw-builder--chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .kw-chipbox {
@@ -1001,8 +995,6 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
 .kw-chip__x:hover { color: var(--hold); }
 
 .kw-chip--ghost { border-style: dashed; border-color: var(--accent); background: var(--tint); padding: 3px 8px; }
-.kw-ghost__field { border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
-.kw-ghost__field:focus { outline: 0; }
 .kw-ghost__op { font-size: 10.5px; font-weight: 600; color: var(--ink-mute); }
 .kw-ghost__op.is-exact { color: var(--hold); }
 .kw-ghost__input {
@@ -1018,10 +1010,38 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
 }
 .kw-add-chip:hover { border-color: var(--accent); color: var(--accent); }
 .kw-add-or {
-  align-self: flex-start; border: 1px solid var(--rule); background: transparent; color: var(--ink-soft);
-  border-radius: 8px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-soft);
+  border-radius: 8px; min-width: 34px; height: 32px; padding: 0 12px; font-size: 16px; font-weight: 700;
+  line-height: 1; cursor: pointer; font-family: inherit;
 }
 .kw-add-or:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 필드 선택 pill — "클릭하면 값을 고르는 UI"임을 강조 (점선 입력칩과 분리) */
+.kw-fieldpill {
+  display: inline-flex; align-items: center; gap: 1px;
+  border: 1px solid var(--accent); border-radius: 999px; background: var(--soft);
+  padding: 3px 7px 3px 11px; cursor: pointer;
+}
+.kw-fieldpill:hover { background: var(--tint); }
+.kw-fieldpill__select {
+  border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 12px;
+  font-weight: 700; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none;
+}
+.kw-fieldpill__select:focus { outline: 0; }
+.kw-fieldpill__caret { font-size: 15px; color: var(--accent); pointer-events: none; }
+
+/* 아이콘 버튼 — 프리셋 저장(연두) / 초기화 */
+.kw-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-soft);
+  border-radius: 8px; min-width: 34px; height: 32px; padding: 0 6px; cursor: pointer; font-family: inherit;
+}
+.kw-iconbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.kw-iconbtn:disabled { opacity: .4; cursor: not-allowed; }
+.kw-iconbtn .material-symbols-outlined { font-size: 19px; }
+.kw-iconbtn--save { color: var(--save); border-color: color-mix(in srgb, var(--save) 40%, var(--rule)); }
+.kw-iconbtn--save:hover:not(:disabled) { border-color: var(--save); color: var(--save); }
 
 /* 결과 — 행 최대화 */
 .kw-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
