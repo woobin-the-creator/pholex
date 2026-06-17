@@ -1,7 +1,22 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { formatDateTime } from '../../utils/format'
 import { HOLD_STATUS, statusPillClass } from '../../utils/statusDisplay'
 import type { LotRow } from '../../types/lot'
+
+const DEFAULT_PAGE_SIZE = 15
+
+/** 번호 페이저 윈도잉 — 현재 페이지 주변 + 양끝, 사이는 줄임표(…). */
+function pageWindow(page: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const out: (number | '…')[] = [1]
+  const lo = Math.max(2, page - 1)
+  const hi = Math.min(total - 1, page + 1)
+  if (lo > 2) out.push('…')
+  for (let p = lo; p <= hi; p += 1) out.push(p)
+  if (hi < total - 1) out.push('…')
+  out.push(total)
+  return out
+}
 
 interface LotHoldPanelProps {
   rows: LotRow[]
@@ -41,6 +56,30 @@ export function LotHoldPanel({
   const [cometGeo, setCometGeo] = useState<{ w: number; h: number; d: string } | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
 
+  // ── 클라이언트 slice 페이지네이션 ──
+  // '내 lot hold' rows는 WebSocket 푸시(props)로 내려오므로 서버 페이징 대신 slice가 단순/적합.
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+
+  const total = rows.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const start = (page - 1) * pageSize
+  const pagedRows = useMemo(() => rows.slice(start, start + pageSize), [rows, start, pageSize])
+  const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), totalPages))
+
+  // rows/pageSize 변화로 현재 페이지가 범위를 벗어나면 보정.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  // 알람 등에서 특정 lot으로 포커스가 오면, 그 lot이 있는 페이지로 점프해 코멧이 보이게 한다.
+  useEffect(() => {
+    if (!focusLotId) return
+    const idx = rows.findIndex((r) => r.lotId === focusLotId)
+    if (idx >= 0) setPage(Math.floor(idx / pageSize) + 1)
+  }, [focusLotId, rows, pageSize])
+
+  // 코멧 측정 — 페이지 점프로 행이 마운트된 뒤 다시 재기 위해 page도 의존성에 둔다.
   useEffect(() => {
     if (!focusLotId) {
       setCometGeo(null)
@@ -62,7 +101,7 @@ export function LotHoldPanel({
       `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
       `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
     setCometGeo({ w, h, d })
-  }, [focusLotId])
+  }, [focusLotId, page])
 
   const handleRefresh = () => {
     setSpinning(true)
@@ -90,7 +129,7 @@ export function LotHoldPanel({
         </tr>
       )
     }
-    return rows.map((row) => {
+    return pagedRows.map((row) => {
       const isHold = row.status === HOLD_STATUS
       return (
         <tr
@@ -200,6 +239,61 @@ export function LotHoldPanel({
           <tbody>{renderBody()}</tbody>
         </table>
       </div>
+
+      {/* 번호 페이저 — 한 페이지에 다 들어오면 숨김. 기존 .pages/.page-link 토큰 재사용. */}
+      {totalPages > 1 ? (
+        <div className="pages pages--nums lot-pages">
+          <button
+            type="button"
+            className="page-link"
+            onClick={() => goToPage(page - 1)}
+            disabled={page <= 1}
+            aria-label="이전 페이지"
+          >
+            ‹
+          </button>
+          {pageWindow(page, totalPages).map((p, i) =>
+            p === '…' ? (
+              <span key={`gap-${i}`} className="page-gap" aria-hidden="true">…</span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                className={`page-link${p === page ? ' is-active' : ''}`}
+                onClick={() => goToPage(p)}
+                aria-label={`${p} 페이지`}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            type="button"
+            className="page-link"
+            onClick={() => goToPage(page + 1)}
+            disabled={page >= totalPages}
+            aria-label="다음 페이지"
+          >
+            ›
+          </button>
+          <span className="lot-pages__spacer" />
+          <label className="lot-pagesize">
+            행
+            <input
+              className="field__input lot-pagesize__input"
+              type="number"
+              min={1}
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Math.max(1, Number(e.target.value) || 1))
+                setPage(1)
+              }}
+              aria-label="페이지 크기"
+            />
+          </label>
+        </div>
+      ) : null}
     </article>
   )
 }
