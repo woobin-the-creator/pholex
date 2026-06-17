@@ -67,3 +67,20 @@ async def test_upsert_lots_batch_atomic(lot_repository):
     await lot_repository.upsert_lots_batch([])
     # No assertion on internal state (Port doesn't expose it). Behavioral guarantee:
     # both calls returned without raising.
+
+
+@pytest.mark.asyncio
+async def test_dump_last_run_at_defaults_to_none(lot_repository):
+    """dump가 한 번도 안 돌았으면 None (lot_dump_meta 행 없음)."""
+    assert await lot_repository.get_dump_last_run_at() is None
+
+
+@pytest.mark.asyncio
+async def test_dump_last_run_at_returns_injected_tz_aware_value(lot_repository):
+    """세터로 주입된 heartbeat를 그대로 반환하고, tz-aware UTC여야 한다."""
+    ts = datetime(2026, 6, 17, 9, 0, 0, tzinfo=timezone.utc)
+    # 세터는 fake 전용 헬퍼. real adapter는 lot_dump_meta seed로 동일 계약을 만족시킨다.
+    lot_repository.set_dump_last_run_at(ts)
+    got = await lot_repository.get_dump_last_run_at()
+    assert got == ts
+    assert got.tzinfo is not None

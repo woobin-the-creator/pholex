@@ -35,6 +35,24 @@ class LotRowDTO(BaseModel):
     _validate_updated_at = field_validator("updated_at")(_require_tz_aware)
 
 
+class MyHoldResult(BaseModel):
+    """슬롯[1] "내 lot hold" usecase 반환. hold 행 목록 + dump 신선도 타임스탬프.
+
+    last_run_at은 lot_dump_meta.last_run_at (dump가 마지막에 돈 시각, tz-aware UTC).
+    dump가 한 번도 안 돌았으면 None. 신선도 색·카운터는 프론트가 last_run_at + 임계값으로 계산.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rows: list[LotRowDTO]
+    last_run_at: datetime | None = None
+
+    @field_validator("last_run_at")
+    @classmethod
+    def _tz_aware_if_present(cls, value: datetime | None) -> datetime | None:
+        return _require_tz_aware(value) if value is not None else None
+
+
 class WatchlistRowDTO(BaseModel):
     """슬롯[2] "내 관심 랏" 표시 행. watchlist lot_id ⨝ lot_status 결과.
 

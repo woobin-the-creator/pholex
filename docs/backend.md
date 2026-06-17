@@ -83,13 +83,15 @@ CREATE TABLE table_configs (
 
 **배경**: 슬롯[2]는 placeholder "수율 계측" → "내 관심 랏"으로 교체. 기존 슬롯[1] "내 lot hold"는 유지하되 신호등 + 캐시 fallback 추가. `lot_status`는 30분 dump 마스터 캐시로, 두 슬롯의 공용 소스가 된다.
 
-**슬롯[1] "내 lot hold" (유지 + 보강)** — 실시간 LotSource(`hold_operator=나` 자동) primary. 실패 시 `lot_status WHERE hold_operator_id=나`로 캐시 fallback. 응답 payload에 `health` 필드(백엔드 주도, 프론트는 값만 따름):
+**슬롯[1] "내 lot hold" (유지 + 보강)** — **(2026-06-17 갱신)** 실시간 LotSource가 사내에도 미구현이라 30분 dump(`lot_status`)가 primary다. hold 데이터는 **LotSource 포트**로 읽고(나중에 실시간 API가 생기면 같은 포트에 무변경 교체), 신선도(`lot_dump_meta.last_run_at`)는 **LotRepository 포트**로 분리해 읽는다. 응답 payload의 `dumpMeta`에 `last_run_at`(절대 타임스탬프) + 임계값(fresh 30분 / stale 60분)만 싣고, **신선도 색·경과시간은 프론트가 매초 계산**한다(백엔드는 정책=임계값만 소유):
 
-| health | 의미 |
+| 신선도 | 조건 (프론트가 `last_run_at`으로 계산) |
 |--------|------|
-| `live` | LotSource 실시간 성공 (🟢) |
-| `cache` | 실시간 실패 → lot_status 캐시 응답, ≤30분 (🟡) |
-| `stale`/`down` | `lot_dump_meta.last_run_at`이 dump 주기 2배(≈60분) 초과 또는 완전 실패 (🔴) |
+| 🟢 `fresh` | `now − last_run_at ≤ 30분` |
+| 🟡 `aging` | `30분 < … ≤ 60분` |
+| 🔴 `stale` | `> 60분` 또는 `last_run_at` 없음(dump 미실행) |
+
+> **방식 조정**: 원안(`health` enum을 백엔드가 `live/cache/stale` 판정, "프론트는 값만 따름")에서 **timestamp + 임계값** 방식으로 바꿨다. "마지막 갱신 MM:SS 전" 카운터와 신호등 색을 같은 `last_run_at` 한 소스로 계산해, 화면을 오래 켜둘 때 카운터는 흐르는데 색은 응답 순간에 고정되는 불일치를 없앴다. `live`(실시간 성공) 상태는 실시간 LotSource가 없어 제거. 실시간 API가 생기면 hold는 LotSource에 무변경 교체되고 신선도는 dump 고유값이라 Repository에 잔류한다. 결정 기록: `history/decisions.html`(2026-06-17), 포트 선택 검토: 이슈 #44.
 
 **슬롯[2] "내 관심 랏" (신규)** — 유저가 lot_id 수동 입력·저장하는 watchlist.
 - **저장**: 전체 교체(set semantics) — 화면 리스트가 곧 watchlist 전체. `user_lots`에서 내 행 전부 삭제 후 재삽입(UnitOfWork 원자성). 빈 row drop / 중복 dedupe / `order_index`로 순서 보존.

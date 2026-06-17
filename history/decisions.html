@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-17 ('내 lot hold' 페이지네이션 — client slice + 인-헤더 범위 스테퍼)";
+  const LAST_UPDATED = "2026-06-17 (슬롯1 신선도: dump primary + 포트 분리 + health timestamp 방식)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -657,6 +657,20 @@
         { name: "시안 B(번호 페이저)", rejected: "휴면 토큰 .pages/.page-link 재사용·점프가 매력이나 푸터 chrome이 생김. 처음 B를 골랐다가 헤더 컴팩트 C로 번복" }
       ],
       note: "AC(#37): 페이지 크기 조절(헤더 컴팩트) + 이전/다음 + 현재/전체(N–M / 전체) + 페이지 여럿일 때만 범위·화살표 노출 + aria-label + mono 폰트 가드(#36) 통과. 페이지 크기 입력은 totalPages<=1이어도 헤더에 남겨요 — 크기를 줄여 다시 페이징할 수 있어야 하고, '크기 변경으로 1페이지가 되면 컨트롤이 사라져 되돌릴 수 없는' 함정을 피하려고요(단 rows=0이면 스테퍼 전체 숨김). 신규 테스트 8개(slice/범위 갱신/끝단 비활성/마지막 범위 끊김/크기 리셋/포커스 점프/빈 목록/단일 페이지 숨김, 총 26 그린). 프로토타입은 proto/lot-hold-pagination 브랜치(미머지·삭제가능), 비교 GIF는 이슈 #40. 갱신: frontend/src/components/panels/LotHoldPanel.tsx, styles.css(.lot-step*). 브랜치 feat/lot-hold-pagination."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-17",
+      status: "future",
+      title: "슬롯[1] 신선도: dump를 primary로 확정 + 포트 분리(hold=Source / 신선도=Repository) + health는 timestamp 방식",
+      decision: "실시간 LotSource가 사내에도 미구현이라, 30분 dump(lot_status)를 슬롯[1] '내 lot hold'의 primary로 확정했어요. hold 데이터는 LotSource 포트로 읽고(나중에 실시간 API가 생기면 같은 포트에 무변경 교체), 신선도(lot_dump_meta.last_run_at)는 LotRepository 포트로 분리해 읽어요. 신선도 표시는 백엔드가 health enum을 판정하는 대신, last_run_at(절대 타임스탬프) + 임계값(30/60분)만 응답에 싣고 프론트가 색(🟢≤30분 / 🟡30~60분 / 🔴>60분)과 '마지막 갱신 MM:SS 전' 카운터를 매초 계산해요.",
+      rationale: "① dump primary — RealLotSource(real/)가 비어 있어 실시간 primary가 실재하지 않아요. 없는 primary를 가정하면 🟢live가 영영 안 뜨고 fallback이 헛돌아요(§7도 MVP=30분 dump로 충분). ② hold=Source / 신선도=Repository 분리 — 나중에 실시간 API가 생기면 hold는 LotSource를 갈아끼우지만 last_run_at은 dump 고유값이라 교체 대상이 아니에요. 신선도까지 LotSource에 넣으면 실시간 어댑터가 dump-메타 없는 get_freshness()를 떠안게 돼요. ③ timestamp 방식 — mm:ss 카운터를 넣은 이상 색·숫자를 같은 last_run_at 한 소스로 계산해야 일치해요. enum이면 화면을 오래 켜둘 때 카운터는 흐르는데 색은 응답 순간에 고정되는 불일치가 생겨요. 임계값을 백엔드가 내려주므로 §4.3 '백엔드 주도' 의도는 지켜져요.",
+      alternatives: [
+        { name: "실시간 LotSource primary + dump fallback (§4.3 원안)", rejected: "RealLotSource가 사내에도 미구현 — 없는 primary라 슬롯1이 빈 화면" },
+        { name: "신선도도 LotSource 포트에", rejected: "실시간 교체 시 실시간 어댑터가 dump-메타 메서드를 떠안음 — 신선도는 dump 고유라 Repository가 맞음" },
+        { name: "health enum을 백엔드가 판정(§4.3 '프론트는 값만')", rejected: "응답 시점 고정 — mm:ss 카운터는 흐르는데 색은 멈추는 불일치" }
+      ],
+      note: "구현 범위(Claude PR): ports/dto.py(MyHoldResult), ports/lot_repository.py(get_dump_last_run_at), usecases/fetch_my_holds.py, api/wire.py(slot_payload에 dumpMeta), api/lots.py, adapters/fake/lot_repository.py + contract·wire 테스트 / frontend(freshness 유틸·useLiveCounter·LotHoldPanel 신호등+카운터). 사내 영역: lot_status hold SELECT(LotSource) + lot_dump_meta SELECT(LotRepository) — docs/dump-job-spec.md에 항목 추가. 포트 선택 검토 인포그래픽은 이슈 #44. §4.3의 'health 백엔드 주도'를 enum→timestamp+임계값으로 조정."
     }
   ];
 

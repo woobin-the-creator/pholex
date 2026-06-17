@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useAtomValue } from 'jotai'
+import { lotHoldDumpMetaAtom } from '../../atoms/tableAtoms'
 import { formatDateTime } from '../../utils/format'
 import { HOLD_STATUS, statusPillClass } from '../../utils/statusDisplay'
+import { computeFreshness, formatElapsed } from '../../utils/freshness'
 import type { LotRow } from '../../types/lot'
 
 const DEFAULT_PAGE_SIZE = 15
@@ -42,6 +45,26 @@ export function LotHoldPanel({
   const [spinning, setSpinning] = useState(false)
   const [cometGeo, setCometGeo] = useState<{ w: number; h: number; d: string } | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
+
+  // ── dump 신선도 신호등 + 매초 경과 카운터 ──
+  const dumpMeta = useAtomValue(lotHoldDumpMetaAtom)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const freshness = dumpMeta
+    ? computeFreshness(dumpMeta.lastRunAt, nowMs, dumpMeta)
+    : 'stale'
+  const elapsedText = dumpMeta ? formatElapsed(dumpMeta.lastRunAt, nowMs) : '—'
+
+  const freshnessColor =
+    freshness === 'fresh'
+      ? 'var(--color-success-green, #1aae39)'
+      : freshness === 'aging'
+        ? 'var(--color-warning, #dd5b00)'
+        : 'var(--color-critical, #e53e3e)'
 
   // ── 클라이언트 slice 페이지네이션 ──
   // '내 lot hold' rows는 WebSocket 푸시(props)로 내려오므로 서버 페이징 대신 slice가 단순/적합.
@@ -231,6 +254,18 @@ export function LotHoldPanel({
             </span>
           ) : null}
           <span>{shortClock(lastUpdated)}</span>
+          {dumpMeta ? (
+            <span className="dump-freshness" title={dumpMeta.lastRunAt ?? '갱신 없음'}>
+              <span
+                className="dump-freshness__dot"
+                aria-label={`신선도: ${freshness}`}
+                style={{ background: freshnessColor }}
+              />
+              <span className="dump-freshness__elapsed">
+                마지막 갱신 {elapsedText} 전
+              </span>
+            </span>
+          ) : null}
           <button
             type="button"
             className={`card__action${spinning ? ' is-spinning' : ''}`}

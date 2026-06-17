@@ -1,5 +1,5 @@
 import type { SessionResponse } from '../types/auth'
-import type { LotRow, SlotPayload } from '../types/lot'
+import type { DumpMeta, LotRow, SlotPayload } from '../types/lot'
 import type { KeywordConfig, KeywordPreset, SpecialHoldResult } from '../types/keyword'
 
 export class UnauthorizedError extends Error {
@@ -40,6 +40,16 @@ function normalizeLotRow(row: Record<string, unknown>): LotRow {
   }
 }
 
+function normalizeDumpMeta(raw: unknown): DumpMeta | null {
+  if (!raw || typeof raw !== 'object') return null
+  const meta = raw as Record<string, unknown>
+  return {
+    lastRunAt: meta.lastRunAt != null ? String(meta.lastRunAt) : null,
+    freshMaxMinutes: Number(meta.freshMaxMinutes ?? 30),
+    staleMinMinutes: Number(meta.staleMinMinutes ?? 60),
+  }
+}
+
 function normalizeSlotPayload(payload: Record<string, unknown>): SlotPayload {
   const rawRows = Array.isArray(payload.rows) ? payload.rows : []
 
@@ -49,6 +59,7 @@ function normalizeSlotPayload(payload: Record<string, unknown>): SlotPayload {
     diff: Boolean(payload.diff),
     lastUpdated:
       payload.lastUpdated ? String(payload.lastUpdated) : payload.last_updated ? String(payload.last_updated) : null,
+    dumpMeta: normalizeDumpMeta(payload.dumpMeta ?? payload.dump_meta),
   }
 }
 

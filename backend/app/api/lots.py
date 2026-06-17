@@ -23,10 +23,11 @@ async def get_my_hold(
     clock: Annotated[Clock, Depends(clock_dep)],
     force_refresh: bool = False,
 ) -> dict:
-    rows = await uc.execute(session.employee_number, force_refresh=force_refresh)
+    result = await uc.execute(session.employee_number, force_refresh=force_refresh)
     return slot_payload(
         table_id=TABLE_ID_MY_HOLD,
-        rows=rows,
+        rows=result.rows,
         diff=False,
         last_updated=clock.now(),
+        last_run_at=result.last_run_at,
     )

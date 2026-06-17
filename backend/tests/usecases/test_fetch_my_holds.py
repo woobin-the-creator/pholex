@@ -21,8 +21,8 @@ def _make_uc() -> tuple[FetchMyHolds, InMemoryLotSource, InMemoryLotRepository]:
 @pytest.mark.asyncio
 async def test_first_call_fetches_from_source():
     uc, _, _ = _make_uc()
-    rows = await uc.execute("99999")
-    assert len(rows) == 3
+    result = await uc.execute("99999")
+    assert len(result.rows) == 3
 
 
 @pytest.mark.asyncio
@@ -32,8 +32,8 @@ async def test_second_call_hits_cache():
     cached_before = await repo.get_my_holds_cached("99999")
     assert cached_before is not None and len(cached_before) == 3
     # second call returns from cache (no source roundtrip needed)
-    rows2 = await uc.execute("99999")
-    assert len(rows2) == 3
+    result2 = await uc.execute("99999")
+    assert len(result2.rows) == 3
 
 
 @pytest.mark.asyncio
@@ -53,15 +53,39 @@ async def test_force_refresh_bypasses_cache():
     ]
     await repo.cache_my_holds("99999", stale)
     # force_refresh should NOT return the stale value
-    rows = await uc.execute("99999", force_refresh=True)
-    assert "STALE" not in {r.lot_id for r in rows}
+    result = await uc.execute("99999", force_refresh=True)
+    assert "STALE" not in {r.lot_id for r in result.rows}
 
 
 @pytest.mark.asyncio
 async def test_unknown_employee_returns_empty():
     uc, _, _ = _make_uc()
-    rows = await uc.execute("00000")
-    assert rows == []
+    result = await uc.execute("00000")
+    assert result.rows == []
+
+
+@pytest.mark.asyncio
+async def test_last_run_at_none_when_dump_never_ran():
+    uc, _, _ = _make_uc()
+    result = await uc.execute("99999")
+    assert result.last_run_at is None
+
+
+@pytest.mark.asyncio
+async def test_last_run_at_returned_on_cache_hit_and_miss():
+    # last_run_at은 캐시 hit/miss·force_refresh 무관하게 항상 repo에서 읽혀야 한다.
+    uc, _, repo = _make_uc()
+    ts = datetime(2026, 6, 17, 9, 0, 0, tzinfo=timezone.utc)
+    repo.set_dump_last_run_at(ts)
+
+    miss = await uc.execute("99999")  # cache miss → source
+    assert miss.last_run_at == ts
+
+    hit = await uc.execute("99999")  # cache hit
+    assert hit.last_run_at == ts
+
+    forced = await uc.execute("99999", force_refresh=True)
+    assert forced.last_run_at == ts
 
 
 @pytest.mark.asyncio
@@ -84,8 +108,8 @@ async def test_empty_holds_does_not_call_batch_ops(monkeypatch):
     monkeypatch.setattr(repo, "upsert_lots_batch", spy_upsert)
     monkeypatch.setattr(repo, "cache_my_holds", spy_cache)
 
-    rows = await uc.execute("00000")  # 없는 사번 → source 가 [] 반환
+    result = await uc.execute("00000")  # 없는 사번 → source 가 [] 반환
 
-    assert rows == []
+    assert result.rows == []
     assert called["upsert"] == 0
     assert called["cache"] == 0

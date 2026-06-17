@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from datetime import datetime
 
 from app.domain.keyword import KeywordQuery
 from app.ports.dto import LotRowDTO
@@ -12,6 +13,8 @@ class InMemoryLotRepository:
     def __init__(self) -> None:
         self._by_lot: dict[str, LotRowDTO] = {}
         self._cache_by_employee: dict[str, list[LotRowDTO]] = {}
+        # dump heartbeat. 기본 None = dump 미실행. 테스트가 세터로 주입한다.
+        self._dump_last_run_at: datetime | None = None
 
     async def upsert_lot(self, row: LotRowDTO) -> None:
         self._by_lot[row.lot_id] = row
@@ -64,3 +67,10 @@ class InMemoryLotRepository:
 
     async def invalidate_cache(self, employee_number: str) -> None:
         self._cache_by_employee.pop(employee_number, None)
+
+    def set_dump_last_run_at(self, dt: datetime | None) -> None:
+        """테스트 헬퍼 — dump heartbeat 주입 (Port 외 fake 전용)."""
+        self._dump_last_run_at = dt
+
+    async def get_dump_last_run_at(self) -> datetime | None:
+        return self._dump_last_run_at

@@ -3,6 +3,11 @@
 > 본 문서는 Pholex MVP의 **Real adapter 4종**을 사내 AI가 구현할 때 따라야 할 사양이다.
 > 도메인/Port/DTO는 외부(Claude)가 정의했고, 사내 AI는 이 사양을 만족하는 adapter를
 > `backend/app/adapters/real/` 아래에 작성한다.
+>
+> **별개 작업 — 30분 dump 잡**: 사내 스케줄러가 `lot_status`·`lot_dump_meta`를 30분마다
+> 적재하는 **레포 바깥 배치 잡**은 본 문서가 아니라 [`docs/dump-job-spec.md`](dump-job-spec.md)를 따른다.
+> (본 문서 = 앱 내부 실시간 adapter, dump-job-spec = 앱 밖 배치 ETL. 접점: dump가 채운 `lot_status`를
+> `RealLotRepository` 캐시 fallback이 읽음.)
 
 ---
 
@@ -105,11 +110,13 @@ class LotRepository(Protocol):
     async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None: ...
     async def cache_my_holds(self, employee_number: str, rows: list[LotRowDTO]) -> None: ...
     async def invalidate_cache(self, employee_number: str) -> None: ...
+    async def get_dump_last_run_at(self) -> datetime | None: ...   # 슬롯1 신선도 (2026-06-17)
 ```
 
 - `get_my_holds_cached` 반환 `None` ↔ **cache miss** (key 부재)
 - `get_my_holds_cached` 반환 `[]` ↔ **정상 빈 결과** (둘은 구분되어야 함)
 - `upsert_lots_batch`는 **단일 트랜잭션**으로 적용 (부분 실패 금지)
+- `get_dump_last_run_at`: `lot_dump_meta.last_run_at`(dump 마지막 실행 시각, **tz-aware UTC**). 미실행 시 `None`, employee 무관 **전역값**. Real: `SELECT last_run_at FROM lot_dump_meta WHERE id = 1`. 슬롯1 신선도 신호등(🟢≤30·🟡30~60·🔴>60분)의 소스 — 프론트가 이 타임스탬프로 색·경과시간 계산
 
 ### 3.3 `MailSender` (`backend/app/ports/mail_sender.py`)
 
@@ -298,8 +305,8 @@ REST `/api/lots/my-hold` 응답과 WS `table_update` 페이로드의 키가 fron
 
 다음 4개 어댑터를 모두 작성해야 사내 데이터가 페이지에 표시된다:
 
-- [ ] `app/adapters/real/lot_source.py` → `RealLotSource` (사내 REST/DB → DTO 변환, polling + stream)
-- [ ] `app/adapters/real/lot_repository.py` → `RealLotRepository` (Pholex Postgres SQLAlchemy async)
+- [ ] `app/adapters/real/lot_source.py` → `RealLotSource` (사내 REST/DB → DTO 변환, polling + stream). **(2026-06-17)** 실시간 API 미구현 → MVP는 `fetch_my_holds`가 `lot_status`에서 hold를 읽음 (`WHERE lot_hold_user_id=:사번 AND lot_status_seg='Hold'`, reference `pg_lot_source.py`). 실시간 API 생기면 이 어댑터만 교체.
+- [ ] `app/adapters/real/lot_repository.py` → `RealLotRepository` (Pholex Postgres SQLAlchemy async). **신선도** `get_dump_last_run_at` → `SELECT last_run_at FROM lot_dump_meta WHERE id=1` 구현 추가.
 - [ ] `app/adapters/real/sso_verifier.py` → `RealSsoVerifier` (사내 OIDC)
 - [ ] `app/adapters/real/mail_sender.py` → `RealMailSender` (사내 SMTP/메일 라이브러리)
 - [ ] alembic migration 디렉터리 + 초기 마이그레이션 (`RealLotRepository` 테이블 DDL)
