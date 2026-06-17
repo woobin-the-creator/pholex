@@ -103,4 +103,36 @@ describe('LotHoldPanel 페이지네이션 (시안 C 인-헤더 범위 스테퍼)
     expect(screen.getByText('LOT-050')).toBeInTheDocument()
     expect(rangeText(container)).toBe('46–60 / 73')
   })
+
+  it('focus가 살아있는 동안 rows push가 와도 사용자가 넘긴 페이지를 되돌리지 않는다', async () => {
+    const user = userEvent.setup()
+    const { rerender, container } = render(
+      <LotHoldPanel rows={makeRows(73)} {...baseProps} focusLotId="LOT-050" />,
+    )
+    // focus로 4페이지(46–60)로 점프
+    expect(rangeText(container)).toBe('46–60 / 73')
+    // 사용자가 이전 페이지로 이동(3페이지, 31–45)
+    await user.click(screen.getByLabelText('이전 페이지'))
+    expect(rangeText(container)).toBe('31–45 / 73')
+    // WebSocket push = 같은 focus 유지한 채 새 rows 배열로 리렌더
+    rerender(<LotHoldPanel rows={makeRows(73)} {...baseProps} focusLotId="LOT-050" />)
+    // 페이지가 4로 튕겨 돌아가지 않고 3페이지를 유지해야 한다
+    expect(rangeText(container)).toBe('31–45 / 73')
+  })
+
+  it('rows가 줄어 현재 페이지가 범위를 벗어나면 빈 테이블 없이 안전 페이지를 렌더한다', () => {
+    const { rerender } = render(<LotHoldPanel rows={makeRows(73)} {...baseProps} />)
+    // 5페이지로 이동(범위 밖이 될 페이지)
+    fireEvent.click(screen.getByLabelText('다음 페이지'))
+    fireEvent.click(screen.getByLabelText('다음 페이지'))
+    fireEvent.click(screen.getByLabelText('다음 페이지'))
+    fireEvent.click(screen.getByLabelText('다음 페이지'))
+    expect(screen.getByText('LOT-072')).toBeInTheDocument()
+    // push로 행이 10개로 축소 → page(5)가 범위를 벗어남
+    rerender(<LotHoldPanel rows={makeRows(10)} {...baseProps} />)
+    // 빈 tbody가 아니라 안전 페이지(1페이지) 내용이 즉시 보여야 한다
+    expect(screen.getByText('LOT-000')).toBeInTheDocument()
+    expect(screen.getByText('LOT-009')).toBeInTheDocument()
+    expect(screen.queryByText('현재 내 hold lot이 없습니다.')).toBeNull()
+  })
 })

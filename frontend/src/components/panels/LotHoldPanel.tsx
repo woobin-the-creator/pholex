@@ -50,25 +50,34 @@ export function LotHoldPanel({
 
   const total = rows.length
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const start = (page - 1) * pageSize
+  // page state가 범위를 벗어나도(rows 축소 등) 렌더는 항상 안전한 페이지를 쓴다 —
+  // 보정용 effect를 두면 out-of-range로 한 프레임 빈 테이블이 깜빡이므로, 렌더에서 파생한다.
+  const safePage = Math.min(Math.max(1, page), totalPages)
+  const start = (safePage - 1) * pageSize
   const pagedRows = useMemo(() => rows.slice(start, start + pageSize), [rows, start, pageSize])
   const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), totalPages))
   const rangeFrom = total === 0 ? 0 : start + 1
   const rangeTo = Math.min(start + pageSize, total)
 
-  // rows/pageSize 변화로 현재 페이지가 범위를 벗어나면 보정.
+  // 알람 등에서 특정 lot으로 포커스가 오면, 그 lot이 있는 페이지로 '한 번만' 점프해 코멧이 보이게 한다.
+  // 같은 focus 요청엔 재점프하지 않는다 — 안 그러면 focus가 살아있는 3초 동안 들어오는 모든
+  // WebSocket push(rows 변경)마다 effect가 재실행돼 사용자가 넘긴 페이지가 강제로 되돌려진다.
+  // rows는 deps에 남겨 데이터가 늦게 도착하는 경우(첫 렌더 때 lot이 아직 없음)도 커버한다.
+  const jumpedFocusRef = useRef<string | null>(null)
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [page, totalPages])
-
-  // 알람 등에서 특정 lot으로 포커스가 오면, 그 lot이 있는 페이지로 점프해 코멧이 보이게 한다.
-  useEffect(() => {
-    if (!focusLotId) return
+    if (!focusLotId) {
+      jumpedFocusRef.current = null
+      return
+    }
+    if (jumpedFocusRef.current === focusLotId) return
     const idx = rows.findIndex((r) => r.lotId === focusLotId)
-    if (idx >= 0) setPage(Math.floor(idx / pageSize) + 1)
+    if (idx >= 0) {
+      setPage(Math.floor(idx / pageSize) + 1)
+      jumpedFocusRef.current = focusLotId
+    }
   }, [focusLotId, rows, pageSize])
 
-  // 코멧 측정 — 페이지 점프로 행이 마운트된 뒤 다시 재기 위해 page도 의존성에 둔다.
+  // 코멧 측정 — 페이지 점프로 행이 마운트된 뒤 다시 재기 위해 렌더되는 페이지(safePage)도 의존성에 둔다.
   useEffect(() => {
     if (!focusLotId) {
       setCometGeo(null)
@@ -90,7 +99,7 @@ export function LotHoldPanel({
       `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
       `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
     setCometGeo({ w, h, d })
-  }, [focusLotId, page])
+  }, [focusLotId, safePage])
 
   const handleRefresh = () => {
     setSpinning(true)
@@ -185,6 +194,7 @@ export function LotHoldPanel({
                   type="number"
                   min={1}
                   value={pageSize}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => {
                     setPageSize(Math.max(1, Number(e.target.value) || 1))
                     setPage(1)
