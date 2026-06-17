@@ -3,105 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-    background: #f4f6fb; color: #1a2233;
-    width: 1080px; padding: 40px 44px;
-  }
-  .head { margin-bottom: 28px; }
-  .kicker { font-size: 13px; font-weight: 700; letter-spacing: .08em; color: #5b6b8c; text-transform: uppercase; }
-  h1 { font-size: 30px; margin-top: 6px; letter-spacing: -.01em; }
-  .sub { font-size: 15px; color: #5b6b8c; margin-top: 8px; line-height: 1.5; }
-
-  .cards { display: flex; gap: 20px; margin-bottom: 30px; }
-  .card { flex: 1; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 16px rgba(30,50,90,.07); border: 1px solid #e6ebf4; }
-  .card .ico { font-size: 34px; }
-  .card h2 { font-size: 20px; margin: 10px 0 2px; }
-  .card .tag { font-size: 13px; color: #8a97b0; font-weight: 600; }
-  .card .role { font-size: 15px; margin: 14px 0 16px; line-height: 1.5; color: #2a3550; }
-  .card .role b { color: #2f6df6; }
-  .src { border-top: 4px solid #2f6df6; }
-  .repo { border-top: 4px solid #14b88a; }
-  .repo .role b { color: #0e9e76; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  td { padding: 7px 8px; vertical-align: top; border-top: 1px solid #eef1f7; }
-  td.k { color: #8a97b0; font-weight: 600; width: 70px; }
-  code { background: #eef2fb; color: #2447a8; padding: 1px 6px; border-radius: 5px; font-size: 12.5px; font-family: "SF Mono", monospace; }
-
-  .vs { align-self: center; font-weight: 800; color: #b6c0d6; font-size: 18px; }
-
-  .decision { background: #fff; border-radius: 16px; padding: 26px 28px; box-shadow: 0 2px 16px rgba(30,50,90,.07); border: 1px solid #e6ebf4; }
-  .decision .q { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-  .decision .qsub { font-size: 14px; color: #5b6b8c; margin-bottom: 20px; line-height: 1.5; }
-  .opts { display: flex; gap: 16px; }
-  .opt { flex: 1; border-radius: 12px; padding: 18px; border: 1.5px solid #e6ebf4; position: relative; }
-  .opt .lab { font-weight: 800; font-size: 15px; margin-bottom: 8px; }
-  .opt .desc { font-size: 13.5px; line-height: 1.55; color: #2a3550; }
-  .opt.pick { border-color: #2f6df6; background: #f5f8ff; }
-  .opt.pick::after { content: "추천 ✓"; position: absolute; top: -11px; right: 14px; background: #2f6df6; color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
-  .opt.dim { opacity: .82; }
-  .opt .lab .a { color: #2f6df6; } .opt .lab .b { color: #8a97b0; }
-
-  .why { margin-top: 20px; background: #f5f8ff; border-left: 4px solid #2f6df6; border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 13.5px; line-height: 1.6; color: #2a3550; }
-  .why b { color: #2447a8; }
-  .ctx { margin-top: 14px; font-size: 12.5px; color: #8a97b0; }
-  .ctx b { color: #d9663d; }
+  html,body{margin:0;padding:0;background:#f4f6fb;}
+  svg{font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:block;}
+  .title{font-size:26px;font-weight:800;fill:#1a2233;}
+  .sub{font-size:14px;fill:#5b6b8c;}
+  .region{font-size:12px;font-weight:700;}
+  .n-title{font-weight:800;}
+  .n-sub{fill:#8a97b0;}
+  .code{font-family:"SF Mono",ui-monospace,monospace;fill:#2447a8;}
+  .flowlab{font-weight:700;}
+  text{dominant-baseline:middle;}
 </style>
 </head>
 <body>
-  <div class="head">
-    <div class="kicker">Pholex · 설계 검토</div>
-    <h1>LotSource vs LotRepository — 어느 포트에 <code>lot_status</code> 읽기를 둘까</h1>
-    <div class="sub">실시간 API가 사내에도 미구현 → 30분 dump(<code>lot_status</code>)가 슬롯1 "내 hold"의 primary로 확정.<br>그렇다면 dump 테이블을 읽는 코드를 어느 포트(콘센트)에 꽂을 것인가.</div>
-  </div>
+<svg width="1200" height="690" viewBox="0 0 1200 690">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#2f6df6"/></marker>
+    <marker id="ahKey" markerWidth="14" markerHeight="14" refX="7" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,4.5 L0,9 Z" fill="#1f49b0"/></marker>
+    <marker id="ahG" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#9aa6bd"/></marker>
+    <marker id="ahO" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#e08a3c"/></marker>
+  </defs>
 
-  <div class="cards">
-    <div class="card src">
-      <div class="ico">🚰</div>
-      <h2>LotSource <span class="tag">/ 원천</span></h2>
-      <div class="role">데이터를 <b>가져온다</b> — 물을 길어오는 <b>취수구</b></div>
-      <table>
-        <tr><td class="k">방향</td><td>바깥(사내) → 앱</td></tr>
-        <tr><td class="k">메서드</td><td><code>fetch_my_holds()</code> 내 hold 가져오기<br><code>subscribe_changes()</code> 변경 스트림</td></tr>
-        <tr><td class="k">성격</td><td>"어디서 데이터를 <b>얻나</b>"</td></tr>
-      </table>
-    </div>
+  <!-- Title -->
+  <text x="36" y="40" class="title">데이터 플로우 — <tspan class="code" font-size="22">lot_status</tspan> 는 어떻게 화면까지 흐르나</text>
+  <text x="36" y="70" class="sub">30분 dump가 lot_status를 채우고(확정), 슬롯1이 그걸 읽어 화면에 띄운다. 그 ‘읽기’를 어느 포트에 꽂을지가 이번 결정.</text>
 
-    <div class="vs">VS</div>
+  <!-- Regions -->
+  <rect x="28" y="92" width="252" height="430" rx="14" fill="#edf0f6"/>
+  <text x="44" y="114" class="region" fill="#7a87a0">레포 바깥 · 사내 소유</text>
+  <rect x="296" y="92" width="876" height="430" rx="14" fill="#ffffff" stroke="#dce4f1" stroke-width="1.5"/>
+  <text x="314" y="114" class="region" fill="#2f6df6">pholex  (앱 + DB)</text>
 
-    <div class="card repo">
-      <div class="ico">🛢️</div>
-      <h2>LotRepository <span class="tag">/ 보관소</span></h2>
-      <div class="role">데이터를 <b>보관했다 꺼낸다</b> — 받아둔 물의 <b>물탱크</b></div>
-      <table>
-        <tr><td class="k">방향</td><td>앱 ↔ 앱의 DB</td></tr>
-        <tr><td class="k">메서드</td><td><code>upsert_lots_batch()</code> 저장<br><code>get_my_holds_cached()</code> 꺼내기</td></tr>
-        <tr><td class="k">성격</td><td>"그걸 어디에 <b>쟁여두나</b>"</td></tr>
-      </table>
-    </div>
-  </div>
+  <!-- ===== MAIN FLOW (blue solid) ===== -->
+  <!-- arrows under nodes first -->
+  <path d="M232,238 L320,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <text x="276" y="222" text-anchor="middle" font-size="11.5" fill="#3a4a6b" class="flowlab">dump · 30분</text>
+  <text x="276" y="254" text-anchor="middle" font-size="10" fill="#9aa6bd">사내 스케줄러</text>
 
-  <div class="decision">
-    <div class="q">질문 — <code>lot_status</code>의 "내 hold" 읽기를 어디에 꽂나?</div>
-    <div class="qsub"><code>lot_status</code>는 성격이 둘 다다: 사내가 채웠으니 취수구 같고, pholex DB 테이블이니 탱크 같다.</div>
-    <div class="opts">
-      <div class="opt pick">
-        <div class="lab"><span class="a">(A)</span> LotSource 포트에</div>
-        <div class="desc"><code>RealLotSource.fetch_my_holds</code>가 <code>lot_status</code>를 읽게 한다.<br>→ usecase·wire <b>무변경</b>. 포트 의미만 "실시간"→"dump 읽기"로 해석.</div>
-      </div>
-      <div class="opt dim">
-        <div class="lab"><span class="b">(B)</span> LotRepository 포트에</div>
-        <div class="desc">읽기 메서드를 새로 추가하고 usecase가 source 대신 그걸 호출.<br>→ usecase 분기 변경 + 포트 2개 손댐.</div>
-      </div>
-    </div>
-    <div class="why">
-      <b>추천 (A).</b> ① 헥사고날의 핵심 = "같은 포트에 다른 어댑터 갈아끼우기" → 나중에 실시간 API가 생겨도 <b>윗단 무변경 교체</b>.
-      ② <code>fetch_my_holds</code> usecase·wire를 안 건드려 변경 최소.
-      ③ reference 구현 <code>PgSampleLotSource</code>가 이미 이 패턴(테이블→<code>LotRowDTO</code>)이라 사내가 베끼기 쉬움.
-    </div>
-    <div class="ctx"><b>주의</b> — (A)로 가도 신호등(<code>health</code>)은 이 포트로 안 들어온다. <code>fetch_my_holds</code>는 hold 목록만 반환하고 <code>last_run_at</code>(탱크 받은 시각)은 안 싣는다 → 신선도는 별도 결정(다음 질문).</div>
-  </div>
+  <path d="M478,238 L548,236" stroke="#1f49b0" stroke-width="4.5" fill="none" marker-end="url(#ahKey)"/>
+  <text x="512" y="218" text-anchor="middle" font-size="12.5" fill="#1f49b0" class="flowlab">★ 내 hold 읽기</text>
+
+  <path d="M726,238 L754,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M876,238 L902,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M982,238 L1006,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+
+  <!-- node: MES -->
+  <rect x="54" y="204" width="178" height="70" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="143" y="232" text-anchor="middle" font-size="15" class="n-title" fill="#1a2233">🏭 사내 MES</text>
+  <text x="143" y="254" text-anchor="middle" font-size="11.5" class="n-sub">랏 원천 데이터</text>
+
+  <!-- node: lot_status tank -->
+  <rect x="326" y="198" width="152" height="82" rx="12" fill="#e8f8f1" stroke="#14b88a" stroke-width="2"/>
+  <text x="402" y="224" text-anchor="middle" font-size="15" class="n-title code" fill="#0e7a5b">🛢 lot_status</text>
+  <text x="402" y="246" text-anchor="middle" font-size="11" fill="#5e9e86">30분 dump</text>
+  <text x="402" y="262" text-anchor="middle" font-size="11" fill="#5e9e86">마스터 캐시</text>
+
+  <!-- node: lot_dump_meta -->
+  <rect x="326" y="294" width="152" height="46" rx="10" fill="#fff4e9" stroke="#f0a868" stroke-width="1.5"/>
+  <text x="402" y="311" text-anchor="middle" font-size="11.5" font-weight="700" fill="#c9772f">⏱ lot_dump_meta</text>
+  <text x="402" y="327" text-anchor="middle" font-size="10" class="code" fill="#c9924f">last_run_at</text>
+
+  <!-- node: PORT (decision) -->
+  <rect x="552" y="182" width="174" height="112" rx="16" fill="#f3f7ff" stroke="#2f6df6" stroke-width="2.5"/>
+  <rect x="552" y="166" width="96" height="26" rx="13" fill="#2f6df6"/>
+  <text x="600" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">(A) 추천 ✓</text>
+  <text x="639" y="216" text-anchor="middle" font-size="15.5" class="n-title" fill="#1f49b0">🔌 LotSource 포트</text>
+  <text x="639" y="240" text-anchor="middle" font-size="12.5" class="code">fetch_my_holds()</text>
+  <text x="639" y="270" text-anchor="middle" font-size="11.5" fill="#9aa6bd">↔ 대안 (B) LotRepository</text>
+
+  <!-- node: usecase -->
+  <rect x="756" y="204" width="120" height="70" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="816" y="232" text-anchor="middle" font-size="13.5" class="n-title" fill="#1a2233">⚙️ usecase</text>
+  <text x="816" y="253" text-anchor="middle" font-size="10.5" class="n-sub">내 hold 조회</text>
+
+  <!-- node: wire -->
+  <rect x="904" y="210" width="78" height="58" rx="10" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="943" y="234" text-anchor="middle" font-size="12.5" class="n-title" fill="#1a2233">🔄 wire</text>
+  <text x="943" y="251" text-anchor="middle" font-size="9.5" class="n-sub">camelCase</text>
+
+  <!-- node: screen -->
+  <rect x="1008" y="198" width="150" height="82" rx="12" fill="#eef3ff" stroke="#3f6df6" stroke-width="1.5"/>
+  <text x="1083" y="226" text-anchor="middle" font-size="14" class="n-title" fill="#27408f">🖥️ 슬롯1 화면</text>
+  <text x="1083" y="248" text-anchor="middle" font-size="11" class="n-sub">내 lot hold</text>
+
+  <!-- ===== FUTURE: realtime API (gray dashed) ===== -->
+  <rect x="54" y="400" width="178" height="64" rx="12" fill="#f4f6fb" stroke="#aeb9cd" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="143" y="426" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8a97b0">⏳ 실시간 API</text>
+  <text x="143" y="447" text-anchor="middle" font-size="11" fill="#aab4c6">사내 미구현</text>
+  <path d="M232,428 C 400,428 470,330 622,296" stroke="#9aa6bd" stroke-width="2.5" fill="none" stroke-dasharray="6,5" marker-end="url(#ahG)"/>
+  <text x="430" y="372" text-anchor="middle" font-size="11.5" fill="#8a97b0" class="flowlab">나중에 같은 포트에 갈아끼움</text>
+  <text x="430" y="390" text-anchor="middle" font-size="10.5" fill="#aab4c6">(usecase·wire·화면 무변경)</text>
+
+  <!-- ===== HEALTH: not carried (orange dashed) ===== -->
+  <path d="M460,338 C 620,452 880,452 1010,372" stroke="#e08a3c" stroke-width="2.5" fill="none" stroke-dasharray="6,5"/>
+  <!-- X mark before screen -->
+  <line x1="998" y1="382" x2="1014" y2="398" stroke="#d9534f" stroke-width="3"/>
+  <line x1="1014" y1="382" x2="998" y2="398" stroke="#d9534f" stroke-width="3"/>
+  <text x="700" y="468" text-anchor="middle" font-size="11.5" fill="#cf7430" class="flowlab">신선도(last_run_at)는 이 포트로 안 흐른다 — 🟡/🔴 신호등은 별도 포트 필요(다음 질문)</text>
+
+  <!-- ===== Legend ===== -->
+  <line x1="320" y1="552" x2="352" y2="552" stroke="#2f6df6" stroke-width="3"/>
+  <text x="360" y="553" font-size="11.5" fill="#3a4a6b">확정 — 현재 흐름(dump 경유)</text>
+  <line x1="590" y1="552" x2="622" y2="552" stroke="#9aa6bd" stroke-width="2.5" stroke-dasharray="6,5"/>
+  <text x="630" y="553" font-size="11.5" fill="#3a4a6b">미구현 — 실시간 API</text>
+  <line x1="810" y1="552" x2="842" y2="552" stroke="#e08a3c" stroke-width="2.5" stroke-dasharray="6,5"/>
+  <text x="850" y="553" font-size="11.5" fill="#3a4a6b">별도 결정 — 신선도(health)</text>
+
+  <!-- ===== Recommendation strip ===== -->
+  <rect x="28" y="588" width="1144" height="72" rx="12" fill="#f5f8ff" stroke="#c5d6ff" stroke-width="1.5"/>
+  <text x="50" y="616" font-size="13.5" font-weight="800" fill="#1f49b0">추천 (A) — LotSource 포트에 lot_status 읽기를 꽂는다</text>
+  <text x="50" y="640" font-size="12.5" fill="#3a4a6b">같은 콘센트(포트)에 지금은 dump-읽기 어댑터를, 실시간 API가 생기면 그 어댑터로 갈아끼운다 → 위 파란 흐름(usecase·wire·화면)은 한 줄도 안 바뀐다.</text>
+</svg>
 </body>
 </html>
