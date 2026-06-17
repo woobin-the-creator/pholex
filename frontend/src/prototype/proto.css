@@ -1,0 +1,154 @@
+/* throwaway 프로토타입 전용 스타일 — 프로덕션 styles.css는 건드리지 않는다.
+   페이지네이션 시안 A/B/C 비교용 셸 + 시안별 보강만 담는다. */
+
+.proto-root {
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.proto-bar {
+  padding: 22px 40px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.proto-bar__title {
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.proto-bar__title strong { color: var(--accent); }
+.proto-bar__tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-mute);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.proto-bar__blurb {
+  margin: 8px 0 14px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.proto-bar__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.proto-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+}
+.proto-switch__btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-mute);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  width: 30px;
+  height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 160ms, color 160ms;
+}
+.proto-switch__btn.is-active {
+  background: var(--accent);
+  color: var(--canvas);
+}
+.proto-theme {
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.proto-theme:hover { border-color: var(--accent); color: var(--accent); }
+
+.proto-stage {
+  flex: 1 1 auto;
+  padding: 28px 40px;
+  min-height: 0;
+}
+.proto-stage__grid {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+}
+.proto-stage__grid .card {
+  width: 100%;
+  grid-row: auto;
+  max-height: 72vh;
+}
+
+.proto-footnote {
+  padding: 12px 40px 24px;
+  font-size: 11.5px;
+  color: var(--ink-mute);
+}
+
+/* ── 시안 공통: 푸터 페이저 안의 행 크기 컨트롤 ── */
+.proto-size {
+  font-size: 12px;
+  color: var(--ink-mute);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.proto-size__input { min-width: 56px; width: 64px; flex: 0 0 auto; }
+
+.proto-pages-a,
+.proto-pages-b { padding: 10px 2px 2px; flex-wrap: wrap; }
+
+/* ── 시안 B: 번호 페이저 — .pages 기본 gap(26px)은 번호 나열엔 넓어 좁힌다 ── */
+.pages--nums { gap: 12px; align-items: center; }
+.pages--nums .page-link { min-width: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.page-gap {
+  font-size: 13px;
+  color: var(--ink-mute);
+  user-select: none;
+  padding: 4px 0;
+}
+
+/* ── 시안 C: 헤더 인라인 범위 스테퍼 ── */
+.proto-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+.proto-step__range {
+  font-size: 12px;
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.proto-step__sep { opacity: 0.5; }
+.proto-step__btn {
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 160ms, color 160ms;
+}
+.proto-step__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.proto-step__btn:disabled { opacity: 0.35; cursor: not-allowed; }
