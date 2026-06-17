@@ -5,118 +5,104 @@
 <style>
   html,body{margin:0;padding:0;background:#f4f6fb;}
   svg{font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:block;}
-  .title{font-size:26px;font-weight:800;fill:#1a2233;}
-  .sub{font-size:14px;fill:#5b6b8c;}
-  .region{font-size:12px;font-weight:700;}
-  .n-title{font-weight:800;}
-  .n-sub{fill:#8a97b0;}
-  .code{font-family:"SF Mono",ui-monospace,monospace;fill:#2447a8;}
-  .flowlab{font-weight:700;}
   text{dominant-baseline:middle;}
+  .code{font-family:"SF Mono",ui-monospace,monospace;}
 </style>
 </head>
 <body>
-<svg width="1200" height="690" viewBox="0 0 1200 690">
+<svg width="1200" height="650" viewBox="0 0 1200 650">
   <defs>
     <marker id="ah" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M0,0 L9,4 L0,8 Z" fill="#2f6df6"/></marker>
-    <marker id="ahKey" markerWidth="14" markerHeight="14" refX="7" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M0,0 L10,4.5 L0,9 Z" fill="#1f49b0"/></marker>
     <marker id="ahG" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M0,0 L9,4 L0,8 Z" fill="#9aa6bd"/></marker>
-    <marker id="ahO" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M0,0 L9,4 L0,8 Z" fill="#e08a3c"/></marker>
   </defs>
 
   <!-- Title -->
-  <text x="36" y="40" class="title">데이터 플로우 — <tspan class="code" font-size="22">lot_status</tspan> 는 어떻게 화면까지 흐르나</text>
-  <text x="36" y="70" class="sub">30분 dump가 lot_status를 채우고(확정), 슬롯1이 그걸 읽어 화면에 띄운다. 그 ‘읽기’를 어느 포트에 꽂을지가 이번 결정.</text>
+  <text x="36" y="36" font-size="25" font-weight="800" fill="#1a2233">LotSource (A) vs LotRepository (B) — 같은 데이터, 다른 포트</text>
+  <text x="36" y="64" font-size="13.5" fill="#5b6b8c"><tspan class="code" fill="#0e7a5b">lot_status</tspan> 읽기를 어느 포트에 꽂느냐에 따라 <tspan font-weight="700" fill="#3a4a6b">usecase를 건드리느냐</tspan>가 갈린다.  파랑 = 추천(A) · 회색 = 대안(B).</text>
 
-  <!-- Regions -->
-  <rect x="28" y="92" width="252" height="430" rx="14" fill="#edf0f6"/>
-  <text x="44" y="114" class="region" fill="#7a87a0">레포 바깥 · 사내 소유</text>
-  <rect x="296" y="92" width="876" height="430" rx="14" fill="#ffffff" stroke="#dce4f1" stroke-width="1.5"/>
-  <text x="314" y="114" class="region" fill="#2f6df6">pholex  (앱 + DB)</text>
+  <!-- Lane bands -->
+  <rect x="244" y="166" width="468" height="118" rx="12" fill="#f5f9ff"/>
+  <text x="260" y="184" font-size="11.5" font-weight="700" fill="#2f6df6">(A) LotSource 경로 · 추천</text>
+  <rect x="244" y="372" width="468" height="118" rx="12" fill="#f6f7f9"/>
+  <text x="260" y="390" font-size="11.5" font-weight="700" fill="#8a97b0">(B) LotRepository 경로 · 대안</text>
 
-  <!-- ===== MAIN FLOW (blue solid) ===== -->
-  <!-- arrows under nodes first -->
-  <path d="M232,238 L320,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
-  <text x="276" y="222" text-anchor="middle" font-size="11.5" fill="#3a4a6b" class="flowlab">dump · 30분</text>
-  <text x="276" y="254" text-anchor="middle" font-size="10" fill="#9aa6bd">사내 스케줄러</text>
+  <!-- Future-extension annotations -->
+  <text x="478" y="150" text-anchor="middle" font-size="11" fill="#8a97b0">⏳ 실시간 API 생기면 → 같은 포트에 무변경 교체  ✓</text>
+  <text x="478" y="508" text-anchor="middle" font-size="11" fill="#b06a3c">⏳ 실시간 API 생기면 → usecase가 source·repo 둘을 조율해야 함  ✗</text>
 
-  <path d="M478,238 L548,236" stroke="#1f49b0" stroke-width="4.5" fill="none" marker-end="url(#ahKey)"/>
-  <text x="512" y="218" text-anchor="middle" font-size="12.5" fill="#1f49b0" class="flowlab">★ 내 hold 읽기</text>
+  <!-- Shared source: lot_status -->
+  <rect x="44" y="288" width="150" height="84" rx="12" fill="#e8f8f1" stroke="#14b88a" stroke-width="2"/>
+  <text x="119" y="312" text-anchor="middle" font-size="14.5" font-weight="800" class="code" fill="#0e7a5b">🛢 lot_status</text>
+  <text x="119" y="333" text-anchor="middle" font-size="11" fill="#5e9e86">30분 dump</text>
+  <text x="119" y="350" text-anchor="middle" font-size="11" fill="#5e9e86">공통 소스</text>
 
-  <path d="M726,238 L754,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
-  <path d="M876,238 L902,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
-  <path d="M982,238 L1006,238" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <!-- Branch arrows -->
+  <path d="M194,308 C 232,298 244,230 268,228" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M194,352 C 232,360 244,432 268,432" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
 
-  <!-- node: MES -->
-  <rect x="54" y="204" width="178" height="70" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
-  <text x="143" y="232" text-anchor="middle" font-size="15" class="n-title" fill="#1a2233">🏭 사내 MES</text>
-  <text x="143" y="254" text-anchor="middle" font-size="11.5" class="n-sub">랏 원천 데이터</text>
+  <!-- ===== Lane A ===== -->
+  <rect x="272" y="196" width="186" height="70" rx="14" fill="#ffffff" stroke="#2f6df6" stroke-width="2.5"/>
+  <text x="365" y="220" text-anchor="middle" font-size="14.5" font-weight="800" fill="#1f49b0">🔌 LotSource 포트</text>
+  <text x="365" y="242" text-anchor="middle" font-size="12" class="code" fill="#2447a8">fetch_my_holds()</text>
 
-  <!-- node: lot_status tank -->
-  <rect x="326" y="198" width="152" height="82" rx="12" fill="#e8f8f1" stroke="#14b88a" stroke-width="2"/>
-  <text x="402" y="224" text-anchor="middle" font-size="15" class="n-title code" fill="#0e7a5b">🛢 lot_status</text>
-  <text x="402" y="246" text-anchor="middle" font-size="11" fill="#5e9e86">30분 dump</text>
-  <text x="402" y="262" text-anchor="middle" font-size="11" fill="#5e9e86">마스터 캐시</text>
+  <path d="M458,228 L514,228" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
 
-  <!-- node: lot_dump_meta -->
-  <rect x="326" y="294" width="152" height="46" rx="10" fill="#fff4e9" stroke="#f0a868" stroke-width="1.5"/>
-  <text x="402" y="311" text-anchor="middle" font-size="11.5" font-weight="700" fill="#c9772f">⏱ lot_dump_meta</text>
-  <text x="402" y="327" text-anchor="middle" font-size="10" class="code" fill="#c9924f">last_run_at</text>
+  <rect x="536" y="178" width="138" height="22" rx="11" fill="#e6f7ef" stroke="#14b88a" stroke-width="1.2"/>
+  <text x="605" y="190" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0e7a5b">usecase 무변경 ✓</text>
+  <rect x="518" y="206" width="166" height="60" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="601" y="228" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1a2233">⚙️ usecase</text>
+  <text x="601" y="248" text-anchor="middle" font-size="10.5" class="code" fill="#8a97b0">source.fetch_my_holds()</text>
 
-  <!-- node: PORT (decision) -->
-  <rect x="552" y="182" width="174" height="112" rx="16" fill="#f3f7ff" stroke="#2f6df6" stroke-width="2.5"/>
-  <rect x="552" y="166" width="96" height="26" rx="13" fill="#2f6df6"/>
-  <text x="600" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">(A) 추천 ✓</text>
-  <text x="639" y="216" text-anchor="middle" font-size="15.5" class="n-title" fill="#1f49b0">🔌 LotSource 포트</text>
-  <text x="639" y="240" text-anchor="middle" font-size="12.5" class="code">fetch_my_holds()</text>
-  <text x="639" y="270" text-anchor="middle" font-size="11.5" fill="#9aa6bd">↔ 대안 (B) LotRepository</text>
+  <!-- ===== Lane B ===== -->
+  <rect x="272" y="400" width="186" height="70" rx="14" fill="#ffffff" stroke="#9aa6bd" stroke-width="2"/>
+  <text x="365" y="424" text-anchor="middle" font-size="14" font-weight="800" fill="#5b6b8c">🗄️ LotRepository 포트</text>
+  <text x="365" y="446" text-anchor="middle" font-size="11" fill="#c9772f">＋ 읽기 메서드 신규 추가</text>
 
-  <!-- node: usecase -->
-  <rect x="756" y="204" width="120" height="70" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
-  <text x="816" y="232" text-anchor="middle" font-size="13.5" class="n-title" fill="#1a2233">⚙️ usecase</text>
-  <text x="816" y="253" text-anchor="middle" font-size="10.5" class="n-sub">내 hold 조회</text>
+  <path d="M458,432 L514,432" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
 
-  <!-- node: wire -->
-  <rect x="904" y="210" width="78" height="58" rx="10" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
-  <text x="943" y="234" text-anchor="middle" font-size="12.5" class="n-title" fill="#1a2233">🔄 wire</text>
-  <text x="943" y="251" text-anchor="middle" font-size="9.5" class="n-sub">camelCase</text>
+  <rect x="536" y="382" width="158" height="22" rx="11" fill="#fdf0e4" stroke="#e0a060" stroke-width="1.2"/>
+  <text x="615" y="394" text-anchor="middle" font-size="11.5" font-weight="700" fill="#c9772f">usecase 분기 수정 ⚠️</text>
+  <rect x="518" y="410" width="166" height="60" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="601" y="432" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1a2233">⚙️ usecase</text>
+  <text x="601" y="452" text-anchor="middle" font-size="10.5" class="code" fill="#8a97b0">repo 호출로 교체</text>
 
-  <!-- node: screen -->
-  <rect x="1008" y="198" width="150" height="82" rx="12" fill="#eef3ff" stroke="#3f6df6" stroke-width="1.5"/>
-  <text x="1083" y="226" text-anchor="middle" font-size="14" class="n-title" fill="#27408f">🖥️ 슬롯1 화면</text>
-  <text x="1083" y="248" text-anchor="middle" font-size="11" class="n-sub">내 lot hold</text>
+  <!-- ===== Merge → shared wire → screen ===== -->
+  <path d="M684,228 C 718,234 722,300 746,316" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M684,432 C 718,426 722,360 746,344" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
 
-  <!-- ===== FUTURE: realtime API (gray dashed) ===== -->
-  <rect x="54" y="400" width="178" height="64" rx="12" fill="#f4f6fb" stroke="#aeb9cd" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <text x="143" y="426" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8a97b0">⏳ 실시간 API</text>
-  <text x="143" y="447" text-anchor="middle" font-size="11" fill="#aab4c6">사내 미구현</text>
-  <path d="M232,428 C 400,428 470,330 622,296" stroke="#9aa6bd" stroke-width="2.5" fill="none" stroke-dasharray="6,5" marker-end="url(#ahG)"/>
-  <text x="430" y="372" text-anchor="middle" font-size="11.5" fill="#8a97b0" class="flowlab">나중에 같은 포트에 갈아끼움</text>
-  <text x="430" y="390" text-anchor="middle" font-size="10.5" fill="#aab4c6">(usecase·wire·화면 무변경)</text>
+  <text x="791" y="286" text-anchor="middle" font-size="10" font-weight="700" fill="#9aa6bd">A·B 공유</text>
+  <rect x="748" y="298" width="86" height="64" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="791" y="322" text-anchor="middle" font-size="13" font-weight="700" fill="#1a2233">🔄 wire</text>
+  <text x="791" y="340" text-anchor="middle" font-size="9.5" fill="#8a97b0">camelCase</text>
 
-  <!-- ===== HEALTH: not carried (orange dashed) ===== -->
-  <path d="M460,338 C 620,452 880,452 1010,372" stroke="#e08a3c" stroke-width="2.5" fill="none" stroke-dasharray="6,5"/>
-  <!-- X mark before screen -->
-  <line x1="998" y1="382" x2="1014" y2="398" stroke="#d9534f" stroke-width="3"/>
-  <line x1="1014" y1="382" x2="998" y2="398" stroke="#d9534f" stroke-width="3"/>
-  <text x="700" y="468" text-anchor="middle" font-size="11.5" fill="#cf7430" class="flowlab">신선도(last_run_at)는 이 포트로 안 흐른다 — 🟡/🔴 신호등은 별도 포트 필요(다음 질문)</text>
+  <path d="M834,330 L890,330" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
 
-  <!-- ===== Legend ===== -->
-  <line x1="320" y1="552" x2="352" y2="552" stroke="#2f6df6" stroke-width="3"/>
-  <text x="360" y="553" font-size="11.5" fill="#3a4a6b">확정 — 현재 흐름(dump 경유)</text>
-  <line x1="590" y1="552" x2="622" y2="552" stroke="#9aa6bd" stroke-width="2.5" stroke-dasharray="6,5"/>
-  <text x="630" y="553" font-size="11.5" fill="#3a4a6b">미구현 — 실시간 API</text>
-  <line x1="810" y1="552" x2="842" y2="552" stroke="#e08a3c" stroke-width="2.5" stroke-dasharray="6,5"/>
-  <text x="850" y="553" font-size="11.5" fill="#3a4a6b">별도 결정 — 신선도(health)</text>
+  <rect x="892" y="294" width="156" height="72" rx="12" fill="#eef3ff" stroke="#3f6df6" stroke-width="1.5"/>
+  <text x="970" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#27408f">🖥️ 슬롯1 화면</text>
+  <text x="970" y="342" text-anchor="middle" font-size="11" fill="#7a87a0">내 lot hold</text>
+
+  <!-- ===== Diff summary (the actual comparison) ===== -->
+  <text x="1075" y="200" text-anchor="middle" font-size="12" font-weight="800" fill="#3a4a6b">무엇이 다른가</text>
+  <g font-size="11">
+    <text x="1062" y="228" text-anchor="start" fill="#5b6b8c">usecase</text>
+    <text x="1062" y="246" text-anchor="start" fill="#0e7a5b">A 무변경 ✓</text>
+    <text x="1062" y="262" text-anchor="start" fill="#c9772f">B 수정 ⚠️</text>
+    <text x="1062" y="288" text-anchor="start" fill="#5b6b8c">reference 코드</text>
+    <text x="1062" y="306" text-anchor="start" fill="#0e7a5b">A PgSampleLotSource</text>
+    <text x="1062" y="322" text-anchor="start" fill="#c9772f">B 신규 작성</text>
+    <text x="1062" y="348" text-anchor="start" fill="#5b6b8c">실시간 확장</text>
+    <text x="1062" y="366" text-anchor="start" fill="#0e7a5b">A 같은 포트 교체</text>
+    <text x="1062" y="382" text-anchor="start" fill="#c9772f">B 조율 복잡</text>
+  </g>
+  <rect x="1052" y="212" width="138" height="182" rx="10" fill="none" stroke="#e0e6f0" stroke-width="1.3"/>
 
   <!-- ===== Recommendation strip ===== -->
-  <rect x="28" y="588" width="1144" height="72" rx="12" fill="#f5f8ff" stroke="#c5d6ff" stroke-width="1.5"/>
-  <text x="50" y="616" font-size="13.5" font-weight="800" fill="#1f49b0">추천 (A) — LotSource 포트에 lot_status 읽기를 꽂는다</text>
-  <text x="50" y="640" font-size="12.5" fill="#3a4a6b">같은 콘센트(포트)에 지금은 dump-읽기 어댑터를, 실시간 API가 생기면 그 어댑터로 갈아끼운다 → 위 파란 흐름(usecase·wire·화면)은 한 줄도 안 바뀐다.</text>
+  <rect x="28" y="540" width="1162" height="86" rx="12" fill="#f5f8ff" stroke="#c5d6ff" stroke-width="1.5"/>
+  <text x="50" y="568" font-size="13.5" font-weight="800" fill="#1f49b0">추천 (A) LotSource</text>
+  <text x="50" y="592" font-size="12.5" fill="#3a4a6b">두 흐름의 유일한 실질 차이는 ‘usecase를 건드리느냐’다. (A)는 무변경 + reference 존재 + 실시간 확장도 같은 포트로 깔끔.</text>
+  <text x="50" y="612" font-size="12.5" fill="#3a4a6b">(B)는 usecase 분기 수정 + 새 메서드 작성 + 실시간 생기면 source·repo 조율 부담 → 같은 결과에 비용만 더 든다.</text>
 </svg>
 </body>
 </html>
