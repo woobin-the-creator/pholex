@@ -58,4 +58,5 @@ class InMemoryLotSource:
             hold_comment=row["hold_comment"],
             updated_at=row["updated_at"],
             is_held_by_me=(row["hold_operator_employee_number"] == viewer_employee_number),
+            hold_operator_id=row["hold_operator_employee_number"],
         )

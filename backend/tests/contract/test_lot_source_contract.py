@@ -42,6 +42,16 @@ async def test_fetch_filters_other_employees(lot_source):
 
 
 @pytest.mark.asyncio
+async def test_hold_operator_id_is_the_queried_employee(lot_source):
+    """fetch_my_holds(X)는 lot_hold_user_id == X 로 거르므로, 모든 row의
+    hold_operator_id는 채워져 있고 조회 사번과 같아야 한다 (real adapter도 동일 계약)."""
+    rows = await lot_source.fetch_my_holds("99999")
+    assert len(rows) > 0
+    assert all(r.hold_operator_id == "99999" for r in rows)
+    assert all(r.hold_operator_id is not None for r in rows)
+
+
+@pytest.mark.asyncio
 async def test_unknown_employee_returns_empty(lot_source):
     """Empty trap: 미등록 사번은 빈 리스트, 등록 사번은 비어있지 않아야 함."""
     rows_known = await lot_source.fetch_my_holds("99999")

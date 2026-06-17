@@ -129,4 +129,5 @@ class PgSampleLotSource:
             hold_comment=row.lot_hold_comment,
             updated_at=updated_at_utc,
             is_held_by_me=(row.lot_hold_user_id == viewer_employee_number),
+            hold_operator_id=row.lot_hold_user_id,  # raw 사번 그대로 → 캐노니컬 hold_operator_id
         )
