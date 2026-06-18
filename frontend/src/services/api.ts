@@ -129,3 +129,26 @@ export async function saveKeywordPreset(
   })
   return normalizeKeywordPreset(payload)
 }
+
+export async function updateKeywordPreset(
+  id: number,
+  name: string,
+  config: KeywordConfig,
+  isDefault = false,
+): Promise<KeywordPreset> {
+  const payload = await requestJson<Record<string, unknown>>(`/api/keyword-presets/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name, config, isDefault }),
+  })
+  return normalizeKeywordPreset(payload)
+}
+
+export async function deleteKeywordPreset(id: number): Promise<void> {
+  // 204 No Content — requestJson(=response.json())을 쓰면 빈 본문 파싱에서 깨지므로 직접 fetch.
+  const response = await fetch(`/api/keyword-presets/${id}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  })
+  if (response.status === 401) throw new UnauthorizedError()
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`)
+}

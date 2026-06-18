@@ -1049,6 +1049,10 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
 .kw-iconbtn .material-symbols-outlined { font-size: 19px; }
 .kw-iconbtn--save { color: var(--save); border-color: color-mix(in srgb, var(--save) 40%, var(--rule)); }
 .kw-iconbtn--save:hover:not(:disabled) { border-color: var(--save); color: var(--save); }
+.kw-iconbtn--danger { color: var(--hold); border-color: color-mix(in srgb, var(--hold) 35%, var(--rule)); }
+.kw-iconbtn--danger:hover:not(:disabled) { border-color: var(--hold); color: var(--hold); }
+/* 이름칸 + 저장 버튼을 한 덩어리로 — flex-wrap 시에도 둘이 함께 줄바꿈된다. */
+.kw-presetsave { display: inline-flex; align-items: center; gap: 6px; }
 
 /* 결과 — 행 최대화 */
 .kw-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }

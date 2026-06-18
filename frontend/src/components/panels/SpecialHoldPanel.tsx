@@ -1,6 +1,12 @@
 import { Fragment, useCallback, useState, type MouseEvent } from 'react'
 import { statusPillClass } from '../../utils/statusDisplay'
-import { listKeywordPresets, saveKeywordPreset, searchSpecialHold } from '../../services/api'
+import {
+  deleteKeywordPreset,
+  listKeywordPresets,
+  saveKeywordPreset,
+  searchSpecialHold,
+  updateKeywordPreset,
+} from '../../services/api'
 import type { LotRow } from '../../types/lot'
 import type { KeywordConfig, KeywordPreset } from '../../types/keyword'
 
@@ -96,6 +102,8 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
   const [presets, setPresets] = useState<KeywordPreset[]>([])
   const [presetName, setPresetName] = useState('')
   const [activeLabel, setActiveLabel] = useState<string | null>(null)
+  // 현재 적용/저장된 프리셋 id — 같은 프리셋 재저장 시 중복 생성 대신 덮어쓰기 위해 추적.
+  const [activePresetId, setActivePresetId] = useState<number | null>(null)
 
   // ── 조건 편집 (인라인 고스트 칩) ──
   const setField = (gid: number, cid: number, field: FieldKey) => {
@@ -183,6 +191,8 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     setTotal(0)
     setSearched(false)
     setActiveLabel(null)
+    setPresetName('')
+    setActivePresetId(null)
   }
 
   const runSearch = useCallback(
@@ -220,13 +230,39 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     const config = buildConfig()
     if (!name || config.groups.length === 0) return
     setBusy(true)
+    setError(null)
     try {
-      await saveKeywordPreset(name, config, presets.length === 0)
-      setPresetName('')
-      setActiveLabel(name)
+      // 저장 시점에 서버 상태를 fresh로 읽어 판정한다(드롭다운 focus 전 stale state로
+      // 매 저장이 default가 되거나 중복이 생기던 버그 방지).
+      const current = await listKeywordPresets()
+      // 같은 이름(또는 현재 적용 중인) 프리셋이 있으면 새로 만들지 않고 덮어쓴다 — 중복 생성 방지.
+      const existing =
+        current.find((p) => p.id === activePresetId) ?? current.find((p) => p.name === name)
+      const saved = existing
+        ? await updateKeywordPreset(existing.id, name, config, existing.isDefault)
+        : await saveKeywordPreset(name, config, current.length === 0)
+      setActivePresetId(saved.id)
+      setActiveLabel(saved.name)
       await loadPresets()
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const deleteActivePreset = async () => {
+    if (activePresetId == null) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteKeywordPreset(activePresetId)
+      setActivePresetId(null)
+      setActiveLabel(null)
+      setPresetName('')
+      await loadPresets()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '삭제 실패')
     } finally {
       setBusy(false)
     }
@@ -238,6 +274,8 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
       conditions: g.conditions.map((c) => ({ id: nextId(), field: c.field as FieldKey, value: c.value })),
     }))
     setGroups(gs.length > 0 ? gs : [newGroup()])
+    setActivePresetId(p.id)
+    setPresetName(p.name) // 이름칸을 채워, 수정 후 재저장하면 새로 만들지 않고 이 프리셋을 덮어쓴다.
     setActiveLabel(p.name)
     void runSearch(1, pageSize, p.config)
   }
@@ -394,16 +432,6 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
             >
               +
             </button>
-            <button
-              type="button"
-              className="kw-iconbtn kw-iconbtn--save"
-              onClick={() => void savePreset()}
-              disabled={busy || !presetName.trim() || !hasQuery}
-              title="프리셋 저장"
-              aria-label="프리셋 저장"
-            >
-              <span className="material-symbols-outlined" aria-hidden="true">save</span>
-            </button>
           </div>
 
           <div className="kw-editor">
@@ -430,13 +458,29 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 aria-label="페이지 크기"
               />
             </label>
-            <input
-              className="field__input kw-value"
-              placeholder="프리셋 이름"
-              value={presetName}
-              onChange={(e) => setPresetName(e.target.value)}
-              aria-label="프리셋 이름"
-            />
+            {/* 이름칸 + 저장 버튼은 항상 붙어 있어야 한다(flex-wrap 으로 갈라지면 "저장 안 됨"으로 오인). */}
+            <span className="kw-presetsave">
+              <input
+                className="field__input kw-value"
+                placeholder="프리셋 이름"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && presetName.trim() && hasQuery && !busy) void savePreset()
+                }}
+                aria-label="프리셋 이름"
+              />
+              <button
+                type="button"
+                className="kw-iconbtn kw-iconbtn--save"
+                onClick={() => void savePreset()}
+                disabled={busy || !presetName.trim() || !hasQuery}
+                title={activePresetId != null ? '프리셋 덮어쓰기' : '프리셋 저장'}
+                aria-label={activePresetId != null ? '프리셋 덮어쓰기' : '프리셋 저장'}
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">save</span>
+              </button>
+            </span>
             <select
               className="kw-select"
               value=""
@@ -455,6 +499,18 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 </option>
               ))}
             </select>
+            {activePresetId != null ? (
+              <button
+                type="button"
+                className="kw-iconbtn kw-iconbtn--danger"
+                onClick={() => void deleteActivePreset()}
+                disabled={busy}
+                title={`프리셋 삭제: ${activeLabel ?? ''}`}
+                aria-label="현재 프리셋 삭제"
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">delete</span>
+              </button>
+            ) : null}
             <button
               type="button"
               className="kw-iconbtn"
