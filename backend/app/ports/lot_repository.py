@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 from app.domain.keyword import KeywordQuery
@@ -49,3 +50,12 @@ class LotRepository(Protocol):
         ...
 
     async def invalidate_cache(self, employee_number: str) -> None: ...
+
+    async def get_dump_last_run_at(self) -> datetime | None:
+        """lot_dump_meta.last_run_at (dump가 마지막에 돈 시각, tz-aware UTC).
+
+        dump가 한 번도 안 돌았으면 None. employee 무관 전역값.
+        신선도(🟡/🔴) 판정 소스 — lot_status 행의 updated_at으로 추론하지 말 것.
+        Real adapter: SELECT last_run_at FROM lot_dump_meta WHERE id = 1.
+        """
+        ...

@@ -7,9 +7,16 @@ export interface LotRow {
   updatedAt: string | null
 }
 
+export interface DumpMeta {
+  lastRunAt: string | null
+  freshMaxMinutes: number
+  staleMinMinutes: number
+}
+
 export interface SlotPayload {
   tableId: number
   rows: LotRow[]
   diff: boolean
   lastUpdated: string | null
+  dumpMeta?: DumpMeta | null
 }

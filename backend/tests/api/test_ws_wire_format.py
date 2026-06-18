@@ -42,11 +42,38 @@ def test_slot_payload_camelcase():
         diff=False,
         last_updated=_DT,
     )
-    assert set(payload.keys()) == {"tableId", "rows", "diff", "lastUpdated"}
+    assert set(payload.keys()) == {"tableId", "rows", "diff", "lastUpdated", "dumpMeta"}
     assert payload["tableId"] == 1
     assert payload["diff"] is False
     assert payload["lastUpdated"] == "2026-04-28T07:42:11+00:00"
     assert len(payload["rows"]) == 2
+
+
+def test_slot_payload_dump_meta_default_thresholds_and_null_last_run():
+    """last_run_at 미지정(dump 미실행) → lastRunAt=None, 임계값은 기본 30/60."""
+    payload = slot_payload(
+        table_id=1,
+        rows=[_row("L001")],
+        diff=False,
+        last_updated=_DT,
+    )
+    dump_meta = payload["dumpMeta"]
+    assert set(dump_meta.keys()) == {"lastRunAt", "freshMaxMinutes", "staleMinMinutes"}
+    assert dump_meta["lastRunAt"] is None
+    assert dump_meta["freshMaxMinutes"] == 30
+    assert dump_meta["staleMinMinutes"] == 60
+
+
+def test_slot_payload_dump_meta_serializes_last_run_at_iso():
+    run_at = datetime(2026, 6, 17, 9, 0, 0, tzinfo=timezone.utc)
+    payload = slot_payload(
+        table_id=1,
+        rows=[_row("L001")],
+        diff=False,
+        last_updated=_DT,
+        last_run_at=run_at,
+    )
+    assert payload["dumpMeta"]["lastRunAt"] == "2026-06-17T09:00:00+00:00"
 
 
 def test_change_to_wire_alert_format():

@@ -40,6 +40,12 @@ def test_my_hold_returns_slot_payload(client):
     first = payload["rows"][0]
     assert set(first.keys()) == {"lotId", "status", "equipment", "processStep", "holdComment", "updatedAt"}
     assert all(row["status"] == "Hold" for row in payload["rows"])  # raw 값 그대로
+    # 신선도 dumpMeta — dump 미실행 시 lastRunAt=None, 임계값 기본 30/60.
+    dump_meta = payload["dumpMeta"]
+    assert set(dump_meta.keys()) == {"lastRunAt", "freshMaxMinutes", "staleMinMinutes"}
+    assert dump_meta["lastRunAt"] is None
+    assert dump_meta["freshMaxMinutes"] == 30
+    assert dump_meta["staleMinMinutes"] == 60
 
 
 def test_my_hold_force_refresh(client):
@@ -80,6 +86,8 @@ def test_ws_table_update_full_snapshot(client):
         assert payload["tableId"] == 1
         assert payload["diff"] is False
         assert len(payload["rows"]) == 3
+        # WS 경로도 slot_payload를 쓰므로 dumpMeta가 일관되게 실린다.
+        assert set(payload["dumpMeta"].keys()) == {"lastRunAt", "freshMaxMinutes", "staleMinMinutes"}
 
 
 def test_ws_refresh_returns_snapshot(client):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.ports.dto import LotRowDTO
+from app.ports.dto import MyHoldResult
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
 from app.ports.unit_of_work import UnitOfWork
@@ -12,11 +12,17 @@ class FetchMyHolds:
         self._repo = repo
         self._uow = uow
 
-    async def execute(self, employee_number: str, *, force_refresh: bool = False) -> list[LotRowDTO]:
+    async def execute(
+        self, employee_number: str, *, force_refresh: bool = False
+    ) -> MyHoldResult:
+        # 신선도(last_run_at)는 캐시 hit/miss·force_refresh와 무관하게 항상 repo에서 읽는다.
+        # dump heartbeat는 hold 데이터의 신선도와 별개 소스(lot_dump_meta)다.
+        last_run_at = await self._repo.get_dump_last_run_at()
+
         if not force_refresh:
             cached = await self._repo.get_my_holds_cached(employee_number)
             if cached is not None:
-                return cached
+                return MyHoldResult(rows=cached, last_run_at=last_run_at)
 
         async with self._uow:
             fresh = await self._source.fetch_my_holds(employee_number)
@@ -27,4 +33,4 @@ class FetchMyHolds:
                 await self._repo.upsert_lots_batch(fresh)
                 await self._repo.cache_my_holds(employee_number, fresh)
             await self._uow.commit()
-        return fresh
+        return MyHoldResult(rows=fresh, last_run_at=last_run_at)

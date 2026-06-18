@@ -14,6 +14,12 @@ from app.domain.lot import LotStatus
 from app.ports.dto import ChangeWithSeverity, KeywordPresetDTO, LotRowDTO, WatchlistRowDTO
 
 
+# 신선도 임계값 (분). 프론트가 last_run_at + 이 값으로 색·카운터를 계산한다.
+# fresh_max: 이 이하면 🟡 캐시 신선 / stale_min: 이 이상이면 🔴 stale·down (dump 주기 2배).
+DUMP_FRESH_MAX_MINUTES = 30
+DUMP_STALE_MIN_MINUTES = 60
+
+
 def _iso(dt: datetime) -> str:
     return dt.isoformat()
 
@@ -60,12 +66,20 @@ def slot_payload(
     rows: list[LotRowDTO],
     diff: bool,
     last_updated: datetime,
+    last_run_at: datetime | None = None,
+    fresh_max_minutes: int = DUMP_FRESH_MAX_MINUTES,
+    stale_min_minutes: int = DUMP_STALE_MIN_MINUTES,
 ) -> dict[str, Any]:
     return {
         "tableId": table_id,
         "rows": [lot_row_to_wire(r) for r in rows],
         "diff": diff,
         "lastUpdated": _iso(last_updated),
+        "dumpMeta": {
+            "lastRunAt": _iso(last_run_at) if last_run_at is not None else None,
+            "freshMaxMinutes": fresh_max_minutes,
+            "staleMinMinutes": stale_min_minutes,
+        },
     }
 
 

@@ -43,12 +43,13 @@ async def _send_full_snapshot(
     clock: Clock,
 ) -> None:
     fetch_uc = FetchMyHolds(source=source, repo=repo, uow=uow)
-    rows = await fetch_uc.execute(employee_number, force_refresh=True)
+    result = await fetch_uc.execute(employee_number, force_refresh=True)
     payload = slot_payload(
         table_id=TABLE_ID_MY_HOLD,
-        rows=rows,
+        rows=result.rows,
         diff=False,
         last_updated=clock.now(),
+        last_run_at=result.last_run_at,
     )
     await ws.send_json({"type": "table_update", "payload": payload})
 

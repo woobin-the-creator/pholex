@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useEffectEvent, useRef } from 'react'
 import { useAtom } from 'jotai'
 import {
+  lotHoldDumpMetaAtom,
   lotHoldErrorAtom,
   lotHoldLastUpdatedAtom,
   lotHoldLoadingAtom,
@@ -54,6 +55,7 @@ export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: Alarm
   const [loading, setLoading] = useAtom(lotHoldLoadingAtom)
   const [error, setError] = useAtom(lotHoldErrorAtom)
   const [lastUpdated, setLastUpdated] = useAtom(lotHoldLastUpdatedAtom)
+  const [, setDumpMeta] = useAtom(lotHoldDumpMetaAtom)
   const socketRef = useRef<ReturnType<typeof connectTableSocket> | null>(null)
   // onAlarm 식별자가 바뀌어도 소켓 effect([user])를 다시 띄우지 않도록 ref로 최신값을 읽는다.
   const onAlarmRef = useRef(onAlarm)
@@ -63,6 +65,7 @@ export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: Alarm
     startTransition(() => {
       setRows(payload.rows)
       setLastUpdated(fallbackLastUpdated(payload))
+      setDumpMeta(payload.dumpMeta ?? null)
       setError(null)
     })
   })
@@ -86,7 +89,13 @@ export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: Alarm
     }
 
     if (DEMO_MODE) {
-      applyPayload({ tableId: 1, rows: DEMO_ROWS, diff: false, lastUpdated: DEMO_LAST_UPDATED })
+      applyPayload({
+        tableId: 1,
+        rows: DEMO_ROWS,
+        diff: false,
+        lastUpdated: DEMO_LAST_UPDATED,
+        dumpMeta: { lastRunAt: DEMO_LAST_UPDATED, freshMaxMinutes: 30, staleMinMinutes: 60 },
+      })
       setLoading(false)
       return undefined
     }
@@ -120,3 +129,5 @@ export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: Alarm
     refresh,
   }
 }
+
+// dumpMeta는 atom을 통해 LotHoldPanel에서 직접 읽는다.
