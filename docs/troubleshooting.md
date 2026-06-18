@@ -22,6 +22,7 @@
 | `socket.gaierror: postgres` / DB 연결 실패 | [#6 postgres 호스트명 해석](#6) |
 | 키워드 Hold가 런타임 에러 / 테이블 없음 | [#7 alembic 미적용](#7) |
 | 알람 박스가 항상 비어 있음 | [#8 알람 스트림 stub(의도된 후속)](#8) |
+| "내 lot hold"만 500 (사내 prod, dev는 정상) | [#9 real 어댑터 포트 메서드 미구현/naive datetime](#9) |
 
 ---
 
@@ -108,3 +109,10 @@
 - **원인(현재 정상)**: `RealLotSource.subscribe_changes`가 **stub**(무한 대기, 이벤트 미발행) — 합의된 deferred 상태. 사내 lot_status는 30분 dump만 있어 실시간 스트림이 없다.
 - **후속**: 30분 dump diff 기반 이벤트 합성(구현 스펙: `ai-prompts/260615-1325-pr28-29-real-adapters-handoff.md` 파트 A 케이스 B, `event_id` 결정적 키 + try/finally 구독해제). 별도 PR.
 - **주의**: stub은 에러가 아니다 — 박스가 비어 있는 게 현재 정상 동작.
+
+## <a id="9"></a>#9 — "내 lot hold"만 500 (real 어댑터가 새 포트 메서드 미구현 / naive datetime)
+- **증상**: 사내 prod(real 어댑터)에서 `GET /api/lots/my-hold`가 **항상 500**. dev(fake)는 정상이라 로컬에서 재현 안 됨.
+- **원인**: 정본이 slot1(2026-06-17)에서 새 포트 메서드 `get_dump_last_run_at`(신선도용 `lot_dump_meta`)와 tz-aware DTO 계약을 추가했는데, 사내 `RealLotRepository`가 이를 **미구현** → `fetch_my_holds`가 **캐시 hit/miss와 무관하게 첫 줄**(`fetch_my_holds.py:20`)에서 호출 → `AttributeError` → 500. 더해 `RealLotSource.fetch_my_holds`가 naive `updated_at`을 그대로 넘기면 `LotRowDTO`의 `_require_tz_aware`가 `ValueError`를 던져 **500이 형태만 바뀌는 마스킹 버그**가 잠재(메서드를 고쳐도 재발).
+- **진단**: fake/real로 먼저 좁힌다(**fake 200·real 500 → real 어댑터 한정**, dev=fake라 재현 불가에 유의). 실제 traceback의 예외 타입이 가설을 가른다: `AttributeError`=메서드 미구현 / `ValueError: datetime must be timezone-aware`=naive datetime / `relation "lot_dump_meta" does not exist`=테이블 부재([#7](#7)).
+- **수정**: real 어댑터에 `get_dump_last_run_at` 구현 — `SELECT last_run_at FROM lot_dump_meta WHERE id=1`, 행 없으면 `None`, naive면 `_kst_to_utc`로 **tz-aware UTC** 변환. 같은 변환을 `RealLotSource.fetch_my_holds`의 `updated_at`에도 적용. `lot_dump_meta` 테이블이 없으면 [#7](#7)대로 마이그레이션 적용. (관련: [#3](#3) 캐시 datetime.)
+- **재발방지**: 정본에 **새 포트 메서드/DTO tz-계약**을 추가하는 PR은 `docs/adapter-spec.md` 체크리스트에 사내 구현 항목을 반드시 넣고, 사내 real 어댑터를 **배포 전 lockstep**으로 갱신한다. `tests/contract`가 fake·real 양쪽에 같은 계약을 강제하도록 유지. tz는 **어댑터 경계에서 KST→UTC로 변환**하고 naive를 포트 밖으로 내보내지 않는다.
