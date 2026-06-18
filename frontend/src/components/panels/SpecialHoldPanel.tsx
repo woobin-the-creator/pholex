@@ -308,70 +308,61 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 <div className="kw-chipbox">
                   {g.conditions.map((c, ci) => {
                     const committed = c.value.trim().length > 0
+                    // 한 조건 = 영속 <input> 하나. ghost↔solid는 엘리먼트 교체가 아니라
+                    // className/접두 span만 바꿔서 표현한다 — 타이핑 중 input이 unmount되어
+                    // 포커스가 튀던 버그(첫 글자만 입력됨)를 막는다.
                     return (
                       <Fragment key={c.id}>
                         {ci > 0 ? <span className="kw-and-mark">그리고</span> : null}
+                        {/* 접두: 미입력=필드 선택 pill / 입력됨=정적 필드 태그 (둘 다 <span> → 노드 재사용) */}
                         {committed ? (
-                          // Solid committed chip — click the value to edit again.
-                          <span className={`kw-chip${c.field === 'status' ? ' is-exact' : ''}`}>
-                            <span className="kw-chip__f">{FIELD_LABEL[c.field]} {opLabel(c.field)}</span>
-                            <input
-                              className="kw-chip__edit"
-                              value={c.value}
-                              onChange={(e) => setValue(g.id, c.id, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                              }}
-                              aria-label="값 수정"
-                              size={Math.max(c.value.length, 2)}
-                            />
-                            <button
-                              type="button"
-                              className="kw-chip__x"
-                              onClick={() => removeCond(g.id, c.id)}
-                              aria-label="삭제"
-                            >
-                              ×
-                            </button>
-                          </span>
+                          <span className="kw-chip__fieldtag">{FIELD_LABEL[c.field]}</span>
                         ) : (
-                          // Field selector pill (click to choose) + dashed value pill.
-                          <Fragment>
-                            <span className="kw-fieldpill">
-                              <select
-                                className="kw-fieldpill__select"
-                                value={c.field}
-                                onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
-                                aria-label="필드 선택"
-                              >
-                                {FIELDS.map((f) => (
-                                  <option key={f} value={f}>{FIELD_LABEL[f]}</option>
-                                ))}
-                              </select>
-                              <span className="kw-fieldpill__caret material-symbols-outlined" aria-hidden="true">
-                                expand_more
-                              </span>
+                          <span className="kw-fieldpill">
+                            <select
+                              className="kw-fieldpill__select"
+                              value={c.field}
+                              onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
+                              aria-label="필드 선택"
+                            >
+                              {FIELDS.map((f) => (
+                                <option key={f} value={f}>{FIELD_LABEL[f]}</option>
+                              ))}
+                            </select>
+                            <span className="kw-fieldpill__caret material-symbols-outlined" aria-hidden="true">
+                              expand_more
                             </span>
-                            <span className="kw-chip kw-chip--ghost">
-                              <span className={`kw-ghost__op${c.field === 'status' ? ' is-exact' : ''}`}>
-                                {opLabel(c.field)}
-                              </span>
-                              <input
-                                className="kw-ghost__input"
-                                value={c.value}
-                                autoFocus={g.conditions.length > 1 || gi > 0}
-                                placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
-                                onChange={(e) => setValue(g.id, c.id, e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                                }}
-                                onBlur={() => commitOrDiscard(g.id, c.id)}
-                                aria-label="값"
-                                size={6}
-                              />
-                            </span>
-                          </Fragment>
+                          </span>
                         )}
+                        <span
+                          className={`kw-chip${committed ? '' : ' kw-chip--ghost'}${c.field === 'status' ? ' is-exact' : ''}`}
+                        >
+                          <span className={`kw-ghost__op${c.field === 'status' ? ' is-exact' : ''}`}>
+                            {opLabel(c.field)}
+                          </span>
+                          <input
+                            className={committed ? 'kw-chip__edit' : 'kw-ghost__input'}
+                            value={c.value}
+                            autoFocus={ci > 0 || gi > 0}
+                            placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
+                            onChange={(e) => setValue(g.id, c.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                            }}
+                            onBlur={() => commitOrDiscard(g.id, c.id)}
+                            aria-label={committed ? '값 수정' : '값'}
+                            size={committed ? Math.max(c.value.length, 2) : 6}
+                          />
+                          <button
+                            type="button"
+                            className="kw-chip__x"
+                            onClick={() => removeCond(g.id, c.id)}
+                            aria-label="삭제"
+                            hidden={!committed}
+                          >
+                            ×
+                          </button>
+                        </span>
                       </Fragment>
                     )
                   })}

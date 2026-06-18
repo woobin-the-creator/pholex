@@ -993,6 +993,13 @@ body[data-theme='dark'] .footer__live::before { background: var(--accent); }
   font-size: 14px; line-height: 1; padding: 0 0 0 2px;
 }
 .kw-chip__x:hover { color: var(--hold); }
+.kw-chip__x[hidden] { display: none; }
+/* 입력 완료된 조건의 정적 필드 태그 (ghost의 필드 pill과 같은 자리, 드롭다운 없음) */
+.kw-chip__fieldtag {
+  display: inline-flex; align-items: center;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--soft);
+  padding: 3px 11px; font-size: 12px; font-weight: 700; color: var(--ink);
+}
 
 .kw-chip--ghost { border-style: dashed; border-color: var(--accent); background: var(--tint); padding: 3px 8px; }
 .kw-ghost__op { font-size: 10.5px; font-weight: 600; color: var(--ink-mute); }
