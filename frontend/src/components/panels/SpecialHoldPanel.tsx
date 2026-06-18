@@ -322,6 +322,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                             <select
                               className="kw-fieldpill__select"
                               value={c.field}
+                              data-cond={c.id}
                               onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
                               aria-label="필드 선택"
                             >
@@ -344,12 +345,19 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                             className={committed ? 'kw-chip__edit' : 'kw-ghost__input'}
                             value={c.value}
                             autoFocus={ci > 0 || gi > 0}
+                            data-cond={c.id}
                             placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
                             onChange={(e) => setValue(g.id, c.id, e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                             }}
-                            onBlur={() => commitOrDiscard(g.id, c.id)}
+                            onBlur={(e) => {
+                              // 같은 조건 내부(자기 필드 드롭다운 등)로 포커스가 옮겨가는 중이면
+                              // 빈 ghost를 버리지 않는다 — 드롭다운 클릭 시 칩이 사라지던 버그 방지.
+                              const rt = e.relatedTarget as HTMLElement | null
+                              if (rt?.getAttribute('data-cond') === String(c.id)) return
+                              commitOrDiscard(g.id, c.id)
+                            }}
                             aria-label={committed ? '값 수정' : '값'}
                             size={committed ? Math.max(c.value.length, 2) : 6}
                           />
