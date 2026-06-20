@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  html,body{margin:0;padding:0;background:#f4f6fb;}
+  svg{font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:block;}
+  text{dominant-baseline:middle;}
+  .code{font-family:"SF Mono",ui-monospace,monospace;}
+</style>
+</head>
+<body>
+<svg width="1200" height="650" viewBox="0 0 1200 650">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#2f6df6"/></marker>
+    <marker id="ahG" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#9aa6bd"/></marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="36" y="36" font-size="25" font-weight="800" fill="#1a2233">LotSource (A) vs LotRepository (B) — 같은 데이터, 다른 포트</text>
+  <text x="36" y="64" font-size="13.5" fill="#5b6b8c"><tspan class="code" fill="#0e7a5b">lot_status</tspan> 읽기를 어느 포트에 꽂느냐에 따라 <tspan font-weight="700" fill="#3a4a6b">usecase를 건드리느냐</tspan>가 갈린다.  파랑 = 추천(A) · 회색 = 대안(B).</text>
+
+  <!-- Lane bands -->
+  <rect x="244" y="166" width="468" height="118" rx="12" fill="#f5f9ff"/>
+  <text x="260" y="184" font-size="11.5" font-weight="700" fill="#2f6df6">(A) LotSource 경로 · 추천</text>
+  <rect x="244" y="372" width="468" height="118" rx="12" fill="#f6f7f9"/>
+  <text x="260" y="390" font-size="11.5" font-weight="700" fill="#8a97b0">(B) LotRepository 경로 · 대안</text>
+
+  <!-- Future-extension annotations -->
+  <text x="478" y="150" text-anchor="middle" font-size="11" fill="#8a97b0">⏳ 실시간 API 생기면 → 같은 포트에 무변경 교체  ✓</text>
+  <text x="478" y="508" text-anchor="middle" font-size="11" fill="#b06a3c">⏳ 실시간 API 생기면 → usecase가 source·repo 둘을 조율해야 함  ✗</text>
+
+  <!-- Shared source: lot_status -->
+  <rect x="44" y="288" width="150" height="84" rx="12" fill="#e8f8f1" stroke="#14b88a" stroke-width="2"/>
+  <text x="119" y="312" text-anchor="middle" font-size="14.5" font-weight="800" class="code" fill="#0e7a5b">🛢 lot_status</text>
+  <text x="119" y="333" text-anchor="middle" font-size="11" fill="#5e9e86">30분 dump</text>
+  <text x="119" y="350" text-anchor="middle" font-size="11" fill="#5e9e86">공통 소스</text>
+
+  <!-- Branch arrows -->
+  <path d="M194,308 C 232,298 244,230 268,228" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M194,352 C 232,360 244,432 268,432" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
+
+  <!-- ===== Lane A ===== -->
+  <rect x="272" y="196" width="186" height="70" rx="14" fill="#ffffff" stroke="#2f6df6" stroke-width="2.5"/>
+  <text x="365" y="220" text-anchor="middle" font-size="14.5" font-weight="800" fill="#1f49b0">🔌 LotSource 포트</text>
+  <text x="365" y="242" text-anchor="middle" font-size="12" class="code" fill="#2447a8">fetch_my_holds()</text>
+
+  <path d="M458,228 L514,228" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="536" y="178" width="138" height="22" rx="11" fill="#e6f7ef" stroke="#14b88a" stroke-width="1.2"/>
+  <text x="605" y="190" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0e7a5b">usecase 무변경 ✓</text>
+  <rect x="518" y="206" width="166" height="60" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="601" y="228" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1a2233">⚙️ usecase</text>
+  <text x="601" y="248" text-anchor="middle" font-size="10.5" class="code" fill="#8a97b0">source.fetch_my_holds()</text>
+
+  <!-- ===== Lane B ===== -->
+  <rect x="272" y="400" width="186" height="70" rx="14" fill="#ffffff" stroke="#9aa6bd" stroke-width="2"/>
+  <text x="365" y="424" text-anchor="middle" font-size="14" font-weight="800" fill="#5b6b8c">🗄️ LotRepository 포트</text>
+  <text x="365" y="446" text-anchor="middle" font-size="11" fill="#c9772f">＋ 읽기 메서드 신규 추가</text>
+
+  <path d="M458,432 L514,432" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
+
+  <rect x="536" y="382" width="158" height="22" rx="11" fill="#fdf0e4" stroke="#e0a060" stroke-width="1.2"/>
+  <text x="615" y="394" text-anchor="middle" font-size="11.5" font-weight="700" fill="#c9772f">usecase 분기 수정 ⚠️</text>
+  <rect x="518" y="410" width="166" height="60" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="601" y="432" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1a2233">⚙️ usecase</text>
+  <text x="601" y="452" text-anchor="middle" font-size="10.5" class="code" fill="#8a97b0">repo 호출로 교체</text>
+
+  <!-- ===== Merge → shared wire → screen ===== -->
+  <path d="M684,228 C 718,234 722,300 746,316" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <path d="M684,432 C 718,426 722,360 746,344" stroke="#9aa6bd" stroke-width="3" fill="none" marker-end="url(#ahG)"/>
+
+  <text x="791" y="286" text-anchor="middle" font-size="10" font-weight="700" fill="#9aa6bd">A·B 공유</text>
+  <rect x="748" y="298" width="86" height="64" rx="12" fill="#ffffff" stroke="#c3ccdb" stroke-width="1.5"/>
+  <text x="791" y="322" text-anchor="middle" font-size="13" font-weight="700" fill="#1a2233">🔄 wire</text>
+  <text x="791" y="340" text-anchor="middle" font-size="9.5" fill="#8a97b0">camelCase</text>
+
+  <path d="M834,330 L890,330" stroke="#2f6df6" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="892" y="294" width="156" height="72" rx="12" fill="#eef3ff" stroke="#3f6df6" stroke-width="1.5"/>
+  <text x="970" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#27408f">🖥️ 슬롯1 화면</text>
+  <text x="970" y="342" text-anchor="middle" font-size="11" fill="#7a87a0">내 lot hold</text>
+
+  <!-- ===== Diff summary (the actual comparison) ===== -->
+  <text x="1075" y="200" text-anchor="middle" font-size="12" font-weight="800" fill="#3a4a6b">무엇이 다른가</text>
+  <g font-size="11">
+    <text x="1062" y="228" text-anchor="start" fill="#5b6b8c">usecase</text>
+    <text x="1062" y="246" text-anchor="start" fill="#0e7a5b">A 무변경 ✓</text>
+    <text x="1062" y="262" text-anchor="start" fill="#c9772f">B 수정 ⚠️</text>
+    <text x="1062" y="288" text-anchor="start" fill="#5b6b8c">reference 코드</text>
+    <text x="1062" y="306" text-anchor="start" fill="#0e7a5b">A PgSampleLotSource</text>
+    <text x="1062" y="322" text-anchor="start" fill="#c9772f">B 신규 작성</text>
+    <text x="1062" y="348" text-anchor="start" fill="#5b6b8c">실시간 확장</text>
+    <text x="1062" y="366" text-anchor="start" fill="#0e7a5b">A 같은 포트 교체</text>
+    <text x="1062" y="382" text-anchor="start" fill="#c9772f">B 조율 복잡</text>
+  </g>
+  <rect x="1052" y="212" width="138" height="182" rx="10" fill="none" stroke="#e0e6f0" stroke-width="1.3"/>
+
+  <!-- ===== Recommendation strip ===== -->
+  <rect x="28" y="540" width="1162" height="86" rx="12" fill="#f5f8ff" stroke="#c5d6ff" stroke-width="1.5"/>
+  <text x="50" y="568" font-size="13.5" font-weight="800" fill="#1f49b0">추천 (A) LotSource</text>
+  <text x="50" y="592" font-size="12.5" fill="#3a4a6b">두 흐름의 유일한 실질 차이는 ‘usecase를 건드리느냐’다. (A)는 무변경 + reference 존재 + 실시간 확장도 같은 포트로 깔끔.</text>
+  <text x="50" y="612" font-size="12.5" fill="#3a4a6b">(B)는 usecase 분기 수정 + 새 메서드 작성 + 실시간 생기면 source·repo 조율 부담 → 같은 결과에 비용만 더 든다.</text>
+</svg>
+</body>
+</html>
