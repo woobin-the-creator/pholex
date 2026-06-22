@@ -24,6 +24,9 @@ certs/
 .omc/state/
 .omc/logs/
 
+# Claude Code 로컬 상태 (머신 전용 설정 + 에이전트 worktree 복사본 — 절대 커밋 금지)
+.claude/
+
 # macOS
 .DS_Store
 
