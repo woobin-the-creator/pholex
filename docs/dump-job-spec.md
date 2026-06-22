@@ -22,6 +22,8 @@
 
 30분마다 사내 lot 데이터를 읽어 `lot_status`(lot별 현재 상태)를 upsert하고, **매 실행 끝에** `lot_dump_meta.last_run_at`를 `now()`로 갱신한다. Pholex는 이 잡을 트리거하지 않고 **결과 테이블을 읽기만** 한다 (push/콜백 결합 없음).
 
+> **알람 확장 (2026-06-22)**: dump가 upsert 전 스냅샷과 diff해 변경 이벤트를 `lot_change_event`에 **같은 트랜잭션**으로 적재하는 transactional outbox가 추가됐다. 이 부분 사양은 [`ai-prompts/260622-1253-alarm-outbox-lot-change-event.md`](../ai-prompts/260622-1253-alarm-outbox-lot-change-event.md) §3 참조. 본 문서의 §3·§4·§5(lot_status/lot_dump_meta upsert·원자성)는 그대로 유효하며, 거기에 이벤트 INSERT가 같은 BEGIN/COMMIT 안에 더해진다.
+
 ---
 
 ## 1. 잡 경계 (반드시 지킬 것)

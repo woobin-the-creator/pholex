@@ -100,6 +100,7 @@ class LotSource(Protocol):
   - 다중 구독자 fan-out (같은 사번 두 iterator → 동일 이벤트 전달)
   - `event_id`는 source 내 unique + 시간 순서 정렬 가능
   - `previous_status` / `new_status` 채움 (severity 분류용)
+  - **real 구현 확정 (2026-06-22)**: 30분 dump가 별도 프로세스라 in-memory fan-out 불가 → Postgres `lot_change_event` outbox를 dump가 적재하고 `subscribe_changes`가 backfill+tail로 읽는다. 사양: [`ai-prompts/260622-1253-alarm-outbox-lot-change-event.md`](../ai-prompts/260622-1253-alarm-outbox-lot-change-event.md). (severity는 어댑터가 채우지 않고 usecase `stream_hold_changes.py`가 분류 — 변동 없음.)
 
 ### 3.2 `LotRepository` (`backend/app/ports/lot_repository.py`)
 

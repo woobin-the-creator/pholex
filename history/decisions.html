@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-17 (슬롯1 신선도: dump primary + 포트 분리 + health timestamp 방식)";
+  const LAST_UPDATED = "2026-06-22 (알람 outbox: lot_change_event transactional outbox + dump diff, Redis 배제)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -671,6 +671,20 @@
         { name: "health enum을 백엔드가 판정(§4.3 '프론트는 값만')", rejected: "응답 시점 고정 — mm:ss 카운터는 흐르는데 색은 멈추는 불일치" }
       ],
       note: "구현 범위(Claude PR): ports/dto.py(MyHoldResult), ports/lot_repository.py(get_dump_last_run_at), usecases/fetch_my_holds.py, api/wire.py(slot_payload에 dumpMeta), api/lots.py, adapters/fake/lot_repository.py + contract·wire 테스트 / frontend(freshness 유틸·useLiveCounter·LotHoldPanel 신호등+카운터). 사내 영역: lot_status hold SELECT(LotSource) + lot_dump_meta SELECT(LotRepository) — docs/dump-job-spec.md에 항목 추가. 포트 선택 검토 인포그래픽은 이슈 #44. §4.3의 'health 백엔드 주도'를 enum→timestamp+임계값으로 조정."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-22",
+      status: "future",
+      title: "알람 전달: Postgres transactional outbox(lot_change_event) + dump diff — Redis 배제",
+      decision: "앱 내 알람이 dev에서 안 떠서 진단해 보니 RealLotSource.subscribe_changes가 stub(미구현)이었어요. 근본 원인은 폴링(30분 dump)이 별도 cron 프로세스로 빠지면서, 웹서버 안에서 도는 subscribe_changes가 이벤트 원천을 잃은 거예요(fake의 in-memory Queue fan-out은 같은 프로세스라 됐지만 real은 두 프로세스를 잇는 매개가 없었음). 두 프로세스를 Postgres outbox 테이블 lot_change_event 하나로 잇기로 확정했어요. dump가 upsert 전 스냅샷과 diff해 변경 이벤트를 lot_status·lot_dump_meta upsert와 같은 트랜잭션으로 INSERT하고, subscribe_changes는 그 테이블을 backfill(재연결 시 replay)+tail(폴링)로 읽어 스트림해요.",
+      rationale: "① outbox 영속(옵션 A '라이브 전용 in-memory diff' 대비) — 사용자가 자리를 비운 사이 일어난 critical hold 전이를 A는 유실하지만 outbox는 DB에 남겨 재연결 시 backfill로 보여줘요('알람이 쌓여 있다'는 기대 충족). ② Postgres(Redis 배제) — dump의 lot_status upsert와 이벤트 INSERT가 같은 트랜잭션에 묶여야 'Hold인데 알람 없음' split-brain이 원천 차단되는데, Redis는 Postgres 트랜잭션에 못 들어와요(transactional outbox 핵심). 게다가 사내 Redis는 SSO nonce용 단일 인스턴스 '캐시 등급'이라 놓치면 안 되는 알람 기록의 내구성 등급과 안 맞아요. ③ 30분 주기 데이터라 실시간 push API 불필요 — dump 시점 합성이 올바른 주기. 폴링 간격·replay 창은 어댑터 내부 상수(새 env 금지).",
+      alternatives: [
+        { name: "옵션 A: 라이브 전용 in-memory diff", rejected: "WS 끊긴 동안 전이 유실 + 웹서버 재시작 시 기준 리셋 — '쌓이는 알람' 요구 미충족" },
+        { name: "Redis outbox(Stream/pub-sub)", rejected: "Postgres 트랜잭션에 못 묶여 split-brain 가능 + 캐시 등급 내구성 부적합 + 30분 주기엔 저지연 이득 무의미" },
+        { name: "실시간 push API", rejected: "사내 실시간 피드 미구현 + 데이터가 30분 주기라 불필요" }
+      ],
+      note: "사양: ai-prompts/260622-1253-alarm-outbox-lot-change-event.md(ALARM-1~5). 사내 영역: lot_change_event alembic + dump diff/INSERT(같은 트랜잭션) + RealLotSource.subscribe_changes(backfill+tail). Claude 무변경: domain/usecases/api/ports(CI gate) — affected_employee_number는 테이블 전용 필터 컬럼이라 DTO 밖. severity는 기존대로 usecase stream_hold_changes가 분류. 260615 파트 A(알람 스트림)의 substrate 미결을 확정·supersede. 사내 구현·증거 회신 대기."
     }
   ];
 
