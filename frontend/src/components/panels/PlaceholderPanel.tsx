@@ -61,7 +61,13 @@ export function PlaceholderPanel({
         </div>
       </header>
 
-      <p className="placeholder-copy">{subtitle}</p>
+      <div className="placeholder-empty">
+        <span className="placeholder-empty__icon material-symbols-outlined" aria-hidden="true">
+          build
+        </span>
+        <p className="placeholder-copy">{subtitle}</p>
+        <span className="placeholder-empty__tag">준비 중</span>
+      </div>
     </article>
   )
 }

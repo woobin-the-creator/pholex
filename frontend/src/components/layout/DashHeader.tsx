@@ -39,10 +39,16 @@ function Kpi({ spec, delay }: { spec: KpiSpec; delay: number }) {
   const toneClass = spec.tone === 'hold' ? ' kpi--hold' : spec.tone === 'yield' ? ' kpi--yield' : ''
 
   return (
-    <div className={`kpi${toneClass}`}>
+    <div className={`kpi${toneClass}${isNumeric ? '' : ' kpi--pending'}`}>
       <span className="kpi__label">{spec.label}</span>
       <span className="kpi__value">
-        {isNumeric ? text : '—'}
+        {isNumeric ? (
+          text
+        ) : (
+          <span className="kpi__pending" title="데이터 준비 중">
+            —
+          </span>
+        )}
         {isNumeric && spec.suffix ? <span className="kpi__unit">{spec.suffix}</span> : null}
       </span>
     </div>
