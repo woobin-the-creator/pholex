@@ -63,7 +63,7 @@ export function PlaceholderPanel({
 
       <div className="placeholder-empty">
         <span className="placeholder-empty__icon material-symbols-outlined" aria-hidden="true">
-          pending
+          build
         </span>
         <p className="placeholder-copy">{subtitle}</p>
         <span className="placeholder-empty__tag">준비 중</span>
