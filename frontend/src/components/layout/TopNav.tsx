@@ -7,10 +7,6 @@ interface TopNavProps {
   user: SessionUser | null
 }
 
-const PAGE_ITEMS = [
-  { label: 'Overview', active: true },
-]
-
 function initialsOf(user: SessionUser | null): string {
   const name = user?.username?.trim() ?? ''
   if (!name) return 'WB'
@@ -35,29 +31,7 @@ export function TopNav({ user }: TopNavProps) {
 
   return (
     <nav className="topnav" aria-label="Primary">
-      <div className="topnav__left">
-        <p className="topnav__title">batch monitoring</p>
-        <div className="pages">
-          {PAGE_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`page-link${item.active ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="topnav__right">
-        <label className="search" aria-label="Search">
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 16 }}>
-            search
-          </span>
-          <input type="search" placeholder="Search lot, tool, comment…" />
-        </label>
-
         <button
           type="button"
           className={`theme-switch${flipping ? ' is-flipping' : ''}`}
@@ -68,14 +42,6 @@ export function TopNav({ user }: TopNavProps) {
             {theme === 'light' ? 'dark_mode' : 'light_mode'}
           </span>
           <span>{theme === 'light' ? 'Dark' : 'Light'}</span>
-        </button>
-
-        <button type="button" className="icon-btn" aria-label="Notifications">
-          <span className="material-symbols-outlined" aria-hidden="true">notifications</span>
-        </button>
-
-        <button type="button" className="icon-btn" aria-label="Settings">
-          <span className="material-symbols-outlined" aria-hidden="true">settings</span>
         </button>
 
         <div className="user">

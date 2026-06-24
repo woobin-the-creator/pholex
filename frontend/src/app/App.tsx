@@ -9,7 +9,6 @@ import { TopNav } from '../components/layout/TopNav'
 import { SideNav } from '../components/layout/SideNav'
 import { DashboardGrid } from '../components/layout/DashboardGrid'
 import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
-import { SystemFooter } from '../components/layout/SystemFooter'
 import { LotHoldPanel } from '../components/panels/LotHoldPanel'
 import { SpecialHoldPanel } from '../components/panels/SpecialHoldPanel'
 import { AlarmDock } from '../components/alarms/AlarmDock'
@@ -49,7 +48,7 @@ function formatDate(): string {
   const dd = String(today.getDate()).padStart(2, '0')
   const mm = String(today.getMonth() + 1).padStart(2, '0')
   const yyyy = today.getFullYear()
-  return `${dd}.${mm}.${yyyy} · Fab 7`
+  return `${dd}.${mm}.${yyyy}`
 }
 
 type PanelId = 'live' | 'slot-4'
@@ -255,8 +254,6 @@ function DashboardApp() {
             vtName="card-slot-4"
           />
         </DashboardGrid>
-
-        <SystemFooter />
       </div>
     </div>
   )
