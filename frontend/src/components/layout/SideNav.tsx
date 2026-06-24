@@ -12,11 +12,6 @@ interface SideNavProps {
   onLogout: () => void
 }
 
-// "Lot tracking"(과거 빈 버튼) 자리를 알람 박스로 교체 — 배지 + 클릭 시 dock 패널을 연다.
-const NAV_ITEMS = [
-  { icon: 'dashboard', label: 'Dashboard', active: true },
-]
-
 export function SideNav({
   filters,
   statusOptions,
@@ -35,7 +30,6 @@ export function SideNav({
           pho<span className="brand__accent">lex</span>
         </p>
         <div className="brand__line" aria-hidden="true" />
-        <p className="brand__sub">Fab 7 ops</p>
       </div>
 
       <div className="nav-section">
@@ -59,19 +53,6 @@ export function SideNav({
               ) : null}
             </button>
           </li>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.label}>
-              <button
-                type="button"
-                className={`nav-item${item.active ? ' is-active' : ''}`}
-              >
-                <span className="material-symbols-outlined" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </button>
-            </li>
-          ))}
         </ul>
       </div>
 
@@ -127,13 +108,6 @@ export function SideNav({
       </div>
 
       <div className="side-footer">
-        <button type="button" className="nav-item">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            help
-          </span>
-          <span>Support</span>
-        </button>
-
         <button type="button" className="nav-item" onClick={onLogout}>
           <span className="material-symbols-outlined" aria-hidden="true">
             logout
