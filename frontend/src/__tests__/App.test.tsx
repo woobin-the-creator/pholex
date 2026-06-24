@@ -112,8 +112,8 @@ describe('App', () => {
     expect(await screen.findByText('LOT-A2948-01')).toBeInTheDocument()
     expect(await screen.findByText('LOT-B5532-19')).toBeInTheDocument()
 
-    const pageNavigation = screen.getByRole('navigation', { name: 'Primary' })
-    expect(within(pageNavigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' })
+    expect(within(primaryNav).getByRole('button', { name: 'Toggle theme' })).toBeInTheDocument()
 
     const filtersSidebar = screen.getByRole('complementary', { name: 'Workspace navigation' })
     expect(within(filtersSidebar).getByLabelText('Lot ID')).toBeInTheDocument()
