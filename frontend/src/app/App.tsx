@@ -11,7 +11,6 @@ import { DashboardGrid } from '../components/layout/DashboardGrid'
 import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
 import { SystemFooter } from '../components/layout/SystemFooter'
 import { LotHoldPanel } from '../components/panels/LotHoldPanel'
-import { PlaceholderPanel } from '../components/panels/PlaceholderPanel'
 import { SpecialHoldPanel } from '../components/panels/SpecialHoldPanel'
 import { AlarmDock } from '../components/alarms/AlarmDock'
 import { useMyHoldTable } from '../hooks/useMyHoldTable'
@@ -53,7 +52,7 @@ function formatDate(): string {
   return `${dd}.${mm}.${yyyy} · Fab 7`
 }
 
-type PanelId = 'slot-0' | 'live' | 'slot-2' | 'slot-3' | 'slot-4' | 'slot-5'
+type PanelId = 'live' | 'slot-4'
 
 function DashboardApp() {
   const [user, setUser] = useAtom(authAtom)
@@ -131,9 +130,6 @@ function DashboardApp() {
     return [
       { label: 'Active', value: activeCount },
       { label: 'Hold', value: holdCount, tone: 'hold' },
-      { label: 'Rework', value: null },
-      { label: 'Inform', value: null },
-      { label: 'Yield · 24h', value: null, tone: 'yield', suffix: '%' },
     ]
   }, [rows])
 
@@ -242,14 +238,6 @@ function DashboardApp() {
         />
 
         <DashboardGrid hasMaximized={maximized !== null}>
-          <PlaceholderPanel
-            slotIndex={0}
-            title="전체 홀드"
-            subtitle="장기 hold 코멘트 + 제외처리 가능"
-            isMaximized={maximized === 'slot-0'}
-            onToggleMaximize={() => toggleMaximize('slot-0')}
-            vtName="card-slot-0"
-          />
           <LotHoldPanel
             rows={filteredRows}
             loading={loading}
@@ -261,34 +249,10 @@ function DashboardApp() {
             onToggleMaximize={() => toggleMaximize('live')}
             vtName="card-live"
           />
-          <PlaceholderPanel
-            slotIndex={2}
-            title="수율 계측"
-            subtitle="측정 결함과 판정 결과를 위한 슬롯입니다."
-            isMaximized={maximized === 'slot-2'}
-            onToggleMaximize={() => toggleMaximize('slot-2')}
-            vtName="card-slot-2"
-          />
-          <PlaceholderPanel
-            slotIndex={3}
-            title="인폼 lot hold"
-            subtitle="인폼에 포함된 lot 파싱 후 status 표시 (hold가 최상단)"
-            isMaximized={maximized === 'slot-3'}
-            onToggleMaximize={() => toggleMaximize('slot-3')}
-            vtName="card-slot-3"
-          />
           <SpecialHoldPanel
             isMaximized={maximized === 'slot-4'}
             onToggleMaximize={() => toggleMaximize('slot-4')}
             vtName="card-slot-4"
-          />
-          <PlaceholderPanel
-            slotIndex={5}
-            title="간단 hold"
-            subtitle="rework cnt / rework 판정대기"
-            isMaximized={maximized === 'slot-5'}
-            onToggleMaximize={() => toggleMaximize('slot-5')}
-            vtName="card-slot-5"
           />
         </DashboardGrid>
 

@@ -9,9 +9,6 @@ interface TopNavProps {
 
 const PAGE_ITEMS = [
   { label: 'Overview', active: true },
-  { label: 'Lots' },
-  { label: 'Equipment' },
-  { label: 'Yield' },
 ]
 
 function initialsOf(user: SessionUser | null): string {

@@ -15,9 +15,6 @@ interface SideNavProps {
 // "Lot tracking"(과거 빈 버튼) 자리를 알람 박스로 교체 — 배지 + 클릭 시 dock 패널을 연다.
 const NAV_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', active: true },
-  { icon: 'precision_manufacturing', label: 'Equipment' },
-  { icon: 'analytics', label: 'Yield analytics' },
-  { icon: 'description', label: 'Reports' },
 ]
 
 export function SideNav({
