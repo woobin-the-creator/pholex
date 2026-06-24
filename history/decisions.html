@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-17 (슬롯1 신선도: dump primary + 포트 분리 + health timestamp 방식)";
+  const LAST_UPDATED = "2026-06-24 (시연 전 미구현 목업 UI 영구 삭제 + 대시보드 2패널 레이아웃)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -671,6 +671,19 @@
         { name: "health enum을 백엔드가 판정(§4.3 '프론트는 값만')", rejected: "응답 시점 고정 — mm:ss 카운터는 흐르는데 색은 멈추는 불일치" }
       ],
       note: "구현 범위(Claude PR): ports/dto.py(MyHoldResult), ports/lot_repository.py(get_dump_last_run_at), usecases/fetch_my_holds.py, api/wire.py(slot_payload에 dumpMeta), api/lots.py, adapters/fake/lot_repository.py + contract·wire 테스트 / frontend(freshness 유틸·useLiveCounter·LotHoldPanel 신호등+카운터). 사내 영역: lot_status hold SELECT(LotSource) + lot_dump_meta SELECT(LotRepository) — docs/dump-job-spec.md에 항목 추가. 포트 선택 검토 인포그래픽은 이슈 #44. §4.3의 'health 백엔드 주도'를 enum→timestamp+임계값으로 조정."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-24",
+      status: "done",
+      title: "시연 전 미구현 목업 UI 영구 삭제 + 대시보드 2패널 레이아웃",
+      decision: "동작하지 않는 placeholder UI를 전부 코드에서 영구 삭제했어요. 대상: 사이드바 Equipment/Yield analytics/Reports, 상단탭 Lots/Equipment/Yield, 헤더 KPI Rework/Inform/Yield·24h, 중앙 4개 PlaceholderPanel(전체 홀드/수율 계측/인폼 lot hold/간단 hold) + PlaceholderPanel.tsx 컴포넌트 자체. 실제 동작하는 '내 lot hold'·'키워드 Hold' 2개만 남기고, 2열 grid에 좌우로 나란히 배치(grid-auto-rows: 1fr로 높이를 꽉 채움).",
+      rationale: "시연에서 미완성 '준비 중' 칩과 빈 핸들러 메뉴가 제품을 미완성으로 보이게 했어요. '임시 숨김(feature flag)'도 검토했지만 사용자가 영구 삭제를 선택 — placeholder의 설계 의도는 decisions.html과 design 문서에 이미 남아 있어 코드 자리표시 없이도 복원 가능해요. 남은 2패널이 card--span2라 4개만 빼면 자연히 2열 나란히가 되어, 사용자가 시안 비교(이슈 #54) 후 B(2열)를 선택했어요.",
+      alternatives: [
+        { name: "시안 A(전체폭 세로 적층)", rejected: "테이블 컬럼은 넓지만 세로로 길어 한 화면에 안 들어옴. 사용자가 '한 화면에 둘 다' 보이는 B 선택" },
+        { name: "임시 숨김(feature flag/주석)", rejected: "되돌리기 쉽지만 죽은 코드가 남음. 의도는 문서에 보존돼 영구 삭제가 더 깔끔" }
+      ],
+      note: "갱신: App.tsx(KPI 배열·PanelId·grid), SideNav.tsx(NAV_ITEMS), TopNav.tsx(PAGE_ITEMS), styles.css(placeholder CSS·view-transition slot 정리·grid-auto-rows), App.test.tsx(패널 6→2). 삭제: PlaceholderPanel.tsx. 시안 비교 이슈 #54, 시안 HTML frontend/demo/. 향후 Equipment/Yield/Reports/수율계측 등은 기능 구현 시 새로 추가."
     }
   ];
 

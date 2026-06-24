@@ -57,7 +57,7 @@ describe('App', () => {
     vi.unstubAllGlobals()
   })
 
-  it('renders six dashboard panels and loads the live my-hold slot', async () => {
+  it('renders the two live dashboard panels and loads the live my-hold slot', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         createJsonResponse({
@@ -106,14 +106,14 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: '내 lot hold' })).toBeInTheDocument()
-    expect(screen.getAllByTestId('dashboard-panel')).toHaveLength(6)
+    // 목업 패널 제거 후 — 실제 동작하는 '내 lot hold' + '키워드 Hold' 2개만 남는다.
+    expect(screen.getAllByTestId('dashboard-panel')).toHaveLength(2)
+    expect(await screen.findByRole('heading', { name: '키워드 Hold' })).toBeInTheDocument()
     expect(await screen.findByText('LOT-A2948-01')).toBeInTheDocument()
     expect(await screen.findByText('LOT-B5532-19')).toBeInTheDocument()
-    expect(screen.getAllByText('MVP 이후')).toHaveLength(4)
 
     const pageNavigation = screen.getByRole('navigation', { name: 'Primary' })
     expect(within(pageNavigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()
-    expect(within(pageNavigation).getByRole('button', { name: 'Lots' })).toBeInTheDocument()
 
     const filtersSidebar = screen.getByRole('complementary', { name: 'Workspace navigation' })
     expect(within(filtersSidebar).getByLabelText('Lot ID')).toBeInTheDocument()
