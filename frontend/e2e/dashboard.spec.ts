@@ -28,11 +28,14 @@ test.describe('대시보드 — 목업 제거 후', () => {
     }
   })
 
-  test('남겨둔 메뉴/탭과 lot 데이터는 정상', async ({ page }) => {
+  test('남겨둔 컨트롤과 lot 데이터는 정상', async ({ page }) => {
+    // declutter(PR #60)로 Overview 탭·Dashboard 항목 등 죽은 장식은 제거됨 —
+    // 살아있는 컨트롤만 확인한다.
     const topnav = page.getByRole('navigation', { name: 'Primary' })
-    await expect(topnav.getByRole('button', { name: 'Overview' })).toBeVisible()
+    await expect(topnav.getByRole('button', { name: 'Toggle theme' })).toBeVisible()
     const sidenav = page.getByRole('complementary', { name: 'Workspace navigation' })
-    await expect(sidenav.getByRole('button', { name: 'Dashboard' })).toBeVisible()
+    await expect(sidenav.getByRole('button', { name: /알람 박스/ })).toBeVisible()
+    await expect(sidenav.getByRole('button', { name: 'Sign out' })).toBeVisible()
     // demo source → 테이블 행이 실제로 렌더되는지(end-to-end 데이터 경로)
     await expect(page.locator('.lot-table__lot-id').first()).toBeVisible()
   })

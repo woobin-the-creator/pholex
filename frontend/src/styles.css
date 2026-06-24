@@ -987,7 +987,9 @@ body[data-theme='dark']  .pill--unknown   { background: rgba(150, 150, 150, 0.12
   left: 20px;
   width: 340px;
   max-height: 72vh;
-  overflow-y: auto;
+  /* 패널 전체 스크롤 금지 — 헤더·검색은 고정, 리스트만 스크롤한다(아래 __list).
+     overflow:hidden이라 내부 스크롤이 22px 둥근 모서리 안에서 깔끔히 클리핑된다. */
+  overflow: hidden;
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -1004,6 +1006,7 @@ body[data-theme='dark']  .pill--unknown   { background: rgba(150, 150, 150, 0.12
   animation: fadeRight 240ms var(--ease-out) backwards;
 }
 .alarm-dock__head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1021,8 +1024,71 @@ body[data-theme='dark']  .pill--unknown   { background: rgba(150, 150, 150, 0.12
   background: none; border: none; cursor: pointer;
   font-size: 18px; line-height: 1; color: var(--ink-mute);
 }
+.alarm-dock__search {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 12px 4px; padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: var(--radius-micro, 4px);
+  color: var(--ink-mute);
+}
+.alarm-dock__search .material-symbols-outlined { font-size: 16px; }
+.alarm-dock__search input {
+  flex: 1; min-width: 0; border: none; background: none; outline: none;
+  font: inherit; font-size: 13px; color: var(--ink);
+}
+.alarm-dock__search input::placeholder { color: var(--ink-mute); }
+.alarm-dock__search:focus-within { border-color: var(--accent, #097fe8); }
+body[data-theme='light'] .alarm-dock__search { border-color: var(--rule, rgba(0, 0, 0, 0.12)); }
 .alarm-dock__empty { padding: 28px 16px; text-align: center; color: var(--ink-mute); font-size: 13px; }
-.alarm-dock__list { list-style: none; margin: 0; padding: 6px; display: grid; gap: 4px; }
+/* 리스트 + 글래스 스크롤 힌트를 함께 담는 상대 위치 래퍼 */
+.alarm-dock__scrollwrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.alarm-dock__list {
+  list-style: none; margin: 0; padding: 6px; display: grid; gap: 6px;
+  /* 리스트만 스크롤 — flex 자식이 스크롤하려면 min-height:0 필수 */
+  flex: 1; min-height: 0; overflow-y: auto;
+  /* 페이지 톤에 맞춘 가는 스크롤바 (Firefox) */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+/* 글래스모피즘 스크롤 힌트 — 상/하단 중앙. 더 스크롤할 게 있을 때만 표시 */
+.alarm-dock__scrollhint {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+          backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow: 0 4px 14px rgba(17, 17, 17, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: var(--ink); cursor: pointer; z-index: 6;
+  transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+/* 미니멀 chevron — SVG라 viewBox 정중앙 정렬이 폰트 metric에 흔들리지 않는다 */
+.alarm-dock__scrollhint .alarm-dock__chevron { display: block; }
+.alarm-dock__scrollhint--up { top: 8px; }
+.alarm-dock__scrollhint--down { bottom: 8px; }
+.alarm-dock__scrollhint--up:hover { transform: translateX(-50%) translateY(-1px); background: rgba(255, 255, 255, 0.64); }
+.alarm-dock__scrollhint--down:hover { transform: translateX(-50%) translateY(1px); background: rgba(255, 255, 255, 0.64); }
+body[data-theme='dark'] .alarm-dock__scrollhint {
+  background: rgba(42, 42, 48, 0.5); border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+body[data-theme='dark'] .alarm-dock__scrollhint--up:hover,
+body[data-theme='dark'] .alarm-dock__scrollhint--down:hover { background: rgba(62, 62, 70, 0.62); }
+/* WebKit 가는 스크롤바 — 트랙 투명, thumb는 padding-box로 떠 있는 알약 */
+.alarm-dock__list::-webkit-scrollbar { width: 8px; }
+.alarm-dock__list::-webkit-scrollbar-track { background: transparent; }
+.alarm-dock__list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.alarm-dock__list::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); background-clip: padding-box; }
+body[data-theme='dark'] .alarm-dock__list { scrollbar-color: rgba(255, 255, 255, 0.26) transparent; }
+body[data-theme='dark'] .alarm-dock__list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.24); background-clip: padding-box; }
+body[data-theme='dark'] .alarm-dock__list::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); background-clip: padding-box; }
 .alarm-item {
   width: 100%;
   display: grid;
