@@ -302,7 +302,7 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-24 (시연 전 미구현 목업 UI 영구 삭제 + 대시보드 2패널 레이아웃)";
+  const LAST_UPDATED = "2026-06-24 (기능 없는 장식 요소 2차 제거 — 죽은 버튼 + 정적 텍스트, 시안 B)";
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -698,6 +698,19 @@
         { name: "임시 숨김(feature flag/주석)", rejected: "되돌리기 쉽지만 죽은 코드가 남음. 의도는 문서에 보존돼 영구 삭제가 더 깔끔" }
       ],
       note: "갱신: App.tsx(KPI 배열·PanelId·grid), SideNav.tsx(NAV_ITEMS), TopNav.tsx(PAGE_ITEMS), styles.css(placeholder CSS·view-transition slot 정리·grid-auto-rows), App.test.tsx(패널 6→2). 삭제: PlaceholderPanel.tsx. 시안 비교 이슈 #54, 시안 HTML frontend/demo/. 향후 Equipment/Yield/Reports/수율계측 등은 기능 구현 시 새로 추가."
+    },
+    {
+      era: "4 · 안정화 · 진행 중",
+      when: "2026-06-24",
+      status: "done",
+      title: "기능 없는 장식 요소 2차 제거 — 죽은 버튼 + 정적 텍스트 (시안 B)",
+      decision: "핸들러가 연결 안 돼 눌러도 무반응인 '죽은' 요소 6개(TopNav 검색창·Overview 탭·알림 아이콘·설정 아이콘, SideNav Dashboard 항목·Support 버튼)와, 데이터에 연동되지 않은 정적 장식 텍스트(TopNav 'batch monitoring' 라벨, SystemFooter 전체 'pholex/fab 7/build 2026.05.28/live', scope의 하드코딩 '· Fab 7' 접미, SideNav 브랜드 'Fab 7 ops')를 코드에서 영구 삭제했어요. 계정 프로필·다크/라이트 토글은 원래 위치인 우상단에 유지(topnav__left 제거로 깨진 정렬을 .topnav__right margin-left:auto로 고정).",
+      rationale: "목업 패널 영구 삭제(#54)의 후속 청소예요. 눌러도 아무 일도 없는 가짜 인터랙션은 사용자를 속이고, 하드코딩 정적 텍스트는 '정보처럼 보이지만 거짓'(데이터 충실도 위반)이에요. 시안 A(죽은 버튼만 제거, 텍스트 유지)와 B(텍스트까지 제거)를 GIF로 비교(이슈 #58)한 뒤 사용자가 더 미니멀한 B를 선택했어요. build 태그·Fab 라벨은 추후 실제 값(빌드 SHA·소속 라인) 연동 계획이 없어 보류가 아닌 삭제로.",
+      alternatives: [
+        { name: "시안 A(죽은 버튼 6개만 제거)", rejected: "정적 장식 텍스트가 남아 '정보처럼 보이는 하드코딩'이 잔존 — 사용자가 더 깔끔한 B 선택" },
+        { name: "정적 텍스트를 실제 데이터로 연동", rejected: "build SHA·소속 라인을 채울 계획이 현재 없음 — 받쳐줄 데이터 없는 표기 유지보다 삭제가 정직(YAGNI)" }
+      ],
+      note: "갱신: TopNav.tsx(검색·페이지탭·아이콘·라벨 + topnav__left 제거), SideNav.tsx(NAV_ITEMS·Support·brand__sub), App.tsx(SystemFooter·formatDate ·Fab 7), styles.css(.footer*·.topnav__title·.search·.icon-btn 잔재 정리 + .topnav__right margin-left:auto). 삭제: SystemFooter.tsx. 살아있는 기능(테마 토글·알람 박스·필터·refresh·로그아웃·KPI·시계)은 전부 보존. 시안 비교 이슈 #58."
     }
   ];
 

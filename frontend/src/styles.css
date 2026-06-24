@@ -352,7 +352,7 @@ body[data-theme='dark'] .page-link.is-active::after {
 .lot-step__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .lot-step__btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.topnav__right { display: flex; align-items: center; gap: 14px; }
+.topnav__right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
 .topnav__right > * { animation: fadeUp 540ms var(--ease-out) backwards; }
 .topnav__right > *:nth-child(1) { animation-delay: 200ms; }
 .topnav__right > *:nth-child(2) { animation-delay: 240ms; }
