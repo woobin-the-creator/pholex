@@ -56,6 +56,20 @@ const CRITICAL_ALERT = {
   },
 }
 
+const SECOND_ALERT = {
+  type: 'alert',
+  payload: {
+    lotId: 'LOT-B5532-19',
+    severity: 'warning',
+    changeType: 'status',
+    previousStatus: 'Run',
+    newStatus: 'Hold',
+    eventId: 'evt-crit-2',
+    occurredAt: '2026-06-13T05:22:00+09:00',
+    message: 'LOT-B5532-19: Run → Hold',
+  },
+}
+
 function mockAuthAndTable() {
   vi.mocked(fetch)
     .mockResolvedValueOnce(
@@ -130,6 +144,37 @@ describe('Alarm dock', () => {
     expect(within(dock).getByText('Run → Hold')).toBeInTheDocument()
     // (A) 열면 전부 읽음 → 배지 사라짐
     await waitFor(() => expect(screen.queryByTestId('alarm-badge')).not.toBeInTheDocument())
+  })
+
+  it('filters the alarm list by the search box (lot id / content)', async () => {
+    mockAuthAndTable()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: '내 lot hold' })
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+    act(() => {
+      MockWebSocket.instances[0].emit(CRITICAL_ALERT)
+      MockWebSocket.instances[0].emit(SECOND_ALERT)
+    })
+    await screen.findByTestId('alarm-badge')
+
+    await userEvent.click(screen.getByRole('button', { name: /알람 박스/ }))
+    const dock = await screen.findByRole('dialog', { name: '알람 박스' })
+
+    // 둘 다 보임
+    expect(within(dock).getByText('LOT-A2948-01')).toBeInTheDocument()
+    expect(within(dock).getByText('LOT-B5532-19')).toBeInTheDocument()
+
+    // 한 lot만 매칭하는 검색어 → 나머지는 사라짐
+    const search = within(dock).getByRole('searchbox', { name: '알람 검색' })
+    await userEvent.type(search, 'A2948')
+    expect(within(dock).getByText('LOT-A2948-01')).toBeInTheDocument()
+    expect(within(dock).queryByText('LOT-B5532-19')).not.toBeInTheDocument()
+
+    // 아무것도 매칭 안 되면 전용 empty 문구
+    await userEvent.clear(search)
+    await userEvent.type(search, 'zzz없는값')
+    expect(within(dock).getByText('검색 결과가 없습니다.')).toBeInTheDocument()
   })
 
   it('ignores a duplicate eventId (no double accumulation)', async () => {

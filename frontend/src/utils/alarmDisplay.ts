@@ -18,6 +18,16 @@ export function describeAlarm(item: AlarmItem): string {
   }
 }
 
+/**
+ * 알람 한 건이 검색어에 걸리는지. 화면에 보이는 정보(lotId + 설명 한 줄)를
+ * 소문자 substring으로 매칭한다. 빈 검색어는 항상 true(= 전체 표시).
+ */
+export function alarmMatchesQuery(item: AlarmItem, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return `${item.lotId} ${describeAlarm(item)}`.toLowerCase().includes(q)
+}
+
 export function clockLabel(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return '--:--'
