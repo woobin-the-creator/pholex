@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pholex — 시안 A · 전체폭 세로 적층</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <!-- 실제 앱과 동일한 스타일을 그대로 링크 (frontend/src/styles.css) -->
+    <link href="../src/styles.css" rel="stylesheet" />
+    <style>
+      /* ── 시안 A 전용: 남은 패널 2개를 전체폭으로 세로 적층 ── */
+      .grid--demo-stack .card { grid-column: 1 / -1; grid-row: auto; }
+      .grid--demo-stack .card { min-height: 320px; }
+
+      /* 데모 배지 (실제 앱에는 들어가지 않음) */
+      .demo-badge {
+        position: fixed; right: 16px; bottom: 16px; z-index: 999;
+        font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--ink-soft); background: var(--soft);
+        border: 1px solid var(--rule); border-radius: 999px;
+        padding: 7px 14px; pointer-events: none;
+      }
+    </style>
+  </head>
+  <body data-theme="light">
+    <div class="shell">
+      <!-- ───────── Sidebar (목업 메뉴 제거: Dashboard만) ───────── -->
+      <aside class="side" aria-label="Workspace navigation">
+        <div class="brand">
+          <p class="brand__mark">pho<span class="brand__accent">lex</span></p>
+          <div class="brand__line" aria-hidden="true"></div>
+          <p class="brand__sub">Fab 7 ops</p>
+        </div>
+
+        <div class="nav-section">
+          <p class="nav-section__label">Workspace</p>
+          <ul class="nav-list">
+            <li>
+              <button type="button" class="nav-item nav-item--alarms" aria-label="알람 박스 (안읽음 3)">
+                <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+                <span>알람 박스</span>
+                <span class="nav-item__badge">3</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-item is-active">
+                <span class="material-symbols-outlined" aria-hidden="true">dashboard</span>
+                <span>Dashboard</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <p class="nav-section__label">Filter</p>
+          <div class="side-filters">
+            <label class="field" for="lot-id-query">
+              <span class="field__label">Lot ID</span>
+              <input id="lot-id-query" class="field__input" type="search" placeholder="LOT-A2948…" />
+            </label>
+            <label class="field" for="lot-status">
+              <span class="field__label">상태</span>
+              <select id="lot-status" class="field__input field__select">
+                <option value="all">전체</option>
+                <option>Active</option>
+                <option>Hold</option>
+                <option>PreActive</option>
+              </select>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" />
+              <span>최근 30분 변경만</span>
+            </label>
+            <div class="side-summary">
+              <strong>10</strong> of 42 lots
+              <br />
+              <button type="button" class="side-summary__reset">필터 초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-footer">
+          <button type="button" class="nav-item">
+            <span class="material-symbols-outlined" aria-hidden="true">help</span>
+            <span>Support</span>
+          </button>
+          <button type="button" class="nav-item">
+            <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+            <span>Sign out</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ───────── Main ───────── -->
+      <div class="main">
+        <!-- Top nav (목업 탭 제거: Overview만) -->
+        <nav class="topnav" aria-label="Primary">
+          <div class="topnav__left">
+            <p class="topnav__title">batch monitoring</p>
+            <div class="pages">
+              <button type="button" class="page-link is-active">Overview</button>
+            </div>
+          </div>
+          <div class="topnav__right">
+            <label class="search" aria-label="Search">
+              <span class="material-symbols-outlined" aria-hidden="true" style="font-size:16px">search</span>
+              <input type="search" placeholder="Search lot, tool, comment…" />
+            </label>
+            <button type="button" class="theme-switch" aria-label="Toggle theme">
+              <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+              <span>Dark</span>
+            </button>
+            <button type="button" class="icon-btn" aria-label="Notifications">
+              <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+            </button>
+            <button type="button" class="icon-btn" aria-label="Settings">
+              <span class="material-symbols-outlined" aria-hidden="true">settings</span>
+            </button>
+            <div class="user">
+              <div class="user__meta">
+                <div class="user__name">김우빈</div>
+                <div class="user__role">Engineer</div>
+              </div>
+              <div class="avatar" aria-hidden="true">김우</div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Dash header (목업 KPI 제거: Active / Hold만) -->
+        <section class="dash-header">
+          <div class="dash-header__context">
+            <h1 class="dash-header__page">Overview</h1>
+            <p class="dash-header__meta">
+              <span>Fab 7 · 전체 lot</span>
+              <span class="dash-header__live">Live · 14:22:07</span>
+            </p>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <span class="kpi__label">Active</span>
+              <span class="kpi__value">128</span>
+            </div>
+            <div class="kpi kpi--hold">
+              <span class="kpi__label">Hold</span>
+              <span class="kpi__value">14</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Grid: 시안 A — 전체폭 세로 적층 -->
+        <section class="grid grid--demo-stack">
+          <!-- ① 내 lot hold (실제 동작) -->
+          <article class="card card--span2 is-live" aria-labelledby="lot-hold-title">
+            <header class="card__head">
+              <div>
+                <p class="card__index">— 02 · live</p>
+                <h2 id="lot-hold-title" class="card__title">내 lot hold</h2>
+              </div>
+              <div class="card__meta">
+                <span class="lot-step">
+                  <label class="lot-step__size">행
+                    <input class="field__input lot-step__sizeinput" type="number" value="15" />
+                  </label>
+                </span>
+                <span>14:22</span>
+                <span class="dump-freshness" title="2026-06-24 14:21:50">
+                  <span class="dump-freshness__dot" style="background: var(--color-success-green, #1aae39)"></span>
+                  <span class="dump-freshness__elapsed">마지막 갱신 17초 전</span>
+                </span>
+                <button type="button" class="card__action" aria-label="즉시 갱신">
+                  <span class="material-symbols-outlined" aria-hidden="true">refresh</span>refresh
+                </button>
+                <button type="button" class="card__icon" aria-label="패널 확대">
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
+                </button>
+              </div>
+            </header>
+            <div class="lot-table-wrap">
+              <table class="lot-table">
+                <colgroup>
+                  <col class="col-lot-id" /><col class="col-status" /><col class="col-equipment" />
+                  <col class="col-process" /><col class="col-comment" /><col class="col-updated" />
+                </colgroup>
+                <thead>
+                  <tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Updated</th></tr>
+                </thead>
+                <tbody>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-A2948</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>Poly Etch</td><td>오버레이 스펙 초과 재검</td><td>14:22</td></tr>
+                  <tr data-status="Active"><td class="lot-table__lot-id">LOT-A2951</td><td><span class="pill pill--active">Active</span></td><td>CMP-03</td><td>STI CMP</td><td>—</td><td>14:20</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-B1107</td><td><span class="pill pill--hold">Hold</span></td><td>LITHO-02</td><td>Photo/Develop</td><td>defect density 한계 초과</td><td>14:18</td></tr>
+                  <tr data-status="PreActive"><td class="lot-table__lot-id">LOT-B1108</td><td><span class="pill pill--preactive">PreActive</span></td><td>DIFF-11</td><td>Gate Ox</td><td>—</td><td>14:15</td></tr>
+                  <tr data-status="Active"><td class="lot-table__lot-id">LOT-C3320</td><td><span class="pill pill--active">Active</span></td><td>IMP-05</td><td>S/D Implant</td><td>—</td><td>14:11</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-C3322</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>Contact Etch</td><td>tool PM 대기</td><td>14:09</td></tr>
+                  <tr data-status="Active"><td class="lot-table__lot-id">LOT-C3325</td><td><span class="pill pill--active">Active</span></td><td>CVD-09</td><td>ILD Deposition</td><td>—</td><td>14:04</td></tr>
+                  <tr data-status="Active"><td class="lot-table__lot-id">LOT-D4471</td><td><span class="pill pill--active">Active</span></td><td>CMP-01</td><td>ILD CMP</td><td>—</td><td>13:58</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-D4472</td><td><span class="pill pill--hold">Hold</span></td><td>METRO-04</td><td>Overlay Measure</td><td>계측값 OOC, 엔지니어 확인 요청</td><td>13:52</td></tr>
+                  <tr data-status="PreActive"><td class="lot-table__lot-id">LOT-E5560</td><td><span class="pill pill--preactive">PreActive</span></td><td>DIFF-08</td><td>Anneal</td><td>—</td><td>13:47</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <!-- ② 키워드 Hold (실제 동작) -->
+          <article class="card card--span2 kw-card" aria-labelledby="special-hold-title">
+            <header class="card__head kw-head">
+              <div class="kw-titlewrap">
+                <p class="card__index">— 05</p>
+                <h2 id="special-hold-title" class="card__title">키워드 Hold</h2>
+              </div>
+              <div class="card__meta">
+                <span class="kw-count"><strong>4</strong>건</span>
+                <button type="button" class="card__icon" aria-label="패널 확대">
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
+                </button>
+              </div>
+            </header>
+
+            <div class="kw-bar">
+              <span class="kw-bar__label">필터</span>
+              <code class="kw-bar__summary">hold_comment ~ 재검  그리고  tool = ETCH</code>
+              <button type="button" class="kw-toggle">편집 <span aria-hidden="true">▾</span></button>
+              <button type="button" class="kw-toggle kw-toggle--ghost" title="다시 조회" aria-label="다시 조회">↻</button>
+            </div>
+
+            <div class="lot-table-wrap kw-table-wrap">
+              <table class="lot-table">
+                <colgroup>
+                  <col class="col-lot-id" /><col class="col-status" /><col class="col-equipment" />
+                  <col class="col-process" /><col class="col-comment" /><col class="col-updated" />
+                </colgroup>
+                <thead>
+                  <tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Updated</th></tr>
+                </thead>
+                <tbody>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-A2948</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>Poly Etch</td><td>오버레이 스펙 초과 재검</td><td>14:22</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-C3322</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>Contact Etch</td><td>재검 후 재투입 대기</td><td>14:09</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-F6680</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-12</td><td>Metal Etch</td><td>CD 재검 요청</td><td>13:40</td></tr>
+                  <tr class="is-hold" data-status="Hold"><td class="lot-table__lot-id">LOT-F6685</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-12</td><td>Metal Etch</td><td>재검 진행중</td><td>13:31</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <footer class="footer">
+          <div class="footer__group">
+            <span class="footer__live">Live monitoring</span>
+            <span>Fab 7 · line A</span>
+          </div>
+          <div class="footer__group">
+            <span>Pholex demo</span>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <div class="demo-badge">시안 A · 전체폭 세로 적층</div>
+
+    <script>
+      // 데모용 테마 토글 (실제 앱은 Jotai로 처리)
+      const btn = document.querySelector('.theme-switch');
+      btn.addEventListener('click', () => {
+        const b = document.body;
+        const next = b.dataset.theme === 'light' ? 'dark' : 'light';
+        b.dataset.theme = next;
+        btn.querySelector('span:last-child').textContent = next === 'light' ? 'Dark' : 'Light';
+        btn.querySelector('.material-symbols-outlined').textContent =
+          next === 'light' ? 'dark_mode' : 'light_mode';
+      });
+    </script>
+  </body>
+</html>
