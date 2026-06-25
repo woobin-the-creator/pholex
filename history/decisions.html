@@ -302,7 +302,9 @@
      status: "done"(확정) | "future"(예정) | "revisit"(언젠가 재검토)
      fields: rationale(왜), alternatives(대안 — name + rejected 이유), note(부가설명)
      ───────────────────────────────────────────────────────────── */
-  const LAST_UPDATED = "2026-06-24 (기능 없는 장식 요소 2차 제거 — 죽은 버튼 + 정적 텍스트, 시안 B)";
+  /* 주의: "마지막 업데이트" 표시는 아래 DECISIONS 배열의 마지막 항목 when에서
+     자동으로 도출돼요. 별도 상수를 두지 마세요 — 단일 라인이라 사외·사내 양쪽이
+     갱신하면 merge 충돌의 단골이 됩니다(merge=union으로도 const 재선언이라 못 풀어요). */
 
   const DECISIONS = [
     // ─── ERA 1: 기반 설계 ───
@@ -710,8 +712,21 @@
         { name: "시안 A(죽은 버튼 6개만 제거)", rejected: "정적 장식 텍스트가 남아 '정보처럼 보이는 하드코딩'이 잔존 — 사용자가 더 깔끔한 B 선택" },
         { name: "정적 텍스트를 실제 데이터로 연동", rejected: "build SHA·소속 라인을 채울 계획이 현재 없음 — 받쳐줄 데이터 없는 표기 유지보다 삭제가 정직(YAGNI)" }
       ],
-      note: "갱신: TopNav.tsx(검색·페이지탭·아이콘·라벨 + topnav__left 제거), SideNav.tsx(NAV_ITEMS·Support·brand__sub), App.tsx(SystemFooter·formatDate ·Fab 7), styles.css(.footer*·.topnav__title·.search·.icon-btn 잔재 정리 + .topnav__right margin-left:auto). 삭제: SystemFooter.tsx. 살아있는 기능(테마 토글·알람 박스·필터·refresh·로그아웃·KPI·시계)은 전부 보존. 시안 비교 이슈 #58."
-    }
+      note: "갱신: TopNav.tsx(검색·페이지탭·아이콘·라벨 + topnav__left 제거), SideNav.tsx(NAV_ITEMS·Support·brand__sub), App.tsx(SystemFooter·formatDate ·Fab 7), styles.css(.footer*·.topnav__title·.search·.icon-btn 잔재 정리 + .topnav__right margin-left:auto). 삭제: SystemFooter.tsx. 살아있는 기능(테마 토글·알람 박스·필터·refresh·로그아웃·KPI·시계)은 전부 보존. 시안 비교 이슈 #58.",
+    },
+    {
+      era: "5 · 운영 · 협업 (Ops & Collaboration)",
+      when: "2026-06-25",
+      status: "done",
+      title: "decisions.html 머지 충돌 구조 제거 — LAST_UPDATED 자동화 + merge=union",
+      decision: "사외(external/main, Claude)와 사내(origin/dev, opencode)가 둘 다 자주 갱신하는 history/decisions.html에서 merge 충돌이 다발하던 걸 구조적으로 없앴어요. (1) 단일 라인 const LAST_UPDATED를 제거하고 렌더 시 DECISIONS 마지막 항목의 when에서 자동 도출, (2) .gitattributes에 history/decisions.html merge=union을 걸고 모든 DECISIONS 항목을 trailing comma로 끝맺어, 양쪽이 배열 끝에 항목을 추가해도 충돌 마커 없이 둘 다 보존되도록 했어요.",
+      rationale: "충돌의 직접 계기는 분기된 dev(약 12 커밋)를 한 번 rebase로 통합하면서 decisions.html이 커밋마다 재충돌한 일회성 사건이었지만, 근본 원인은 '공유 append 파일 + 단일 라인 상수'라는 파일 구조였어요. config(pull.rebase)는 이미 merge 기본이라 누를 스위치가 없었고, 구조 수정이 유일한 지속 해결책. union은 append-only 공유 파일에 git이 주는 정석 머지 전략이라 이 파일에 딱 맞아요. LAST_UPDATED만은 union으로 못 풀어요(const 재선언 SyntaxError) → 제거가 답.",
+      alternatives: [
+        { name: "pull.rebase=false 설정으로 끝내기", rejected: "이 레포 config엔 애초에 rebase가 안 켜져 있었음(일회성 수동 rebase였음) — 누를 스위치가 없어 재발을 못 막음" },
+        { name: "결정을 history/decisions/*.json 개별 파일로 분리", rejected: "다른 파일명이라 충돌은 원천 차단되지만 리팩터가 크고 CLAUDE.md 규약·렌더러까지 다 바꿔야 해 과함(YAGNI)" },
+      ],
+      note: "행동 규율: external 통합은 항상 merge로(rebase 금지). divergent-branch warning이 떠도 rebase를 고르지 말 것. 앞으로 DECISIONS 항목은 반드시 trailing comma로 끝맺기.",
+    },
   ];
 
   /* ─── 렌더링 (수정 불필요) ─── */
@@ -781,7 +796,8 @@
     syncBtn();
   });
 
-  document.getElementById("updatedAt").textContent = "마지막 업데이트: " + LAST_UPDATED + " · 총 " + DECISIONS.length + "개 결정";
+  const _lastWhen = DECISIONS.length ? DECISIONS[DECISIONS.length - 1].when : "";
+  document.getElementById("updatedAt").textContent = "마지막 업데이트: " + _lastWhen + " · 총 " + DECISIONS.length + "개 결정";
 </script>
 </body>
 </html>

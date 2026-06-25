@@ -27,7 +27,9 @@
 굵직한 결정을 내릴 때마다 `history/decisions.html`을 업데이트한다.
 
 - **대상**: architecture 선택, framework/library 선택, 큰 트레이드오프 결정(예: SQLite→Postgres, fake/real adapter 분리, 데이터 소스 전략, 테마 정책 등). 자잘한 버그 픽스·리팩터는 제외한다.
-- **방법**: 파일 상단 `DECISIONS` 배열에 객체 하나를 추가하고 `LAST_UPDATED` 날짜를 갱신한다. timeline은 JS가 자동으로 그리므로 HTML 본문은 건드리지 않는다.
+- **방법**: 파일 상단 `DECISIONS` 배열 **끝에 객체 하나를 추가**하되 **반드시 trailing comma로 끝맺는다**(`},`). timeline은 JS가 자동으로 그리므로 HTML 본문은 건드리지 않는다.
+- **"마지막 업데이트" 표시**: 배열 마지막 항목의 `when`에서 자동 도출된다. 따로 갱신할 상수(`LAST_UPDATED` 등)를 두지 마라.
+- **왜 이 규약인가**: `history/decisions.html`은 사외(external/main)·사내(origin/dev)가 둘 다 갱신하는 공유 파일이라 `.gitattributes`에 `merge=union`이 걸려 있다. 양쪽이 배열 끝에 항목을 추가해도 충돌 없이 둘 다 보존되려면 (1) 모든 항목이 trailing comma로 끝나야 하고 (2) 양쪽이 수정하는 단일 라인 상수가 없어야 한다. 이 두 규율을 어기면 union 머지가 깨진다(자세한 배경은 decisions.html의 해당 결정 항목 참고).
 - **필드**: `era`, `when`, `status`(`done`|`future`|`revisit`), `title`, `decision`, `rationale`, `alternatives`(name + rejected), `note`(선택).
 
 **왜 중요한가**: 과거에 왜 이런 architecture/framework를 골랐는지 헷갈리지 않으려고 만든 기록이다. 결정이 생길 때마다 누적되지 않으면 가치가 사라진다.
