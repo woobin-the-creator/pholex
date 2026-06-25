@@ -1,0 +1,4 @@
+# 사외(external/main)와 사내(origin/dev)가 둘 다 append-only로 갱신하는 공유 결정 로그.
+# union 머지 드라이버로 양쪽이 배열 끝에 추가한 항목을 충돌 마커 없이 모두 보존한다.
+# 전제: 항목은 trailing comma로 끝맺고, 단일 라인 상수(LAST_UPDATED 등)는 두지 않는다.
+history/decisions.html merge=union
