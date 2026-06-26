@@ -69,6 +69,16 @@ function DashboardApp() {
   const { alarms, unread, handleAlarm, markAllRead, clearAlarms } = useAlarms(stableFocusLot)
   const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user, handleAlarm)
 
+  // 데모/e2e 전용: 성능 e2e가 토스트를 직접 띄울 수 있게 노출. DEMO_MODE에서만 등록(프로덕션 비활성).
+  useEffect(() => {
+    if (!DEMO_MODE) return undefined
+    const w = window as Window & { __demoAlarm?: typeof handleAlarm }
+    w.__demoAlarm = handleAlarm
+    return () => {
+      delete w.__demoAlarm
+    }
+  }, [handleAlarm])
+
   const toggleMaximize = (id: PanelId) => {
     const update = () => {
       setMaximized((current) => (current === id ? null : id))
