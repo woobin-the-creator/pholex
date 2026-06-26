@@ -408,3 +408,37 @@ export const tableLoadingAtomFamily = atomFamily((tableId: number) =>
 - Secondary text (#615d59) on white: ~5.5:1 (AA)
 - Notion Blue on white: ~4.6:1 (AA, 대형 텍스트 기준)
 - Warning Orange on white: ~4.2:1 (AA, 대형 텍스트 기준)
+
+---
+
+### 13.9 Do's & Don'ts — AI Slop 탈피 가드레일
+
+> **이 섹션이 가장 중요하다**: 위 13.1~13.8은 "무엇을 쓸지"(토큰)를 정하지만, 여기서는 "무엇을 하지 말지"(금지선)를 못박는다.
+> AI 생성 UI가 "전부 똑같이 생겨" 보이는 건 모델이 학습 데이터의 **통계적 평균**(glassmorphism·퍼플 그라디언트·균일 pill·부유 그림자)을 뱉기 때문이다.
+> 좋은 디자인은 분포의 **꼬리**에 있고, 그건 사람이 *명시적으로 기본값을 금지*해야만 나온다. UI 코드를 짜기 전 이 표를 먼저 읽는다.
+
+#### 금지 — AI 티(tells)
+
+Reddit 4.7만 게시물에서 집계된 "vibe-coded 사이트의 시각적 단서" 상위 항목 + Pholex 현황.
+
+| ❌ 하지 말 것 | ✅ 대신 | Pholex 현황 |
+|--------------|---------|-------------|
+| `backdrop-filter: blur` (glassmorphism) | 불투명 단색 면 (`var(--canvas)` 등) | **위반 중** — `.alarm-dock`(blur 26px), 일부 오버레이. 토스트는 교정 완료 |
+| 모든 모서리를 pill(`9999px`)로 | radius 위계(4·8·12·16px)에서만, 곡선은 의미 있는 곳만 | **위반 중** — 토스트·배지가 무분별한 pill |
+| 부유하는 다층 그림자(5층 blur 52px) | 1px 경계선 + 1단 그림자로 절제 | 부분 위반 — `--shadow-deep` 남용 주의 |
+| 화이트 다층 그라디언트 남발 | 평평한 단색 표면 우선 | 부분 위반 — 알람 배경 그라디언트 |
+| AI 퍼플/인디고(`indigo-500`) 그라디언트 | warm neutral + 절제된 accent | ✅ 회피됨 (warm minimalism) |
+| 그라디언트 hero 텍스트 | 단색 텍스트 + 굵기로 위계 | ✅ 없음 |
+| 근거 없는 neon glow | 그림자/경계선으로만 깊이 표현 | ✅ 없음 |
+| emoji를 아이콘으로 | `Material Symbols Outlined` | ✅ 준수 중 |
+| 중앙정렬 hero + 카드 3개 클리셰 | 데이터 밀도에 맞는 비대칭 레이아웃 | ✅ 해당 없음(대시보드) |
+| Inter/Roboto/system 기본 폰트 | `JetBrains Mono` (13.2 폰트 정책) | ✅ 준수 중 (fontPolicy 테스트가 강제) |
+
+#### 작업 원칙 (생성 → 정제)
+
+1. **기본값부터 죽인다**: primary color·border radius·font를 의식적으로 고른다. AI의 "clean and modern" 기본값은 곧 엘리베이터 음악이다.
+2. **레퍼런스 우선**: 새 컴포넌트는 Mobbin/Land-book 등 실제 프로덕트 레퍼런스를 먼저 정한 뒤, 그 패턴을 이 토큰 위에 얹는다.
+3. **한 컴포넌트씩**: 전체를 재생성하지 말고 컴포넌트 단위로 explore→critique→refine. 전체 재생성은 매번 "조금 더 beige하게" 평균으로 회귀한다.
+4. **개성은 빈틈에**: empty state·error·loading·microcopy에 사람 손길을 넣는다 — 여기가 "AI 티 vs craft"가 갈리는 지점.
+
+> **배경**: 이 가드레일이 없던 동안 알람 토스트가 glassmorphism + 균일 pill + 부유 그림자로 구현됐고, blur 재합성 때문에 등장 애니메이션이 끊겼다(2026-06-26 수정). 13.1~13.8을 충실히 따라도 금지선이 없으면 같은 AI 티가 재생산된다는 걸 보여준 사례다. 위반 현황 칸은 교정될 때마다 갱신한다.

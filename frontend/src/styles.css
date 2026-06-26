@@ -1133,10 +1133,8 @@ body[data-theme='dark'] .alarm-dock__list::-webkit-scrollbar-thumb:hover { backg
   min-width: 280px;
   padding: 14px 16px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.3)),
-    rgba(244, 246, 251, 0.5);
-  backdrop-filter: blur(20px) saturate(185%);
-  -webkit-backdrop-filter: blur(20px) saturate(185%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.86)),
+    rgba(244, 246, 251, 1);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 18px;
   box-shadow:
@@ -1197,7 +1195,7 @@ body[data-theme='dark'] .alarm-item--warning {
 body[data-theme='dark'] .alarm-pop {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
-    rgba(18, 20, 26, 0.52);
+    rgba(18, 20, 26, 0.97);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.5),
