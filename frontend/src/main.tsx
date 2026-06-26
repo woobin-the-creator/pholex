@@ -10,6 +10,9 @@ import './styles/highlight-variant-d.css'
 import './styles/highlight-variant-e.css'
 import './styles/highlight-variant-f.css'
 import './styles/highlight-variant-g.css'
+import './styles/highlight-variant-h.css'
+import './styles/highlight-variant-i.css'
+import './styles/highlight-variant-j.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -1,0 +1,119 @@
+/* highlight-variant-i.css — 알람 점프 하이라이트 시안 "I. Rounded + Left Accent"
+ *
+ * 목적: 채택된 G("Ring + Soft Fill")의 부드러운 모션을 그대로 가져오되, ring "모양"을
+ *       전문가스럽게 다듬는다. H("Rounded Ring")와 동일한 둥근 모서리 링을 기본으로 하고,
+ *       거기에 첫 셀의 좌측 변만 더 두꺼운 accent 바로 강조한다. 이로써 알람 박스의
+ *       severity 좌측 바와 시각 언어를 통일한다 — "좌측이 또렷이 짚이는" 전문가 느낌.
+ *
+ *       둥근 모서리 기법: 각 td의 ::after 오버레이에 border-radius를 주면, 그 오버레이의
+ *       inset box-shadow(테두리)가 곡률을 따라 둥글게 렌더된다. 첫 td는 좌측 모서리만,
+ *       마지막 td는 우측 모서리만 둥글려 행 전체가 하나의 둥근 카드처럼 닫힌다.
+ *       ::after inset:2px 로 셀 안쪽에 살짝 들여 카드 여백을 만든다.
+ *
+ *       좌측 accent: 첫 td의 좌측 변만 3px 로 두껍게(일반 변 1.5px) 그려, severity 바처럼
+ *       세로로 또렷한 강조선을 만든다. 색은 --hold 토큰(라이트 #c63927 / 다크 #e87b6d).
+ *
+ *       GPU 경량: 애니메이트하는 속성은 opacity(링) 와 background-color(배경 1회 페이드)뿐이다.
+ *       box-shadow(링·accent)는 전부 정적이며 절대 애니메이트하지 않는다. filter·SVG path·
+ *       레이아웃 속성은 일절 애니메이트하지 않는다. 사내 VM(소프트웨어 렌더 llvmpipe)에서도
+ *       가볍게 돈다. 모션 리듬은 G와 1:1 동일(1.6s, 같은 키프레임 비율).
+ *
+ *       의도적으로 prefers-reduced-motion으로 끄지 않는다 — reduce가 자동으로 켜지는 사내
+ *       환경에서도 이 강조가 보여야 한다. (선택 후 reduce 정책은 재논의.)
+ *
+ * 적용: <body data-hl-variant="i"> 일 때만 활성화. 모든 셀렉터가 그 스코프로 시작한다.
+ */
+
+/* ── 기존 코멧/SVG 무력화 ───────────────────────────────────────────────── */
+/* GPU 의존(drop-shadow filter + stroke-dashoffset)인 코멧 SVG를 완전히 숨긴다. */
+body[data-hl-variant="i"] .lot-trace-svg {
+  display: none !important;
+}
+
+/* 기존 .is-focused td의 배경 애니메이션(alarmFocusBg)을 I의 soft-fill 페이드로 덮어쓴다.
+ * 배경은 --hold-soft로 부드럽게 차올랐다(ease-out) 빠진다. background 1회 페이드(제약 허용).
+ * 모션은 G와 동일한 타이밍·키프레임 비율을 그대로 따른다. */
+body[data-hl-variant="i"] .lot-table tbody tr.is-focused td {
+  animation: hlVariantIFill 1.6s ease-out 1 both;
+  /* td를 ::after 오버레이의 포지셔닝 기준으로 삼는다. tr은 이미 position:relative; z-index:2. */
+  position: relative;
+}
+
+/* Soft Fill: transparent → --hold-soft(차오름) → transparent(빠짐). 한 번만.
+ * 링 opacity 페이드와 같은 리듬으로 떠올랐다 가라앉도록 키프레임을 맞춘다(G와 동일 비율). */
+@keyframes hlVariantIFill {
+  0%   { background-color: transparent; }
+  22%  { background-color: var(--hold-soft); }   /* 차올라 유지 진입 */
+  68%  { background-color: var(--hold-soft); }   /* 유지 끝 */
+  100% { background-color: transparent; }        /* 부드럽게 빠짐 */
+}
+
+/* ── I. Rounded Ring (정적 box-shadow + opacity 1회 페이드) ─────────────────── */
+/* 각 td의 ::after 오버레이에 inset box-shadow로 상/하 테두리를 정적으로 그린다.
+ * inset:2px 로 셀 안쪽에 들여 카드 여백을 만들고, border-radius로 곡률을 준다 —
+ * border-radius가 걸린 오버레이의 inset box-shadow는 그 곡률을 따라 둥글게 렌더된다.
+ * 첫 td는 좌측 모서리(6px 0 0 6px)만, 마지막 td는 우측 모서리(0 6px 6px 0)만 둥글린다.
+ * 중간 td는 모서리 없이(0) 상·하 변만 — 행 전체가 하나의 둥근 카드처럼 닫힌다.
+ * 일반 변은 1.5px. box-shadow는 정적이고, 강조는 오직 opacity 페이드로만 — 0 → 1(ease-out)
+ * → 유지 → 0(ease-in). 오버레이는 클릭 통과(pointer-events:none), td 내용 위(z-index)로 떠 링이 또렷하다. */
+body[data-hl-variant="i"] .lot-table tbody tr.is-focused td::after {
+  content: "";
+  position: absolute;
+  inset: 2px;            /* 셀 안쪽으로 살짝 들여 카드 여백 */
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 0;      /* 중간 td: 모서리 없음(첫/마지막에서 override) */
+  /* 상·하 테두리(정적, 1.5px). inset box-shadow라 레이아웃에 영향 없음.
+   * border-radius 곡률을 따라 둥글게 렌더된다. */
+  box-shadow:
+    inset 0  1.5px 0 0 var(--hold),
+    inset 0 -1.5px 0 0 var(--hold);
+  opacity: 0;
+  /* GPU 경량: opacity만 애니메이트. 부드럽게 떴다 잦아드는 1회 페이드(깜빡임 없음). */
+  animation: hlVariantIRing 1.6s ease-out 1 both;
+}
+
+/* 첫 셀: 좌측 모서리를 둥글리고(6px), 상·하 변 + 좌측 accent 바를 그린다.
+ * 좌측 변만 3px 로 두껍게 — severity 좌측 바처럼 또렷한 세로 강조선(알람 박스와 통일감). */
+body[data-hl-variant="i"] .lot-table tbody tr.is-focused td:first-child::after {
+  border-radius: 6px 0 0 6px;
+  box-shadow:
+    inset 0    1.5px 0 0 var(--hold),
+    inset 0   -1.5px 0 0 var(--hold),
+    inset 3px  0     0 0 var(--hold);   /* 좌측 accent: 두꺼운 severity 바 */
+}
+
+/* 마지막 셀: 우측 모서리를 둥글리고(6px), 상·하 변 + 우측 변(1.5px)으로 링을 닫는다. */
+body[data-hl-variant="i"] .lot-table tbody tr.is-focused td:last-child::after {
+  border-radius: 0 6px 6px 0;
+  box-shadow:
+    inset 0     1.5px 0 0 var(--hold),
+    inset 0    -1.5px 0 0 var(--hold),
+    inset -1.5px 0    0 0 var(--hold);
+}
+
+/* 행에 셀이 하나뿐일 때(엣지 케이스): 네 변을 모두 닫고 좌측만 accent.
+ * :first-child::after / :last-child::after 가 동시에 걸리는 단일 셀에서도 사방 링이 그려지도록 보강. */
+body[data-hl-variant="i"] .lot-table tbody tr.is-focused td:first-child:last-child::after {
+  border-radius: 6px;
+  box-shadow:
+    inset 0     1.5px 0 0 var(--hold),
+    inset 0    -1.5px 0 0 var(--hold),
+    inset 3px   0     0 0 var(--hold),   /* 좌측 accent */
+    inset -1.5px 0    0 0 var(--hold);
+}
+
+/* 부드러운 1회 페이드: 0(off) → 1(on, ease-out으로 차오름) → 유지 → 0(ease-in으로 잦아듦).
+ * 구간별 timing-function을 줘 "차오를 땐 ease-out, 잦아들 땐 ease-in"의 결을 만든다.
+ * --hold-soft 배경(hlVariantIFill)과 같은 타이밍에 함께 떴다 가라앉는다(G와 동일 비율). 잔류 없이 종료. */
+@keyframes hlVariantIRing {
+  0%   { opacity: 0; animation-timing-function: ease-out; }  /* 차오름 시작 */
+  22%  { opacity: 1; animation-timing-function: linear; }    /* 도달 → 유지 진입 */
+  68%  { opacity: 1; animation-timing-function: ease-in; }   /* 유지 끝 → 잦아듦 시작 */
+  100% { opacity: 0; }                                       /* 종료(잔류 없음) */
+}
+
+/* ── 다크 모드 ─────────────────────────────────────────────────────────── */
+/* --hold(라이트 #c63927 / 다크 #e87b6d), --hold-soft(라이트 #fff2f0) 토큰이 테마별로
+ * 자동 전환되고, 링 색·좌측 accent·배경 모두 토큰을 그대로 참조하므로 다크에서도 자동
+ * 대응된다. 색을 따로 재지정하지 않는다. */
