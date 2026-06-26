@@ -43,7 +43,6 @@ export function LotHoldPanel({
   vtName,
 }: LotHoldPanelProps) {
   const [spinning, setSpinning] = useState(false)
-  const [cometGeo, setCometGeo] = useState<{ w: number; h: number; d: string } | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
 
   // ── dump 신선도 신호등 + 매초 경과 카운터 ──
@@ -82,7 +81,7 @@ export function LotHoldPanel({
   const rangeFrom = total === 0 ? 0 : start + 1
   const rangeTo = Math.min(start + pageSize, total)
 
-  // 알람 등에서 특정 lot으로 포커스가 오면, 그 lot이 있는 페이지로 '한 번만' 점프해 코멧이 보이게 한다.
+  // 알람 등에서 특정 lot으로 포커스가 오면, 그 lot이 있는 페이지로 '한 번만' 점프해 하이라이트가 보이게 한다.
   // 같은 focus 요청엔 재점프하지 않는다 — 안 그러면 focus가 살아있는 3초 동안 들어오는 모든
   // WebSocket push(rows 변경)마다 effect가 재실행돼 사용자가 넘긴 페이지가 강제로 되돌려진다.
   // rows는 deps에 남겨 데이터가 늦게 도착하는 경우(첫 렌더 때 lot이 아직 없음)도 커버한다.
@@ -100,28 +99,12 @@ export function LotHoldPanel({
     }
   }, [focusLotId, rows, pageSize])
 
-  // 코멧 측정 — 페이지 점프로 행이 마운트된 뒤 다시 재기 위해 렌더되는 페이지(safePage)도 의존성에 둔다.
+  // 포커스된 행을 화면 중앙으로 스크롤한다 — 페이지 점프로 행이 마운트된 뒤 잡기 위해
+  // 렌더되는 페이지(safePage)도 의존성에 둔다. 하이라이트 자체는 .is-focused CSS가 건다.
   useEffect(() => {
-    if (!focusLotId) {
-      setCometGeo(null)
-      return
-    }
+    if (!focusLotId) return
     const row = rowRefs.current.get(focusLotId)
     row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    if (!row) {
-      setCometGeo(null)
-      return
-    }
-    // 행 테두리를 따르는 둥근 경로 — 상단 중앙(w/2, 0)에서 시작해 시계방향 1회전.
-    // r=h/2면 짧은 변이 반원(stadium). 코멧은 이 경로 위 stroke-dash라 모서리에서 곡선으로 휜다.
-    const w = row.offsetWidth
-    const h = row.offsetHeight
-    const r = h / 2
-    const d =
-      `M ${w / 2} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} ` +
-      `A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} ` +
-      `V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
-    setCometGeo({ w, h, d })
   }, [focusLotId, safePage])
 
   const handleRefresh = () => {
@@ -163,20 +146,6 @@ export function LotHoldPanel({
           data-status={row.status}
         >
           <td className="lot-table__lot-id" title={row.lotId}>
-            {focusLotId === row.lotId && cometGeo ? (
-              <svg
-                className="lot-trace-svg"
-                width={cometGeo.w}
-                height={cometGeo.h}
-                viewBox={`0 0 ${cometGeo.w} ${cometGeo.h}`}
-                fill="none"
-                aria-hidden="true"
-              >
-                <path className="lot-trace-comet lot-trace-comet--tail" pathLength={100} d={cometGeo.d} />
-                <path className="lot-trace-comet lot-trace-comet--mid" pathLength={100} d={cometGeo.d} />
-                <path className="lot-trace-comet lot-trace-comet--head" pathLength={100} d={cometGeo.d} />
-              </svg>
-            ) : null}
             {row.lotId}
           </td>
           <td>
