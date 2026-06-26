@@ -7,6 +7,9 @@ import './styles/highlight-variant-a.css'
 import './styles/highlight-variant-b.css'
 import './styles/highlight-variant-c.css'
 import './styles/highlight-variant-d.css'
+import './styles/highlight-variant-e.css'
+import './styles/highlight-variant-f.css'
+import './styles/highlight-variant-g.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

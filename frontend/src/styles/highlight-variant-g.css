@@ -1,0 +1,94 @@
+/* highlight-variant-g.css — 알람 점프 하이라이트 시안 "G. Ring + Soft Fill"
+ *
+ * 목적: D("Ring Blink")의 또렷한 빨강 링 강조는 그대로 유지하되, steps(1) 깜빡임의 투박한
+ *       모션을 걷어내고 "부드럽게 떴다 잦아드는" 한 번의 페이드로 다듬은 변형이다.
+ *       링(테두리)은 D와 동일한 정적 inset box-shadow로 그리고 opacity만 부드럽게
+ *       1회 페이드(0 → 1 ease-out → 유지 → 0 ease-in)한다. 깜빡임 없음.
+ *       여기에 행 배경을 --hold-soft로 은은하게 차올렸다 빠지는 1회 background 페이드를
+ *       동반시켜, 테두리와 배경이 같은 타이밍에 함께 떠올랐다 가라앉는다.
+ *       "또렷한 강조 + 차분한 고급감"의 균형이 이 시안의 핵심이다.
+ *
+ *       GPU 경량: 애니메이트하는 속성은 opacity(링) 와 background(배경 1회 페이드)뿐이다.
+ *       box-shadow(링)는 정적이며 절대 애니메이트하지 않는다. filter·SVG path·레이아웃
+ *       속성·box-shadow 애니메이트는 일절 쓰지 않는다. 사내 VM(소프트웨어 렌더 llvmpipe)
+ *       에서도 가볍게 돈다.
+ *
+ *       의도적으로 prefers-reduced-motion으로 끄지 않는다 — reduce가 자동으로 켜지는 사내
+ *       환경에서도 이 강조가 보여야 한다. (선택 후 reduce 정책은 재논의.)
+ *
+ * 적용: <body data-hl-variant="g"> 일 때만 활성화. 모든 셀렉터가 그 스코프로 시작한다.
+ */
+
+/* ── 기존 코멧/SVG 무력화 ───────────────────────────────────────────────── */
+/* GPU 의존(drop-shadow filter + stroke-dashoffset)인 코멧 SVG를 완전히 숨긴다. */
+body[data-hl-variant="g"] .lot-trace-svg {
+  display: none !important;
+}
+
+/* 기존 .is-focused td의 배경 애니메이션(alarmFocusBg)을 G의 soft-fill 페이드로 덮어쓴다.
+ * 배경은 --hold-soft로 부드럽게 차올랐다(ease-out) 빠진다. background 1회 페이드(제약 허용). */
+body[data-hl-variant="g"] .lot-table tbody tr.is-focused td {
+  animation: hlVariantGFill 1.6s ease-out 1 both;
+  /* td를 ::after 오버레이의 포지셔닝 기준으로 삼는다. tr은 이미 position:relative; z-index:2. */
+  position: relative;
+}
+
+/* Soft Fill: transparent → --hold-soft(차오름) → transparent(빠짐). 한 번만.
+ * 링 opacity 페이드와 같은 리듬으로 떠올랐다 가라앉도록 키프레임을 맞춘다. */
+@keyframes hlVariantGFill {
+  0%   { background-color: transparent; }
+  22%  { background-color: var(--hold-soft); }   /* 차올라 유지 진입 */
+  68%  { background-color: var(--hold-soft); }   /* 유지 끝 */
+  100% { background-color: transparent; }        /* 부드럽게 빠짐 */
+}
+
+/* ── G. Ring (정적 box-shadow + opacity 1회 페이드) ───────────────────────── */
+/* D와 동일하게 각 td의 ::after 오버레이에 inset box-shadow로 상/하 테두리를 정적으로 그린다.
+ * 첫 td는 좌측 변, 마지막 td는 우측 변을 더해 링을 닫는다.
+ * box-shadow는 정적이고, 강조는 오직 opacity 페이드로만 — 0 → 1(ease-out) → 유지 → 0(ease-in).
+ * 오버레이는 클릭 통과(pointer-events:none), td 내용 위(z-index)로 살짝 떠 링이 또렷하다. */
+body[data-hl-variant="g"] .lot-table tbody tr.is-focused td::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* 상·하 테두리(정적). inset box-shadow라 레이아웃에 영향 없음. */
+  box-shadow:
+    inset 0  2px 0 0 var(--hold),
+    inset 0 -2px 0 0 var(--hold);
+  opacity: 0;
+  /* GPU 경량: opacity만 애니메이트. 부드럽게 떴다 잦아드는 1회 페이드(깜빡임 없음). */
+  animation: hlVariantGRing 1.6s ease-out 1 both;
+}
+
+/* 좌측 끝을 닫는다(첫 셀의 왼쪽 변) — 링의 좌측 변. */
+body[data-hl-variant="g"] .lot-table tbody tr.is-focused td:first-child::after {
+  box-shadow:
+    inset 0   2px 0 0 var(--hold),
+    inset 0  -2px 0 0 var(--hold),
+    inset 2px 0   0 0 var(--hold);
+}
+
+/* 우측 끝을 닫는다(마지막 셀의 오른쪽 변) — 링의 우측 변. */
+body[data-hl-variant="g"] .lot-table tbody tr.is-focused td:last-child::after {
+  box-shadow:
+    inset 0    2px 0 0 var(--hold),
+    inset 0   -2px 0 0 var(--hold),
+    inset -2px 0   0 0 var(--hold);
+}
+
+/* 부드러운 1회 페이드: 0(off) → 1(on, ease-out으로 차오름) → 유지 → 0(ease-in으로 잦아듦).
+ * 구간별 timing-function을 줘 "차오를 땐 ease-out, 잦아들 땐 ease-in"의 결을 만든다.
+ * --hold-soft 배경(hlVariantGFill)과 같은 타이밍에 함께 떴다 가라앉는다. 잔류 없이 종료. */
+@keyframes hlVariantGRing {
+  0%   { opacity: 0; animation-timing-function: ease-out; }  /* 차오름 시작 */
+  22%  { opacity: 1; animation-timing-function: linear; }    /* 도달 → 유지 진입 */
+  68%  { opacity: 1; animation-timing-function: ease-in; }   /* 유지 끝 → 잦아듦 시작 */
+  100% { opacity: 0; }                                       /* 종료(잔류 없음) */
+}
+
+/* ── 다크 모드 ─────────────────────────────────────────────────────────── */
+/* --hold(라이트 #c63927 / 다크 #e87b6d), --hold-soft(라이트 #fff2f0) 토큰이 테마별로
+ * 자동 전환되고, 링 색·배경 모두 토큰을 그대로 참조하므로 다크에서도 자동 대응된다.
+ * 색을 따로 재지정하지 않는다. */
