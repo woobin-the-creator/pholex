@@ -11,9 +11,10 @@ from app.ports.lot_source import LotSource
 class StreamHoldChanges:
     """Subscribe to lot change events, classify severity, invalidate cache.
 
-    Severity policy is *domain*, not adapter:
-    - status: `* → hold` (transition into hold from non-hold) = critical
-    - else = info
+    Severity policy is *domain*, not adapter (see docs/backend.md §7):
+    - status `* → Hold` (into Hold from non-Hold) = critical
+    - any other *actual* status transition (previous != new) = warning
+    - same-status status event (re-entry) or non-status change = info
 
     Cache invalidation happens unconditionally on every event so the next REST
     refresh sees fresh data.
@@ -31,10 +32,10 @@ class StreamHoldChanges:
 
     @staticmethod
     def _classify_severity(event: LotChangeEventDTO) -> Literal["info", "warning", "critical"]:
-        if (
-            event.change_type == "status"
-            and event.new_status == LotStatus.HOLD
-            and event.previous_status != LotStatus.HOLD
-        ):
+        if event.change_type != "status":
+            return "info"
+        if event.new_status == LotStatus.HOLD and event.previous_status != LotStatus.HOLD:
             return "critical"
+        if event.previous_status != event.new_status:
+            return "warning"
         return "info"
