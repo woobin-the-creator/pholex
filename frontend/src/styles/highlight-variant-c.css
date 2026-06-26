@@ -1,0 +1,110 @@
+/* =============================================================================
+ * Highlight Variant C — "Left Bar Drop"
+ * -----------------------------------------------------------------------------
+ * 알람 클릭 → 테이블 행 점프 시 하이라이트 시안 C.
+ * 점프한 행 좌측에 빨강 세로 막대가 위에서 아래로 펼쳐지듯 내려와 "여기로
+ * 점프했다"를 또렷이 짚은 뒤, 잠깐 머물다 페이드한다.
+ *
+ * GPU 경량 설계: 이 시안은 GPU 가속이 없는 사내 VM에서도 가볍게 돌도록
+ * transform(scaleY)과 opacity만 애니메이트한다. 코멧이 쓰던 SVG
+ * stroke-dashoffset · drop-shadow filter는 전혀 쓰지 않는다.
+ *
+ * 주의: prefers-reduced-motion으로 끄지 않는다 — 사내 reduce 환경에서도
+ * 하이라이트가 보여야 하기 때문. (선택 후 reduce 정책 재논의)
+ *
+ * 모든 셀렉터는 body[data-hl-variant="c"]로 스코프되어, 이 변형이 선택된
+ * 경우에만 적용된다. 다크 테마는 --hold / --hold-soft 토큰이 자동 대응한다.
+ * ========================================================================== */
+
+/* ---- 1. 코멧 끄기 ---------------------------------------------------------- */
+/* SVG 코멧(stroke-dashoffset + drop-shadow filter)을 완전히 제거한다. */
+body[data-hl-variant="c"] .lot-trace-svg {
+  display: none !important;
+}
+
+/* 기존 코멧용 배경 페이드(alarmFocusBg) override —
+   이 시안은 좌측 막대 + 자체 배경 페이드를 쓴다. */
+body[data-hl-variant="c"] .lot-table tbody tr.is-focused td {
+  animation: hlcRowBg 1.6s ease-out 1 both;
+}
+
+/* ---- 2. 행 / 셀 베이스 ----------------------------------------------------- */
+/* is-focused 행은 좌측 막대를 td:first-child의 ::before로 그리므로
+   해당 셀에 position:relative를 부여한다(없으면 absolute가 어긋남). */
+body[data-hl-variant="c"] .lot-table tbody tr.is-focused {
+  position: relative;
+  z-index: 2;
+}
+body[data-hl-variant="c"] .lot-table tbody tr.is-focused td:first-child {
+  position: relative;
+}
+
+/* ---- 3. 좌측 세로 막대 (Left Bar Drop) ------------------------------------ */
+/* 폭 3px의 정적 막대를 첫 셀 좌측에 깔고, scaleY(0)→scaleY(1)로 위에서
+   아래로 펼쳐 내려오게 한 뒤(머묾) opacity로 페이드한다.
+   - transform-origin: top  → 위에서 아래로 자라는 인상
+   - width/height/top/left/bottom은 정적. 애니메이트는 transform·opacity뿐.
+   - filter / box-shadow 애니메이트는 쓰지 않는다(정적 그림자조차 생략). */
+body[data-hl-variant="c"] .lot-table tbody tr.is-focused td:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--hold);
+  transform-origin: top;
+  transform: scaleY(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  animation: hlcBarDrop 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) 1 both;
+}
+
+/* 막대: 펼쳐 내려오기(scaleY) → 머묾 → 페이드(opacity)
+   0%   감춤
+   8%   살짝 보이며 펼치기 시작
+   38%  완전히 펼쳐짐(transform 애니메이트 종료)
+   75%  또렷이 머무름
+   100% opacity로 사라짐 (scaleY는 1 유지) */
+@keyframes hlcBarDrop {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  38% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  75% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+/* ---- 4. 은은한 행 배경 1회 페이드 ----------------------------------------- */
+/* background-color는 1회 페이드만 허용 → --hold-soft에서 transparent로.
+   (반복·왕복 없음. 막대가 주역, 배경은 보조.) */
+@keyframes hlcRowBg {
+  0% {
+    background: var(--hold-soft);
+  }
+  70% {
+    background: var(--hold-soft);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* ---- 5. 다크 테마 ---------------------------------------------------------- */
+/* 색은 전적으로 --hold(다크 #e87b6d) / --hold-soft 토큰에 위임하므로
+   별도 다크 override 규칙이 필요 없다. 토큰이 테마에 따라 자동 전환된다.
+   (이 블록은 의도를 명시하기 위한 문서용 주석이다.) */

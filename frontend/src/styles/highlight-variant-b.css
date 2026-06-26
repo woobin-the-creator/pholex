@@ -1,0 +1,122 @@
+/* =============================================================================
+   하이라이트 시안 B — "Edge Sweep"
+   알람 클릭 → 테이블 행 점프 시, 점프한 행의 상단·하단 빨강 가로선이
+   좌→우로 그어지며 나타났다가 페이드아웃하는 스윕.
+
+   적용 조건: body[data-hl-variant="b"] 일 때만. 모든 셀렉터가 그 prefix로 시작.
+
+   GPU 경량 정책: 이 시안은 GPU 가속에 거의 의존하지 않게 설계됐다.
+   애니메이트하는 속성은 transform(scaleX)과 opacity 뿐이고, background-color는
+   행 본문에 1회 페이드만 쓴다. filter / SVG stroke-dashoffset / box-shadow 애니메이트 /
+   레이아웃 속성(width·height·top·left·margin) 애니메이트는 일절 쓰지 않는다.
+   GPU 없는 사내 VM의 소프트웨어 컴포지팅에서도 부담이 적다.
+
+   reduce 정책: 의도적으로 prefers-reduced-motion으로 끄지 않는다.
+   사내 reduce 환경에서도 점프 위치를 시각적으로 보여줘야 하기 때문.
+   (시안 최종 선택 후 reduce 정책은 다시 논의한다.)
+   ========================================================================== */
+
+/* ---- 0. 코멧(SVG) 끄기 + 기존 코멧/배경 애니메이션 override ---------------- */
+
+/* 기존 SVG 코멧 비활성화 — GPU 의존(drop-shadow filter + stroke-dashoffset) 제거 */
+body[data-hl-variant="b"] .lot-trace-svg {
+  display: none !important;
+}
+
+/* 점프 행은 기준 컨텍스트로. tr을 relative + z-index로 띄워 선이 셀 위에 보이게 한다 */
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused {
+  position: relative;
+  z-index: 2;
+}
+
+/* 기존 .is-focused td 배경 애니메이션을 이 시안 전용 1회 페이드로 교체.
+   background-color 만 1회 페이드(허용 범위) — 반복 없음, both로 종료 상태 고정. */
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused td {
+  animation: hlB-rowFade 1.6s ease-out 1 both;
+  /* 선을 td 경계 정확히 위/아래에 깔기 위한 기준 컨텍스트 */
+  position: relative;
+}
+
+@keyframes hlB-rowFade {
+  0%   { background-color: var(--hold-soft); }
+  70%  { background-color: var(--hold-soft); }
+  100% { background-color: transparent; }
+}
+
+/* ---- 1. 상단/하단 빨강 가로선 (Edge Sweep) -------------------------------- */
+/*
+   각 td 의 ::before = 상단 선, ::after = 하단 선.
+   height 는 정적(2px), 애니메이트하는 건 transform(scaleX) 과 opacity 뿐.
+   transform-origin: left 라서 모든 td 의 선이 동시에 좌측부터 자라나며,
+   td 들이 가로로 붙어 있으므로 행 전체 폭을 좌→우로 한 줄이 흐르는 인상을 준다.
+
+   타이밍(약 1.5s 1회):
+     0%   선 길이 0 (scaleX 0)
+     ~38% 선이 행 끝까지 그어짐 (scaleX 1), 이때까지 opacity 1
+     이후 opacity 로 천천히 페이드아웃
+*/
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::before,
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;                 /* 정적 — 애니메이트하지 않음 */
+  background: var(--hold);     /* 라이트/다크 토큰 자동 대응 */
+  pointer-events: none;
+  z-index: 4;
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform, opacity;
+  /* 그어지기(scaleX) + 페이드(opacity) 를 하나의 키프레임으로 묶어 1회 재생 */
+  animation: hlB-sweep 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) 1 both;
+}
+
+/* 상단 선: td 위쪽 경계에 */
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::before {
+  top: 0;
+}
+
+/* 하단 선: td 아래쪽 경계에 */
+body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::after {
+  bottom: 0;
+}
+
+/* scaleX 0→1 로 좌측부터 그어진 뒤 opacity 로 페이드아웃 */
+@keyframes hlB-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  38% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* ---- 2. 다크 모드 -------------------------------------------------------- */
+/*
+   선·배경 모두 var(--hold) / var(--hold-soft) 토큰을 그대로 쓰므로
+   테마 토큰이 다크 값(--hold: #e87b6d)으로 바뀌면 자동 대응된다.
+   다크에선 가는 선이 살짝 묻힐 수 있어 정적 두께만 1px 더 준다(애니메이트 아님).
+*/
+@media (prefers-color-scheme: dark) {
+  body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::before,
+  body[data-hl-variant="b"] .lot-table tbody tr.is-focused td::after {
+    height: 3px;              /* 정적 — 가독성 보정 */
+  }
+}
+
+/* 명시적 data-theme 속성을 쓰는 환경 대비(있다면 우선) */
+body[data-hl-variant="b"][data-theme="dark"] .lot-table tbody tr.is-focused td::before,
+body[data-hl-variant="b"][data-theme="dark"] .lot-table tbody tr.is-focused td::after {
+  height: 3px;
+}
