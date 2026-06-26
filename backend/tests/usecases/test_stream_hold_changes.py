@@ -36,9 +36,10 @@ def test_severity_hold_to_hold_is_info():
     assert StreamHoldChanges._classify_severity(ev) == "info"
 
 
-def test_severity_active_to_preactive_is_info():
+def test_severity_active_to_preactive_is_warning():
+    """실제 status 전환(→Hold 제외)은 warning (§7)."""
     ev = _ev(previous_status="Active", new_status="PreActive")
-    assert StreamHoldChanges._classify_severity(ev) == "info"
+    assert StreamHoldChanges._classify_severity(ev) == "warning"
 
 
 def test_severity_comment_change_is_info():
