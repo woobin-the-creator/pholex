@@ -1,0 +1,342 @@
+/* =============================================================================
+ * Alarm Variant C — "Terminal Log" (개발자 콘솔 / 모노 로그)
+ *
+ * 컨셉: 알람 박스(.alarm-dock)와 critical 팝(.alarm-pop)을 어두운 터미널 패널로
+ * 강제한다. 라이트/다크 무관하게 잉크빛 콘솔 톤을 박고, 다크에서만 더 깊은
+ * 검정으로 미세조정한다. 각 알람은 한 줄 로그 라인처럼 압축되고, severity는
+ * 면 색칠이 아니라 행 앞 글리프 + lot 텍스트 색으로 표현한다(터미널이 색으로
+ * 로그 레벨을 구분하듯). 모든 모서리는 각지게(0~4px), backdrop-filter·pill·
+ * 부유 그림자·brightness 호버는 일절 쓰지 않는다(13.9 가드레일 준수).
+ *
+ * 폰트는 전역 JetBrains Mono(--font-mono)를 그대로 상속 — 콘솔 톤에 완벽 부합.
+ * 모든 셀렉터는 body[data-alarm-variant="c"] 로 스코프된다.
+ * ============================================================================= */
+
+body[data-alarm-variant="c"] {
+  /* 이 시안 전용 로컬 토큰 — 라이트/다크 공통의 콘솔 팔레트 */
+  --c-panel: #1b1d22;        /* 패널 배경 (잉크빛 콘솔) */
+  --c-panel-head: #15171b;   /* 헤더·상태바: 패널보다 한 단계 어둡게 */
+  --c-line-hover: #24262d;   /* 로그 라인 호버 배경 */
+  --c-edge: rgba(236, 234, 230, 0.1);   /* 패널 내부 구분선 */
+  --c-text: #cdd0d6;         /* 본문 회색 텍스트 */
+  --c-text-soft: #9499a2;    /* 설명 */
+  --c-text-mute: #6b6f78;    /* 타임스탬프·메타 */
+  --c-prompt: #5aa2c4;       /* 프롬프트 글리프($/›) — 차분한 청록 */
+  --c-crit: #e06458;         /* critical (어두운 패널 위 대비 확보한 빨강) */
+  --c-warn: #e08a3c;         /* warning */
+  --c-info: #707682;         /* info (글리프 = 흐린 점) */
+}
+
+/* ── 패널: 박스(dock) ─────────────────────────────────────────────────────── */
+body[data-alarm-variant="c"] .alarm-dock {
+  /* 다층 글래스/blur 제거 → 불투명 단색 콘솔 패널 */
+  background: var(--c-panel);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--c-edge);
+  border-radius: 4px;          /* 각진 콘솔 — 22px → 4px */
+  /* 부유 다층 그림자 금지: 1px 경계선 + 절제된 1단 그림자만 */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  color: var(--c-text);
+}
+
+/* 헤더: 콘솔 타이틀바 */
+body[data-alarm-variant="c"] .alarm-dock__head {
+  background: var(--c-panel-head);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--c-edge);
+}
+body[data-alarm-variant="c"] .alarm-dock__title {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-soft);
+}
+/* 타이틀 앞 콘솔 프롬프트 글리프 */
+body[data-alarm-variant="c"] .alarm-dock__title::before {
+  content: "› ";
+  color: var(--c-prompt);
+  font-weight: 700;
+}
+body[data-alarm-variant="c"] .alarm-dock__clear {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-text-mute);
+  border-radius: 2px;
+  padding: 2px 4px;
+}
+body[data-alarm-variant="c"] .alarm-dock__clear:hover:not(:disabled) {
+  color: var(--c-text);
+  background: var(--c-line-hover);
+}
+body[data-alarm-variant="c"] .alarm-dock__close {
+  font-size: 16px;
+  color: var(--c-text-mute);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+body[data-alarm-variant="c"] .alarm-dock__close:hover { color: var(--c-crit); }
+
+/* 검색창: 프롬프트($) 글리프가 살아있는 콘솔 입력 라인 */
+body[data-alarm-variant="c"] .alarm-dock__search {
+  margin: 8px 10px 4px;
+  padding: 6px 9px;
+  background: var(--c-panel-head);
+  border: 1px solid var(--c-edge);
+  border-radius: 2px;
+  color: var(--c-text-soft);
+}
+/* Material Symbols 돋보기를 숨기고 $ 프롬프트로 대체 (DOM은 못 바꾸므로 CSS로) */
+body[data-alarm-variant="c"] .alarm-dock__search .material-symbols-outlined {
+  font-size: 0;            /* glyph 자체를 0폭으로 죽임 */
+  width: 0.7em;
+}
+body[data-alarm-variant="c"] .alarm-dock__search .material-symbols-outlined::after {
+  content: "$";
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-prompt);
+}
+body[data-alarm-variant="c"] .alarm-dock__search input {
+  font-size: 12px;
+  color: var(--c-text);
+  caret-color: var(--c-prompt);
+}
+body[data-alarm-variant="c"] .alarm-dock__search input::placeholder {
+  color: var(--c-text-mute);
+}
+body[data-alarm-variant="c"] .alarm-dock__search:focus-within {
+  border-color: var(--c-prompt);
+}
+
+/* 빈 상태: 콘솔 로그 라인 톤의 메시지 */
+body[data-alarm-variant="c"] .alarm-dock__empty {
+  padding: 22px 14px;
+  color: var(--c-text-mute);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+body[data-alarm-variant="c"] .alarm-dock__empty::before {
+  content: "# ";
+  color: var(--c-text-mute);
+}
+
+/* ── 로그 리스트 ──────────────────────────────────────────────────────────── */
+body[data-alarm-variant="c"] .alarm-dock__list {
+  padding: 4px 0;
+  gap: 0;                  /* 로그는 라인끼리 붙는다 */
+  scrollbar-color: rgba(236, 234, 230, 0.18) transparent;
+}
+body[data-alarm-variant="c"] .alarm-dock__list::-webkit-scrollbar-thumb {
+  background: rgba(236, 234, 230, 0.18);
+  border-radius: 0;        /* 각진 스크롤바 */
+  background-clip: padding-box;
+}
+body[data-alarm-variant="c"] .alarm-dock__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 234, 230, 0.32);
+  background-clip: padding-box;
+}
+
+/* 스크롤힌트: blur+pill 제거 → 각진 작은 화살표 */
+body[data-alarm-variant="c"] .alarm-dock__scrollhint {
+  width: 22px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--c-panel-head);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--c-edge);
+  box-shadow: none;
+  color: var(--c-text-soft);
+}
+body[data-alarm-variant="c"] .alarm-dock__scrollhint--up { top: 4px; }
+body[data-alarm-variant="c"] .alarm-dock__scrollhint--down { bottom: 4px; }
+body[data-alarm-variant="c"] .alarm-dock__scrollhint--up:hover,
+body[data-alarm-variant="c"] .alarm-dock__scrollhint--down:hover {
+  background: var(--c-line-hover);
+  color: var(--c-text);
+  transform: translateX(-50%);    /* 부유 nudge 제거 */
+}
+
+/* ── 로그 라인: .alarm-item (auto 1fr auto = lot / desc / time) ───────────── */
+body[data-alarm-variant="c"] .alarm-item {
+  display: grid;
+  /* 행 앞 글리프 칸을 추가하기 위해 grid를 재정의: glyph / lot / desc / time */
+  grid-template-columns: 14px auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;     /* 로그 라인은 배경 거의 없음 */
+  color: var(--c-text);
+  transition: background 120ms var(--ease-out);
+}
+/* 행 앞 상태 글리프 — severity 색. info(기본): 흐린 가운뎃점 */
+body[data-alarm-variant="c"] .alarm-item::before {
+  content: "·";
+  grid-column: 1;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--c-info);
+}
+/* 호버: 라인 배경만 살짝 밝아짐 (transform/brightness 금지) */
+body[data-alarm-variant="c"] .alarm-item:hover {
+  background: var(--c-line-hover);
+  transform: none;
+  filter: none;
+}
+/* 안읽음: 좌측 얇은 세로 마커 (pill·glow 아님) */
+body[data-alarm-variant="c"] .alarm-item.is-unread {
+  box-shadow: inset 2px 0 0 var(--c-prompt);
+}
+
+body[data-alarm-variant="c"] .alarm-item__lot {
+  grid-column: 2;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text);
+  letter-spacing: 0.01em;
+}
+body[data-alarm-variant="c"] .alarm-item__desc {
+  grid-column: 3;
+  font-size: 12px;
+  color: var(--c-text-soft);
+}
+body[data-alarm-variant="c"] .alarm-item__time {
+  grid-column: 4;
+  font-size: 11px;
+  color: var(--c-text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* severity = 글리프 색 + lot 텍스트 색 (면 색칠 아님) */
+/* critical: ■ 글리프 + 빨강 lot */
+body[data-alarm-variant="c"] .alarm-item--critical::before {
+  content: "■";
+  font-size: 9px;
+  color: var(--c-crit);
+}
+body[data-alarm-variant="c"] .alarm-item--critical .alarm-item__lot { color: var(--c-crit); }
+
+/* warning: ▲ 글리프 + 주황 lot */
+body[data-alarm-variant="c"] .alarm-item--warning::before {
+  content: "▲";
+  font-size: 9px;
+  color: var(--c-warn);
+}
+body[data-alarm-variant="c"] .alarm-item--warning .alarm-item__lot { color: var(--c-warn); }
+
+/* ── 토스트: .alarm-pop — 화면 하단 상태바에 뜨는 한 줄 로그 ──────────────── */
+body[data-alarm-variant="c"] .alarm-pop {
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  padding: 9px 12px;
+  background: var(--c-panel);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--c-edge);
+  border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  color: var(--c-text);
+}
+/* 좌측 상태 글리프 (dot) — body 앞에 붙는 콘솔 로그 레벨 마커 */
+body[data-alarm-variant="c"] .alarm-pop::before {
+  content: "·";
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-info);
+}
+body[data-alarm-variant="c"] .alarm-pop--critical::before {
+  content: "■";
+  font-size: 11px;
+  color: var(--c-crit);
+}
+body[data-alarm-variant="c"] .alarm-pop--warning::before {
+  content: "▲";
+  font-size: 11px;
+  color: var(--c-warn);
+}
+
+body[data-alarm-variant="c"] .alarm-pop__body { gap: 1px; }
+body[data-alarm-variant="c"] .alarm-pop__lot {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text);
+  letter-spacing: 0.01em;
+}
+body[data-alarm-variant="c"] .alarm-pop--critical .alarm-pop__lot { color: var(--c-crit); }
+body[data-alarm-variant="c"] .alarm-pop--warning .alarm-pop__lot { color: var(--c-warn); }
+body[data-alarm-variant="c"] .alarm-pop__desc {
+  font-size: 11px;
+  color: var(--c-text-soft);
+}
+
+/* 이동 버튼: 각진 콘솔 버튼 (pill 999px → 2px) */
+body[data-alarm-variant="c"] .alarm-pop__jump {
+  padding: 5px 12px;
+  border: 1px solid var(--c-edge);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--c-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+body[data-alarm-variant="c"] .alarm-pop--critical .alarm-pop__jump {
+  border-color: var(--c-crit);
+  color: var(--c-crit);
+}
+body[data-alarm-variant="c"] .alarm-pop--warning .alarm-pop__jump {
+  border-color: var(--c-warn);
+  color: var(--c-warn);
+}
+body[data-alarm-variant="c"] .alarm-pop__jump:hover { background: var(--c-line-hover); }
+body[data-alarm-variant="c"] .alarm-pop__close {
+  font-size: 16px;
+  color: var(--c-text-mute);
+}
+body[data-alarm-variant="c"] .alarm-pop__close:hover { color: var(--c-text); }
+
+/* ── 다크 테마 미세조정: 더 깊은 검정으로 ─────────────────────────────────── */
+body[data-alarm-variant="c"][data-theme='dark'] .alarm-dock,
+body[data-alarm-variant="c"][data-theme='dark'] .alarm-pop {
+  --c-panel: #0e0f12;
+  --c-panel-head: #08090b;
+  --c-line-hover: #181a1f;
+  background: var(--c-panel);
+  border-color: rgba(236, 234, 230, 0.08);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+}
+body[data-alarm-variant="c"][data-theme='dark'] .alarm-dock__head,
+body[data-alarm-variant="c"][data-theme='dark'] .alarm-dock__search {
+  background: var(--c-panel-head);
+}
+
+/* ── 접근성: 투명도/고대비 선호 시에도 콘솔 톤은 이미 불투명이라 안전.
+ *    기존 글래스 폴백이 이 시안엔 적용되지 않도록 콘솔 값을 재확인한다. ──── */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  body[data-alarm-variant="c"] .alarm-dock,
+  body[data-alarm-variant="c"] .alarm-pop {
+    background: var(--c-panel);
+    border-color: var(--c-edge);
+  }
+  body[data-alarm-variant="c"] .alarm-item { background: transparent; }
+  body[data-alarm-variant="c"] .alarm-item:hover { background: var(--c-line-hover); }
+  /* 폴백에서도 severity는 면이 아니라 글리프+텍스트로만 (면 색칠 강제 해제) */
+  body[data-alarm-variant="c"] .alarm-item--critical,
+  body[data-alarm-variant="c"] .alarm-item--warning { background: transparent; }
+  body[data-alarm-variant="c"] .alarm-pop--critical,
+  body[data-alarm-variant="c"] .alarm-pop--warning {
+    background: var(--c-panel);
+    border-color: var(--c-edge);
+  }
+}

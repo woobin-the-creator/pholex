@@ -69,6 +69,17 @@ function DashboardApp() {
   const { alarms, unread, handleAlarm, markAllRead, clearAlarms } = useAlarms(stableFocusLot)
   const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user, handleAlarm)
 
+  // 데모 모드 전용: 디자인 시안 녹화(Playwright)가 토스트를 직접 띄울 수 있게 노출.
+  // 프로덕션(DEMO_MODE=false)에선 등록하지 않는다.
+  useEffect(() => {
+    if (!DEMO_MODE) return undefined
+    const w = window as Window & { __demoAlarm?: typeof handleAlarm }
+    w.__demoAlarm = handleAlarm
+    return () => {
+      delete w.__demoAlarm
+    }
+  }, [handleAlarm])
+
   const toggleMaximize = (id: PanelId) => {
     const update = () => {
       setMaximized((current) => (current === id ? null : id))

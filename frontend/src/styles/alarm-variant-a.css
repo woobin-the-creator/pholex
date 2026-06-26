@@ -1,0 +1,293 @@
+/* =====================================================================
+   시안 A — "Solid Ledger" (제조 현장 단말기 / 정석 원장)
+   ---------------------------------------------------------------------
+   컨셉: glassmorphism(blur·반투명·다층 그라디언트·부유 그림자)을 전부 걷어내고
+   완전 불투명 warm-white 면 + 1px hairline + 4px severity 좌측 바로
+   빽빽하고 단정한 "원장(ledger)" 단말기 느낌을 만든다.
+
+   스코프: 모든 셀렉터는 body[data-alarm-variant="a"] 로 시작해 기본 규칙을 override.
+   다크는 body[data-alarm-variant="a"][data-theme='dark'] 로 specificity를 높여
+   기본 다크 규칙(body[data-theme='dark'] ...)을 이긴다.
+
+   토큰: --canvas/--soft/--tint(불투명 면), --rule(hairline), --ink/--ink-soft/--ink-mute(텍스트),
+         --radius-micro(4)/--radius-sm(8). severity 색은 critical rgba(198,57,39) /
+         warning rgba(221,91,0) / info=중성 --ink-mute.
+
+   13.9 가드레일 준수: backdrop-filter 없음 / pill(9999px) 없음 /
+   다층 부유 그림자 없음(1px 경계선 + 얕은 1단 그림자) / 화이트 그라디언트 없음 /
+   filter:brightness() 호버 없음(background 전환). 폰트는 전역 mono를 inherit.
+   ===================================================================== */
+
+/* severity 좌측 바 색 — 한 곳에서 관리 */
+body[data-alarm-variant="a"] .alarm-dock,
+body[data-alarm-variant="a"] .alarm-pop {
+  --sev-critical: rgb(198, 57, 39);
+  --sev-warning: rgb(221, 91, 0);
+  --sev-info: var(--ink-mute);
+}
+
+/* ---------------------------------------------------------------------
+   알람 박스 (.alarm-dock) — 불투명 면 + hairline + radius 8px
+   --------------------------------------------------------------------- */
+body[data-alarm-variant="a"] .alarm-dock {
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm, 8px);
+  /* 부유 다층 그림자 대신 얕은 1단 그림자만 */
+  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.08);
+}
+
+/* 헤더 — 약한 교차 톤(soft) + 아래 hairline */
+body[data-alarm-variant="a"] .alarm-dock__head {
+  padding: 12px 14px;
+  background: var(--soft);
+  border-bottom: 1px solid var(--rule);
+}
+body[data-alarm-variant="a"] .alarm-dock__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+body[data-alarm-variant="a"] .alarm-dock__clear { color: var(--ink-soft); }
+body[data-alarm-variant="a"] .alarm-dock__clear:hover:not(:disabled) { color: var(--ink); }
+body[data-alarm-variant="a"] .alarm-dock__close { color: var(--ink-mute); }
+body[data-alarm-variant="a"] .alarm-dock__close:hover { color: var(--ink); }
+
+/* 검색창 — 불투명 면 + 1px 경계, radius 4px(기능 요소) */
+body[data-alarm-variant="a"] .alarm-dock__search {
+  margin: 10px 12px 6px;
+  padding: 7px 10px;
+  background: var(--soft);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-micro, 4px);
+  color: var(--ink-mute);
+}
+body[data-alarm-variant="a"] .alarm-dock__search:focus-within {
+  border-color: var(--ink);
+  background: var(--canvas);
+}
+body[data-alarm-variant="a"] .alarm-dock__search input { color: var(--ink); }
+body[data-alarm-variant="a"] .alarm-dock__search input::placeholder { color: var(--ink-mute); }
+body[data-alarm-variant="a"] .alarm-dock__empty { color: var(--ink-mute); }
+
+/* 리스트 — 카드 간격을 좁혀 빽빽한 원장 느낌, 행 사이 hairline 구분선 */
+body[data-alarm-variant="a"] .alarm-dock__list {
+  padding: 0;
+  gap: 0;
+  background: var(--canvas);
+}
+body[data-alarm-variant="a"] .alarm-dock__list > li + li {
+  border-top: 1px solid var(--rule);
+}
+
+/* ---------------------------------------------------------------------
+   알람 항목 (.alarm-item) — 불투명 면 + 좌측 4px severity 바(::before)
+   --------------------------------------------------------------------- */
+body[data-alarm-variant="a"] .alarm-item {
+  position: relative;
+  gap: 10px;
+  padding: 9px 12px 9px 16px;   /* 좌측 16 = 4px 바 + 12 텍스트 여백 */
+  background: var(--canvas);
+  border: none;
+  border-radius: 0;             /* 행은 평평한 원장 줄 — 카드 곡선 제거 */
+  box-shadow: none;
+  transition: background 140ms var(--ease-out);
+}
+/* 좌측 severity 색 바 — 기본(info)은 중성 회색 */
+body[data-alarm-variant="a"] .alarm-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--sev-info, var(--ink-mute));
+}
+/* 호버 — brightness 대신 배경 톤 전환 */
+body[data-alarm-variant="a"] .alarm-item:hover {
+  transform: none;
+  filter: none;
+  background: var(--tint);
+}
+/* 안읽음 — soft 톤으로 살짝 도드라지게(글로우/그림자 없이) */
+body[data-alarm-variant="a"] .alarm-item.is-unread {
+  background: var(--soft);
+  box-shadow: none;
+}
+body[data-alarm-variant="a"] .alarm-item.is-unread:hover { background: var(--tint); }
+
+/* severity 좌측 바 색 — critical/warning */
+body[data-alarm-variant="a"] .alarm-item--critical {
+  background: var(--canvas);
+  border-color: transparent;
+}
+body[data-alarm-variant="a"] .alarm-item--critical::before { background: var(--sev-critical); }
+body[data-alarm-variant="a"] .alarm-item--warning {
+  background: var(--canvas);
+  border-color: transparent;
+}
+body[data-alarm-variant="a"] .alarm-item--warning::before { background: var(--sev-warning); }
+
+/* 텍스트 정렬 — 모노폰트 tabular-nums로 lot/time 칸을 또박또박 */
+body[data-alarm-variant="a"] .alarm-item__lot {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+body[data-alarm-variant="a"] .alarm-item__desc { color: var(--ink-soft); }
+body[data-alarm-variant="a"] .alarm-item__time {
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   스크롤 힌트 (.alarm-dock__scrollhint) — blur+pill 제거 → 불투명 사각 버튼
+   --------------------------------------------------------------------- */
+body[data-alarm-variant="a"] .alarm-dock__scrollhint {
+  width: 26px;
+  height: 22px;
+  border-radius: var(--radius-micro, 4px);
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 4px rgba(17, 17, 17, 0.1);
+  color: var(--ink-soft);
+  transition: background 140ms var(--ease-out);
+}
+body[data-alarm-variant="a"] .alarm-dock__scrollhint--up:hover,
+body[data-alarm-variant="a"] .alarm-dock__scrollhint--down:hover {
+  transform: translateX(-50%);   /* 부유 이동 제거 — 색만 전환 */
+  background: var(--tint);
+}
+
+/* ---------------------------------------------------------------------
+   토스트 (.alarm-pop) — dock과 같은 언어: 불투명 면 + 좌측 4px 바 + radius 8px
+   --------------------------------------------------------------------- */
+body[data-alarm-variant="a"] .alarm-pop {
+  position: relative;
+  gap: 14px;
+  padding: 13px 16px 13px 18px;  /* 좌측 18 = 4px 바 + 14 여백 */
+  overflow: hidden;              /* 좌측 바가 8px 모서리 안에서 클리핑되게 */
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: 0 2px 10px rgba(17, 17, 17, 0.12);
+}
+body[data-alarm-variant="a"] .alarm-pop::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--sev-info, var(--ink-mute));
+}
+body[data-alarm-variant="a"] .alarm-pop--critical { background: var(--canvas); border-color: var(--rule); }
+body[data-alarm-variant="a"] .alarm-pop--critical::before { background: var(--sev-critical); }
+body[data-alarm-variant="a"] .alarm-pop--warning { background: var(--canvas); border-color: var(--rule); }
+body[data-alarm-variant="a"] .alarm-pop--warning::before { background: var(--sev-warning); }
+
+body[data-alarm-variant="a"] .alarm-pop__lot {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+body[data-alarm-variant="a"] .alarm-pop__desc { color: var(--ink-soft); }
+/* 이동 버튼 — pill(999px) 제거 → radius 4px 기능 버튼, hold 색 면 */
+body[data-alarm-variant="a"] .alarm-pop__jump {
+  border: 1px solid transparent;
+  border-radius: var(--radius-micro, 4px);
+  background: var(--hold);
+  color: #fff;
+  box-shadow: none;
+  transition: background 140ms var(--ease-out);
+}
+body[data-alarm-variant="a"] .alarm-pop__jump:hover { background: var(--sev-critical); }
+body[data-alarm-variant="a"] .alarm-pop__close { color: var(--ink-mute); }
+body[data-alarm-variant="a"] .alarm-pop__close:hover { color: var(--ink); }
+
+/* =====================================================================
+   다크 테마 — body[data-alarm-variant="a"][data-theme='dark']
+   불투명 다크 warm-neutral 면. severity 바는 다크에서도 또렷하게 유지.
+   ===================================================================== */
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock,
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop {
+  /* 다크에서 빨강/주황을 약간 밝혀 어두운 면 위에서도 대비 확보 */
+  --sev-critical: rgb(232, 123, 109);
+  --sev-warning: rgb(221, 120, 60);
+  --sev-info: var(--ink-mute);
+}
+
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock {
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--rule);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__head {
+  background: var(--soft);
+  border-bottom-color: var(--rule);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__search {
+  background: var(--soft);
+  border-color: var(--rule);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__search:focus-within {
+  border-color: var(--accent);
+  background: var(--canvas);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__list { background: var(--canvas); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__list > li + li { border-top-color: var(--rule); }
+
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item { background: var(--canvas); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item:hover { filter: none; background: var(--tint); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item.is-unread { background: var(--soft); box-shadow: none; }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item.is-unread:hover { background: var(--tint); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item--critical { background: var(--canvas); border-color: transparent; }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-item--warning { background: var(--canvas); border-color: transparent; }
+
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__scrollhint {
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--rule);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: var(--ink-soft);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__scrollhint--up:hover,
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-dock__scrollhint--down:hover {
+  background: var(--tint);
+}
+
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop {
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--rule);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop--critical { background: var(--canvas); border-color: var(--rule); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop--warning { background: var(--canvas); border-color: var(--rule); }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop__jump { background: var(--hold); color: #1a1a1d; }
+body[data-alarm-variant="a"][data-theme='dark'] .alarm-pop__jump:hover { background: var(--sev-critical); }
+
+/* =====================================================================
+   접근성 폴백 — 이미 불투명이라 추가 처리는 불필요하지만, 기본 규칙의
+   @media 폴백이 specificity로 이기지 않도록 severity 바 색만 재확인.
+   (reduced-transparency / contrast-more 환경에서도 좌측 바 위계 유지)
+   ===================================================================== */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  body[data-alarm-variant="a"] .alarm-item--critical,
+  body[data-alarm-variant="a"] .alarm-pop--critical { background: var(--canvas); }
+  body[data-alarm-variant="a"] .alarm-item--critical::before,
+  body[data-alarm-variant="a"] .alarm-pop--critical::before { background: var(--sev-critical); }
+  body[data-alarm-variant="a"] .alarm-item--warning,
+  body[data-alarm-variant="a"] .alarm-pop--warning { background: var(--canvas); }
+  body[data-alarm-variant="a"] .alarm-item--warning::before,
+  body[data-alarm-variant="a"] .alarm-pop--warning::before { background: var(--sev-warning); }
+}

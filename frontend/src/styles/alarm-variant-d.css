@@ -1,0 +1,324 @@
+/* ===========================================================
+   Alarm Variant D — "Notion Card"
+   Warm-minimalism 정통(frontend.md §13)을 그대로 따르되,
+   현재 알람 UI의 AI-tell만 걷어낸 정제 버전:
+     · glassmorphism(backdrop-filter blur) 제거 → 불투명 흰 카드
+     · 균일 pill(9999px) 제거 → radius 위계 8 / 12px
+     · 부유 다층 그림자(5층 blur 52px) 제거 → whisper border + 1단 소프트 그림자
+     · 화이트 다층 그라디언트 제거 → 평평한 단색 면
+     · filter: brightness() 호버 제거 → 그림자 1단 깊어짐 + 미세 배경 틴트
+   심각도는 면 전체 색칠/좌측 바 대신 8px 색 dot(::before)로 절제되게 표현.
+
+   스코프: 모든 셀렉터가 body[data-alarm-variant="d"] 로 시작.
+   다크: body[data-alarm-variant="d"][data-theme='dark'] 로 기본 다크보다
+         specificity 높게 덮어쓴다. (실제 토큰 --canvas/--soft/--ink* 등은
+         테마별로 이미 올바른 값이라 그대로 재사용한다.)
+
+   주의: frontend.md가 언급한 --shadow-card / --radius-sm 등은 :root에 정의돼
+   있지 않으므로(이 코드베이스 실측), 그 철학을 살린 명시값을 로컬 토큰으로 쓴다.
+   =========================================================== */
+
+/* 변형 D 전용 소프트 그림자/반경 토큰 — 절제된 1단(+미세 ambient).
+   기본(라이트)값을 변형 스코프에 로컬 선언하고, 다크에서 덮는다. */
+body[data-alarm-variant="d"] {
+  --d-radius-card: 12px;   /* dock·toast 컨테이너 (§13.4 --radius-md) */
+  --d-radius-item: 8px;    /* 항목·검색창·스크롤힌트 (§13.4 --radius-sm) */
+  --d-radius-btn: 6px;     /* 마이크로 버튼 */
+
+  /* whisper border + 얕은 단일 그림자(누적 부유 그림자 아님) */
+  --d-border: 1px solid rgba(0, 0, 0, 0.1);
+  --d-shadow-card: 0 1px 2px rgba(17, 17, 17, 0.06), 0 4px 12px rgba(17, 17, 17, 0.08);
+  --d-shadow-hover: 0 2px 4px rgba(17, 17, 17, 0.08), 0 8px 20px rgba(17, 17, 17, 0.1);
+  --d-tint-hover: #f6f5f4;   /* warm white 호버 면 */
+
+  /* severity dot 색 (warm neutral 토큰계와 어울리는 절제된 채도) */
+  --d-critical: rgb(198, 57, 39);
+  --d-warning: rgb(221, 91, 0);
+}
+
+body[data-alarm-variant="d"][data-theme='dark'] {
+  --d-border: 1px solid rgba(236, 234, 230, 0.1);
+  --d-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.36);
+  --d-shadow-hover: 0 2px 5px rgba(0, 0, 0, 0.46), 0 8px 22px rgba(0, 0, 0, 0.44);
+  --d-tint-hover: #1a1a1d;
+  --d-critical: rgb(232, 123, 109);
+  --d-warning: rgb(221, 120, 60);
+}
+
+/* -----------------------------------------------------------
+   Dock 컨테이너 — 불투명 흰 카드
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"] .alarm-dock {
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;             /* §13.9: glassmorphism 금지 */
+  border: var(--d-border);
+  border-radius: var(--d-radius-card);
+  box-shadow: var(--d-shadow-card);
+}
+
+body[data-alarm-variant="d"] .alarm-dock__head {
+  border-bottom: var(--d-border);
+}
+body[data-alarm-variant="d"] .alarm-dock__title {
+  color: var(--ink);
+}
+body[data-alarm-variant="d"] .alarm-dock__clear {
+  color: var(--ink-soft);
+  border-radius: var(--d-radius-btn);
+  padding: 2px 6px;
+  transition: background 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+body[data-alarm-variant="d"] .alarm-dock__clear:not(:disabled):hover {
+  background: var(--d-tint-hover);
+  color: var(--ink);
+}
+body[data-alarm-variant="d"] .alarm-dock__close {
+  color: var(--ink-mute);
+  border-radius: var(--d-radius-btn);
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+body[data-alarm-variant="d"] .alarm-dock__close:hover {
+  background: var(--d-tint-hover);
+  color: var(--ink);
+}
+
+/* -----------------------------------------------------------
+   검색창 — 카드 언어와 동일한 불투명 입력
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"] .alarm-dock__search {
+  background: var(--soft);
+  border: var(--d-border);
+  border-radius: var(--d-radius-item);
+  color: var(--ink-mute);
+  transition: border-color 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+}
+body[data-alarm-variant="d"] .alarm-dock__search input {
+  color: var(--ink);
+}
+body[data-alarm-variant="d"] .alarm-dock__search input::placeholder {
+  color: var(--ink-mute);
+}
+body[data-alarm-variant="d"] .alarm-dock__search:focus-within {
+  border-color: var(--ink-soft);
+  box-shadow: 0 0 0 2px var(--rule);
+}
+
+body[data-alarm-variant="d"] .alarm-dock__empty {
+  color: var(--ink-mute);
+}
+
+/* -----------------------------------------------------------
+   항목(.alarm-item) — 불투명 카드 + severity dot
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"] .alarm-item {
+  position: relative;
+  /* dot 자리를 좌측 패딩으로 확보(DOM은 못 바꾸므로 ::before로 dot 삽입).
+     기존 grid(auto 1fr auto)는 그대로 둔다. */
+  gap: 8px;
+  padding: 10px 12px 10px 26px;
+  background: var(--canvas);
+  border: var(--d-border);
+  border-radius: var(--d-radius-item);
+  box-shadow: none;
+  transition:
+    background 140ms var(--ease-out),
+    border-color 140ms var(--ease-out),
+    box-shadow 140ms var(--ease-out);
+}
+
+/* severity dot — 8px 원, 좌측 세로 중앙 */
+body[data-alarm-variant="d"] .alarm-item::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--ink-mute);       /* 기본(무심각도) dot */
+}
+body[data-alarm-variant="d"] .alarm-item--critical::before { background: var(--d-critical); }
+body[data-alarm-variant="d"] .alarm-item--warning::before  { background: var(--d-warning); }
+
+/* §13.9: filter: brightness() 호버 금지 → 미세 틴트 + 얕은 그림자 1단 */
+body[data-alarm-variant="d"] .alarm-item:hover {
+  transform: none;
+  filter: none;
+  background: var(--d-tint-hover);
+  box-shadow: var(--d-shadow-card);
+}
+
+/* 안읽음 — 면 색칠 대신 dot에 가는 링 + 살짝 진한 border */
+body[data-alarm-variant="d"] .alarm-item.is-unread {
+  box-shadow: none;
+  border-color: rgba(0, 0, 0, 0.16);
+}
+body[data-alarm-variant="d"] .alarm-item.is-unread::before {
+  box-shadow: 0 0 0 3px var(--rule);
+}
+
+body[data-alarm-variant="d"] .alarm-item__lot  { color: var(--ink); }
+body[data-alarm-variant="d"] .alarm-item__desc { color: var(--ink-soft); }
+body[data-alarm-variant="d"] .alarm-item__time { color: var(--ink-mute); }
+
+/* -----------------------------------------------------------
+   스크롤 힌트 — blur 제거, 불투명 작은 버튼 radius 8px
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"] .alarm-dock__scrollhint {
+  width: 26px; height: 26px;
+  border-radius: var(--d-radius-item);   /* §13.9: 9999px pill 금지 */
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;                  /* §13.9: blur 금지 */
+  border: var(--d-border);
+  box-shadow: var(--d-shadow-card);
+  color: var(--ink-soft);
+}
+body[data-alarm-variant="d"] .alarm-dock__scrollhint--up:hover {
+  transform: translateX(-50%) translateY(-1px);
+  background: var(--d-tint-hover);
+  box-shadow: var(--d-shadow-hover);
+  color: var(--ink);
+}
+body[data-alarm-variant="d"] .alarm-dock__scrollhint--down:hover {
+  transform: translateX(-50%) translateY(1px);
+  background: var(--d-tint-hover);
+  box-shadow: var(--d-shadow-hover);
+  color: var(--ink);
+}
+
+/* -----------------------------------------------------------
+   Toast(.alarm-pop) — 불투명 카드 + severity dot, pill/blur 제거
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"] .alarm-pop {
+  position: relative;
+  padding: 14px 16px 14px 28px;       /* 좌측 dot 자리 */
+  background: var(--canvas);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--d-border);
+  border-radius: var(--d-radius-card);
+  box-shadow: var(--d-shadow-card);
+}
+body[data-alarm-variant="d"] .alarm-pop::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--ink-mute);
+}
+body[data-alarm-variant="d"] .alarm-pop--critical::before { background: var(--d-critical); }
+body[data-alarm-variant="d"] .alarm-pop--warning::before  { background: var(--d-warning); }
+
+body[data-alarm-variant="d"] .alarm-pop__lot  { color: var(--ink); }
+body[data-alarm-variant="d"] .alarm-pop__desc { color: var(--ink-soft); }
+
+/* 이동 버튼 — pill 대신 radius 6px, severity 톤의 절제된 솔리드 */
+body[data-alarm-variant="d"] .alarm-pop__jump {
+  border: 1px solid transparent;
+  border-radius: var(--d-radius-btn);
+  background: var(--hold);
+  color: #fff;
+  box-shadow: none;
+  transition: background 140ms var(--ease-out), transform 120ms var(--ease-out);
+}
+body[data-alarm-variant="d"] .alarm-pop__jump:hover {
+  background: var(--d-critical);
+}
+body[data-alarm-variant="d"] .alarm-pop__jump:active { transform: scale(0.96); }
+
+body[data-alarm-variant="d"] .alarm-pop__close {
+  color: var(--ink-mute);
+  border-radius: var(--d-radius-btn);
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+body[data-alarm-variant="d"] .alarm-pop__close:hover {
+  background: var(--d-tint-hover);
+  color: var(--ink);
+}
+
+/* -----------------------------------------------------------
+   다크 — 기본 다크(.alarm-dock 등)보다 specificity 높게 덮는다.
+   토큰(--canvas/--soft/--ink*)은 이미 다크값이라 위 라이트 규칙의
+   대부분이 다크에서도 그대로 옳다. blur/gradient를 다시 끄는 것 +
+   순흑 canvas 대신 한 단계 밝은 면을 카드면으로 쓰는 것만 명시.
+   ----------------------------------------------------------- */
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock {
+  background: var(--soft);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--d-border);
+  box-shadow: var(--d-shadow-card);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__head {
+  border-bottom: var(--d-border);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__search {
+  background: var(--tint);
+  border: var(--d-border);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__search:focus-within {
+  border-color: var(--ink-soft);
+  box-shadow: 0 0 0 2px var(--rule);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-item {
+  background: var(--tint);
+  border: var(--d-border);
+  box-shadow: none;
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-item:hover {
+  background: #232327;
+  filter: none;
+  box-shadow: var(--d-shadow-card);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-item.is-unread {
+  border-color: rgba(236, 234, 230, 0.18);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__scrollhint {
+  background: var(--soft);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--d-border);
+  box-shadow: var(--d-shadow-card);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__scrollhint--up:hover,
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-dock__scrollhint--down:hover {
+  background: var(--tint);
+  box-shadow: var(--d-shadow-hover);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-pop {
+  background: var(--soft);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--d-border);
+  box-shadow: var(--d-shadow-card);
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-pop__jump {
+  background: var(--hold);
+  color: #1a1a1d;                    /* 다크 hold(연어색)는 어두운 텍스트가 대비 좋다 */
+}
+body[data-alarm-variant="d"][data-theme='dark'] .alarm-pop__jump:hover {
+  background: var(--d-critical);
+}
+
+/* -----------------------------------------------------------
+   접근성 — 변형 D는 이미 불투명이라 reduced-transparency 폴백은
+   사실상 동일. 고대비 선호 시 border만 또렷하게.
+   ----------------------------------------------------------- */
+@media (prefers-contrast: more) {
+  body[data-alarm-variant="d"] .alarm-dock,
+  body[data-alarm-variant="d"] .alarm-pop,
+  body[data-alarm-variant="d"] .alarm-item {
+    border-color: var(--ink-mute);
+  }
+}
