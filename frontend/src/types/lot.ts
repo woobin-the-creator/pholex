@@ -16,7 +16,6 @@ export interface DumpMeta {
 export interface SlotPayload {
   tableId: number
   rows: LotRow[]
-  diff: boolean
   lastUpdated: string | null
   dumpMeta?: DumpMeta | null
 }

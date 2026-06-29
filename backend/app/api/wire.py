@@ -67,8 +67,6 @@ def slot_payload(
     diff: bool,
     last_updated: datetime,
     last_run_at: datetime | None = None,
-    fresh_max_minutes: int = DUMP_FRESH_MAX_MINUTES,
-    stale_min_minutes: int = DUMP_STALE_MIN_MINUTES,
 ) -> dict[str, Any]:
     return {
         "tableId": table_id,
@@ -77,8 +75,8 @@ def slot_payload(
         "lastUpdated": _iso(last_updated),
         "dumpMeta": {
             "lastRunAt": _iso(last_run_at) if last_run_at is not None else None,
-            "freshMaxMinutes": fresh_max_minutes,
-            "staleMinMinutes": stale_min_minutes,
+            "freshMaxMinutes": DUMP_FRESH_MAX_MINUTES,
+            "staleMinMinutes": DUMP_STALE_MIN_MINUTES,
         },
     }
 

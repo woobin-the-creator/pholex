@@ -92,7 +92,6 @@ export function useMyHoldTable(user: SessionUser | null, onAlarm?: (alarm: Alarm
       applyPayload({
         tableId: 1,
         rows: DEMO_ROWS,
-        diff: false,
         lastUpdated: DEMO_LAST_UPDATED,
         dumpMeta: { lastRunAt: DEMO_LAST_UPDATED, freshMaxMinutes: 30, staleMinMinutes: 60 },
       })

@@ -4,8 +4,6 @@ import asyncio
 from collections import defaultdict
 from typing import AsyncIterator
 
-from ulid import ULID
-
 from app.adapters.fake.golden_dataset import GOLDEN_ROWS, GoldenRow
 from app.domain.lot import LotStatus
 from app.ports.dto import LotChangeEventDTO, LotRowDTO
@@ -44,9 +42,6 @@ class InMemoryLotSource:
         """Test helper: fan-out an event to all subscribers of the given employee."""
         for queue in list(self._subscribers[employee_number]):
             await queue.put(event)
-
-    def new_event_id(self) -> str:
-        return str(ULID())
 
     @staticmethod
     def _to_dto(row: GoldenRow, viewer_employee_number: str) -> LotRowDTO:

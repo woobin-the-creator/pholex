@@ -39,7 +39,6 @@ function normalizeSocketPayload(payload: Record<string, unknown>): SlotPayload {
         ((row as Record<string, unknown>).updated_at as string | null) ??
         null,
     })),
-    diff: Boolean(payload.diff),
     lastUpdated:
       (payload.lastUpdated as string | null) ?? (payload.last_updated as string | null) ?? new Date().toISOString(),
   }
