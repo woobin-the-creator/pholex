@@ -206,7 +206,10 @@ function DashboardApp() {
   if (!authResolved) {
     return (
       <div className="splash-screen">
-        <p className="splash-screen__eyebrow">Pholex</p>
+        <div className="splash-screen__brand">
+          <span className="splash-screen__logo" aria-hidden="true" />
+          <p className="splash-screen__eyebrow">Pholex</p>
+        </div>
         <h1>세션 확인 중</h1>
       </div>
     )
@@ -215,7 +218,10 @@ function DashboardApp() {
   if (authError) {
     return (
       <div className="splash-screen">
-        <p className="splash-screen__eyebrow">Pholex</p>
+        <div className="splash-screen__brand">
+          <span className="splash-screen__logo" aria-hidden="true" />
+          <p className="splash-screen__eyebrow">Pholex</p>
+        </div>
         <h1>대시보드를 시작하지 못했습니다.</h1>
         <p>{authError}</p>
       </div>

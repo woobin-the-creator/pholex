@@ -167,6 +167,13 @@ body[data-theme='dark'] {
 body[data-theme='dark'] .side::after { animation: ambientBreathe 8s ease-in-out infinite; }
 
 .brand { padding: 0 4px 24px; }
+.brand__row { display: flex; align-items: center; gap: 9px; }
+.brand__logo {
+  width: 24px; height: 24px; flex: none;
+  background: center / contain no-repeat;
+  background-image: url('/logo-light.png');
+}
+body[data-theme='dark'] .brand__logo { background-image: url('/logo-dark.png'); }
 body[data-theme='light'] .brand__mark {
   font-size: 17px; font-weight: 500; letter-spacing: -0.01em; margin: 0;
 }
@@ -820,6 +827,18 @@ body[data-theme='dark']  .pill--unknown   { background: rgba(150, 150, 150, 0.12
   margin: 0 0 4px; color: var(--ink-mute);
   letter-spacing: 0.28em; text-transform: uppercase; font-size: 11px;
 }
+/* 로고 + 워드마크 가로 락업 — 로고는 좌측 빈공간, PHOLEX 는 살짝 우측으로 */
+.splash-screen__brand {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin-bottom: 4px;
+}
+.splash-screen__brand .splash-screen__eyebrow { margin: 0; padding-left: 2px; }
+.splash-screen__logo {
+  width: 30px; height: 30px; flex: none;
+  background: center / contain no-repeat;
+  background-image: url('/logo-light.png');
+}
+body[data-theme='dark'] .splash-screen__logo { background-image: url('/logo-dark.png'); }
 
 /* ---------- Responsive (graceful) ----------------------------- */
 @media (max-width: 1180px) {

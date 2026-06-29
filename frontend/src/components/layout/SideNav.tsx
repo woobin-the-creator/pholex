@@ -26,9 +26,12 @@ export function SideNav({
   return (
     <aside className="side" aria-label="Workspace navigation">
       <div className="brand">
-        <p className="brand__mark">
-          pho<span className="brand__accent">lex</span>
-        </p>
+        <div className="brand__row">
+          <span className="brand__logo" aria-hidden="true" />
+          <p className="brand__mark">
+            pho<span className="brand__accent">lex</span>
+          </p>
+        </div>
         <div className="brand__line" aria-hidden="true" />
       </div>
 
