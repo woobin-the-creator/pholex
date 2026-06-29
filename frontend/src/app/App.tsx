@@ -66,7 +66,8 @@ function DashboardApp() {
   // focusLot은 최신 filteredRows를 ref로 읽고, useAlarms엔 안정 래퍼만 넘긴다.
   const focusLotRef = useRef<(lotId: string) => void>(() => {})
   const stableFocusLot = useRef((lotId: string) => focusLotRef.current(lotId)).current
-  const { alarms, unread, handleAlarm, markAllRead, clearAlarms } = useAlarms(stableFocusLot)
+  const { alarms, unread, handleAlarm, markAllRead, clearAlarms, removeAlarm } =
+    useAlarms(stableFocusLot)
   const { rows, loading, error, lastUpdated, refresh } = useMyHoldTable(user, handleAlarm)
 
   // 데모/e2e 전용: 성능 e2e가 토스트를 직접 띄울 수 있게 노출. DEMO_MODE에서만 등록(프로덕션 비활성).
@@ -120,6 +121,13 @@ function DashboardApp() {
     setFocusLotId(lotId)
   }
   focusLotRef.current = focusLot
+
+  // 박스 항목 클릭 = 그 변경을 "처리"한 것 → 해당 알람을 비우고 랏으로 점프한다.
+  // focusLot 자체는 WS 자동 점프 등에서도 쓰이므로 순수하게 두고, 제거는 이 클릭 경로에서만.
+  const handleAlarmSelect = (lotId: string, eventId: string) => {
+    removeAlarm(eventId)
+    focusLot(lotId)
+  }
 
   // (A) 박스를 열면 전부 읽음 처리 — 배지가 0으로. 항목별 읽음은 추후 read 플래그로 승격.
   const openAlarms = () => {
@@ -233,7 +241,7 @@ function DashboardApp() {
         alarms={alarms}
         onClose={() => setAlarmsOpen(false)}
         onClear={clearAlarms}
-        onSelect={focusLot}
+        onSelect={handleAlarmSelect}
       />
 
       <div className="main">

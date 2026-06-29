@@ -17,6 +17,11 @@ export function markAllRead(items: AlarmItem[]): AlarmItem[] {
   return items.map((item) => (item.read ? item : { ...item, read: true }))
 }
 
+/** eventId로 알람 하나를 제거한다. 박스에서 항목을 클릭(=처리)하면 그 알람을 비운다. */
+export function removeAlarm(items: AlarmItem[], eventId: string): AlarmItem[] {
+  return items.filter((item) => item.eventId !== eventId)
+}
+
 export function clearAll(): AlarmItem[] {
   return []
 }

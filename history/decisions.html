@@ -795,6 +795,19 @@
       ],
       note: "버그 픽스지만 #70 결정의 핵심 구조(코멧/Ring 두 경로의 td positioning)를 정정하므로 기록. 사외(GPU 코멧 경로)·사내(reduce Ring 경로) 양쪽 e2e 통과. 데모: docs/demo/alarm-highlight-comet-row-fix.gif.",
     },
+    {
+      era: "5 · 운영 · 협업 (Ops & Collaboration)",
+      when: "2026-06-29",
+      status: "done",
+      title: "알람 박스: 항목 클릭 = 점프 + 그 알람 제거(인박스형)",
+      decision: "알람 박스 항목을 클릭하면 해당 랏으로 점프하면서 그 알람을 비우도록 바꿨어요. 종전엔 클릭=점프만이고 알람은 누적 로그로 남았는데(개별 삭제 없음, '모두 비우기'만), 사용자 기대(클릭한 항목은 처리되어 사라짐)에 맞춰 인박스형으로 전환했어요. eventId 기준 removeAlarm(store)·removeAlarmAtom(jotai)를 추가하고, AlarmDock onSelect 시그니처를 (lotId)→(lotId, eventId)로 확장, App에서 handleAlarmSelect 래퍼가 removeAlarm 후 focusLot을 호출해요. focusLot 자체는 WS 자동 점프에서도 쓰이므로 순수하게 두고 제거는 박스 클릭 경로에서만 일어나요.",
+      rationale: "종전 '누적 로그' 모델은 '놓친 critical의 유일한 기록'이라는 영속성 취지였지만, 클릭해도 항목이 남아 '처리했다'는 피드백이 없고 박스가 계속 쌓이는 불편이 있었어요. read 플래그 승격(흐림 처리)도 후보였으나, 사용자가 원한 동작이 명확히 '클릭하면 사라짐'이라 인박스형(A)을 택했어요. 영속성은 '모두 비우기' 전까지 안 본 알람이 남는 것으로 충분하고, 클릭=명시적 확인 행위로 간주해요.",
+      alternatives: [
+        { name: "클릭 시 개별 read 처리(흐려지되 남음) (B)", rejected: "코드 주석이 예고한 진화 방향이고 로그 영속성도 유지하지만, 사용자가 원한 '사라짐'과 다름. 박스가 계속 쌓이는 불편도 남음." },
+        { name: "현행 유지(클릭=점프만, 모두 비우기만)", rejected: "클릭 후에도 항목이 남아 '처리됨' 피드백 부재. 사용자 기대와 어긋남." },
+      ],
+      note: "WS 자동 점프(useAlarms→focusLot)는 제거를 타지 않도록 래퍼를 박스 클릭 경로에만 연결. 테스트: alarmStore removeAlarm 단위 3종 + alarmDock '클릭=제거+점프' 통합 1종 추가(유닛 55 통과). 팝(CriticalToast)의 onJump는 이번 범위 밖(박스 항목 한정).",
+    },
   ];
 
   /* ─── 렌더링 (수정 불필요) ─── */

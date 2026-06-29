@@ -7,12 +7,13 @@ interface AlarmDockProps {
   alarms: AlarmItem[]
   onClose: () => void
   onClear: () => void
-  onSelect: (lotId: string) => void
+  onSelect: (lotId: string, eventId: string) => void
 }
 
 /**
  * 좌측 사이드바 "알람 박스"가 열어주는 패널. 변경을 시간순 평면 로그로 보여준다.
- * 항목 클릭 → 메인 테이블의 해당 랏으로 점프(App focusLot). 적립은 localStorage 영속.
+ * 항목 클릭 → 메인 테이블의 해당 랏으로 점프(App focusLot) + 그 알람 제거(처리됨).
+ * 적립은 localStorage 영속.
  */
 export function AlarmDock({ open, alarms, onClose, onClear, onSelect }: AlarmDockProps) {
   // 검색은 dock 로컬 상태 — 상위 atom(적립/배지)은 전체 기준 그대로 유지한다.
@@ -120,7 +121,7 @@ export function AlarmDock({ open, alarms, onClose, onClear, onSelect }: AlarmDoc
                 <button
                   type="button"
                   className={`alarm-item alarm-item--${alarm.severity}${alarm.read ? '' : ' is-unread'}`}
-                  onClick={() => onSelect(alarm.lotId)}
+                  onClick={() => onSelect(alarm.lotId, alarm.eventId)}
                 >
                   <span className="alarm-item__lot">{alarm.lotId}</span>
                   <span className="alarm-item__desc">{describeAlarm(alarm)}</span>
