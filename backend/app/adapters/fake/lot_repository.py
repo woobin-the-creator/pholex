@@ -20,14 +20,7 @@ class InMemoryLotRepository:
         self._by_lot[row.lot_id] = row
 
     async def upsert_lots_batch(self, rows: list[LotRowDTO]) -> None:
-        # atomic from caller's POV: snapshot first, then apply all-or-nothing
-        snapshot = dict(self._by_lot)
-        try:
-            for row in rows:
-                self._by_lot[row.lot_id] = row
-        except Exception:
-            self._by_lot = snapshot
-            raise
+        self._by_lot.update({row.lot_id: row for row in rows})
 
     async def get_lots_by_ids(self, lot_ids: list[str]) -> dict[str, LotRowDTO]:
         return {lid: self._by_lot[lid] for lid in lot_ids if lid in self._by_lot}

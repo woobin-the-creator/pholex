@@ -56,7 +56,6 @@ function normalizeSlotPayload(payload: Record<string, unknown>): SlotPayload {
   return {
     tableId: Number(payload.tableId ?? payload.table_id ?? 1),
     rows: rawRows.map((row) => normalizeLotRow((row ?? {}) as Record<string, unknown>)),
-    diff: Boolean(payload.diff),
     lastUpdated:
       payload.lastUpdated ? String(payload.lastUpdated) : payload.last_updated ? String(payload.last_updated) : null,
     dumpMeta: normalizeDumpMeta(payload.dumpMeta ?? payload.dump_meta),

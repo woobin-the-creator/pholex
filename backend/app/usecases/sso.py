@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from app.config import settings
-from app.domain.session import AuthLevel, SessionUser
 from app.ports.dto import SsoIdentityDTO, UserRecordDTO
 from app.ports.sso_verifier import SsoVerifier
 from app.ports.user_repository import UserRepository
@@ -16,15 +15,6 @@ def _resolve_auth_level(identity: SsoIdentityDTO) -> str:
     if identity.email and identity.email.lower() in _admin_emails():
         return "ADMIN"
     return identity.auth_level
-
-
-def identity_to_session_user(identity: SsoIdentityDTO) -> SessionUser:
-    return SessionUser(
-        employee_number=identity.employee_number,
-        username=identity.username,
-        email=identity.email,
-        auth_level=AuthLevel(identity.auth_level),
-    )
 
 
 class InitSsoLogin:

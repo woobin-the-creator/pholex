@@ -8,8 +8,7 @@ export interface KpiSpec {
   label: string
   value: number | null
   decimals?: number
-  suffix?: string
-  tone?: 'default' | 'hold' | 'yield'
+  tone?: 'default' | 'hold'
 }
 
 interface DashHeaderProps {
@@ -51,7 +50,7 @@ function Kpi({ spec, delay }: { spec: KpiSpec; delay: number }) {
     delay,
     enabled: isNumeric,
   })
-  const toneClass = spec.tone === 'hold' ? ' kpi--hold' : spec.tone === 'yield' ? ' kpi--yield' : ''
+  const toneClass = spec.tone === 'hold' ? ' kpi--hold' : ''
 
   return (
     <div className={`kpi${toneClass}${isNumeric ? '' : ' kpi--pending'}`}>
@@ -64,7 +63,6 @@ function Kpi({ spec, delay }: { spec: KpiSpec; delay: number }) {
             —
           </span>
         )}
-        {isNumeric && spec.suffix ? <span className="kpi__unit">{spec.suffix}</span> : null}
       </span>
     </div>
   )
