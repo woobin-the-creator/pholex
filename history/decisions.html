@@ -782,6 +782,19 @@
       ],
       note: "woff2가 weight당 ~450KB(Monoplex 자체가 잘 빌드돼 서브셋 없이도 가벼움)라 5종 전부 채택. CJK Han(한자)은 폰트에 없음(한글 11172자 + Latin) — pholex 도메인상 무관. 시안 이미지는 orphan 브랜치 font-specimens에 보관(코드와 분리).",
     },
+    {
+      era: "5 · 운영 · 협업 (Ops & Collaboration)",
+      when: "2026-06-29",
+      status: "done",
+      title: "코멧 하이라이트 행-가림 버그 수정: 코멧 경로 td는 static 유지",
+      decision: "#70(코멧 primary + Ring 폴백)에서 코멧이 행 전체를 감싸지 못하고 lot-id 셀에서만 도는 버그를 고쳤어요. 원인은 #70이 Ring 폴백(td::after)의 포지셔닝 기준을 만들려고 .is-focused td 전체에 position:relative를 준 것. 그러면 코멧 SVG(첫 td 자식, position:absolute)의 기준 조상이 tr이 아니라 첫 td로 바뀌고, 동시에 형제 td들도 모두 positioned가 되어 DOM 순서상 뒤 td들이 코멧의 오른쪽을 덮었어요. 해결: td position:relative를 @media (prefers-reduced-motion: reduce) 블록 안으로 옮겨, 코멧 경로에선 td를 static으로 둬 SVG가 tr 기준 + z-index:3으로 모든 td 위에 그려지게 했어요(최초 구현 #29 구조 복원). 회귀 가드로 'PRIMARY: 코멧이 행 전체를 감싼다'(모든 td static + SVG폭==행폭) e2e 추가.",
+      rationale: "최초 코멧 도입(#29)은 td에 position을 주지 않아 SVG가 행 기준으로 펼쳐지고 positioned라 static td들 위에 그려졌어요 — 가림이 없었죠. #69(Ring 단일)로 코멧을 걷어냈다가 #70에서 되살리며, Ring 폴백이 요구하는 td positioning을 코멧 경로에까지 공통 적용한 게 옛 구조를 깨뜨렸어요. 두 경로의 positioning 요구가 상충(코멧=tr 기준이라 td static / Ring=td 기준이라 td relative)하므로, reduce 비트로 갈라지는 폴백 경로 안에서만 td를 relative로 둬 충돌을 제거했어요.",
+      alternatives: [
+        { name: "첫 td에 z-index만 올려 형제 위로(td:first-child{z-index:4})", rejected: "가림은 가려도 'SVG를 한 셀에 가둔 채 stacking으로 우회'하는 땜질. 최초 #29의 깔끔한 구조(td static→SVG가 tr 기준)를 버림." },
+        { name: "코멧 SVG를 행 단위 오버레이로 분리하는 리팩터", rejected: "가장 견고하나 테이블 구조상 변경 범위가 큼. 한 줄(position 이동)로 #29 동작이 그대로 복원되므로 과함." },
+      ],
+      note: "버그 픽스지만 #70 결정의 핵심 구조(코멧/Ring 두 경로의 td positioning)를 정정하므로 기록. 사외(GPU 코멧 경로)·사내(reduce Ring 경로) 양쪽 e2e 통과. 데모: docs/demo/alarm-highlight-comet-row-fix.gif.",
+    },
   ];
 
   /* ─── 렌더링 (수정 불필요) ─── */

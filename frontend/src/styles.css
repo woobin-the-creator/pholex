@@ -1290,10 +1290,15 @@ body[data-theme='dark'] .alarm-pop__jump:hover { background: var(--d-critical); 
 }
 
 /* 배경 soft-fill 페이드 — 코멧/Ring 두 모드 공통. background는 --hold-soft로 차올랐다 빠진다.
- * td를 코멧 SVG와 Ring ::after 오버레이의 포지셔닝 기준으로도 삼는다(tr은 이미 relative; z-index:2). */
+ *
+ * ⚠️ 여기서 td에 position:relative를 주면 안 된다. 코멧 SVG(첫 td 자식, position:absolute)의
+ * 기준 조상이 tr(relative; z-index:2)이 아니라 첫 td로 바뀌고, 동시에 형제 td들도 모두
+ * positioned가 되어 DOM 순서상 나중 td들이 코멧의 오른쪽을 덮는다(=코멧이 lot-id 셀에서만
+ * 도는 버그). 코멧 경로에선 td를 static으로 둬 SVG가 tr 기준 + z-index:3으로 모든 td 위에
+ * 그려지게 한다(최초 구현 #29 구조). Ring ::after 폴백이 필요로 하는 td position:relative는
+ * 아래 @media (prefers-reduced-motion: reduce) 블록 안에서만 부여한다. */
 .lot-table tbody tr.is-focused td {
   animation: alarmFocusBg 1.6s ease-out 1 both;
-  position: relative;
 }
 
 /* Soft Fill: transparent → --hold-soft(차오름) → transparent(빠짐). 한 번만. */
@@ -1356,6 +1361,10 @@ body[data-theme='dark'] .alarm-pop__jump:hover { background: var(--d-critical); 
 @media (prefers-reduced-motion: reduce) {
   /* 코멧 숨김 — DOM엔 남아있어도(LotHoldPanel이 항상 주입) 렌더하지 않는다. */
   .lot-trace-svg { display: none; }
+
+  /* Ring ::after 오버레이의 포지셔닝 기준 — 이 폴백 경로에서만 td를 relative로 둔다.
+   * (코멧 경로에선 td가 static이어야 SVG가 tr 기준 + 형제 td 위에 그려진다. 위 주석 참고.) */
+  .lot-table tbody tr.is-focused td { position: relative; }
 
   /* 중간 td: 상·하 선만(정적, 1.5px offset). 모서리 radius 없음(직선 구간).
    * inset box-shadow라 레이아웃 영향 없음. 강조는 오직 opacity 페이드로만. */

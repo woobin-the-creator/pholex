@@ -39,6 +39,32 @@ test.describe('알람 클릭 → 행 점프 하이라이트 이중 경로', () =
     await expect(page.locator('.lot-trace-comet--head')).toHaveCount(1)
   })
 
+  // 회귀 가드(코멧 행-가림 버그): 코멧이 lot-id 셀에서만 돌지 않고 행 전체를 감싸야 한다.
+  //  코멧 SVG(첫 td 자식, position:absolute)는 행(tr) 기준으로 행 전체 너비에 그려지고
+  //  z-index:3으로 모든 td 위에 떠야 한다. 만약 .is-focused td에 position:relative가 끼면
+  //  SVG 기준이 첫 셀로 바뀌고 형제 td들이 코멧 오른쪽을 덮어 "lot-id 셀에서만 도는" 버그가 된다.
+  //  → 코멧 경로(reduce 아님)에선 모든 td가 static이어야 하고, SVG 폭 == 행 폭이어야 한다.
+  test('PRIMARY: 코멧이 행 전체를 감싼다 (lot-id 셀 가림 회귀 방지)', async ({ page }) => {
+    await seedAndJump(page)
+    const probe = await page
+      .locator('.lot-table tbody tr.is-focused')
+      .evaluate((row) => {
+        const svg = row.querySelector('.lot-trace-svg') as SVGElement
+        const tds = [...row.children] as HTMLElement[]
+        return {
+          tdPositions: tds.map((td) => getComputedStyle(td).position),
+          parentTdStatic: getComputedStyle(svg.parentElement as HTMLElement).position === 'static',
+          rowW: Math.round(row.getBoundingClientRect().width),
+          svgW: Math.round(svg.getBoundingClientRect().width),
+        }
+      })
+    // 모든 td가 static (position:relative가 끼면 형제 td가 코멧을 덮음)
+    expect(probe.tdPositions.every((p) => p === 'static')).toBe(true)
+    expect(probe.parentTdStatic).toBe(true)
+    // SVG가 행 전체 너비로 그려진다 (첫 셀 폭으로 잘리지 않음)
+    expect(probe.svgW).toBe(probe.rowW)
+  })
+
   test('FALLBACK: reduce-motion에선 코멧이 숨고 Rounded Ring(box-shadow)이 그려진다', async ({
     page,
   }) => {
