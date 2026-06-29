@@ -146,6 +146,37 @@ describe('Alarm dock', () => {
     await waitFor(() => expect(screen.queryByTestId('alarm-badge')).not.toBeInTheDocument())
   })
 
+  it('removes the alarm when its item is clicked (click = dismiss + jump)', async () => {
+    mockAuthAndTable()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: '내 lot hold' })
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+    act(() => {
+      MockWebSocket.instances[0].emit(CRITICAL_ALERT)
+      MockWebSocket.instances[0].emit(SECOND_ALERT)
+    })
+    await screen.findByTestId('alarm-badge')
+
+    // 박스 열기 → 두 알람 모두 보임
+    await userEvent.click(screen.getByRole('button', { name: /알람 박스/ }))
+    let dock = await screen.findByRole('dialog', { name: '알람 박스' })
+    expect(within(dock).getByText('LOT-A2948-01')).toBeInTheDocument()
+    expect(within(dock).getByText('LOT-B5532-19')).toBeInTheDocument()
+
+    // A2948 항목 클릭 → 점프하며 박스가 닫힌다(focusLot)
+    await userEvent.click(within(dock).getByText('LOT-A2948-01'))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '알람 박스' })).not.toBeInTheDocument(),
+    )
+
+    // 다시 열면 클릭(=처리)한 알람만 사라지고 나머지는 남아 있다
+    await userEvent.click(screen.getByRole('button', { name: /알람 박스/ }))
+    dock = await screen.findByRole('dialog', { name: '알람 박스' })
+    expect(within(dock).queryByText('LOT-A2948-01')).not.toBeInTheDocument()
+    expect(within(dock).getByText('LOT-B5532-19')).toBeInTheDocument()
+  })
+
   it('filters the alarm list by the search box (lot id / content)', async () => {
     mockAuthAndTable()
     render(<App />)

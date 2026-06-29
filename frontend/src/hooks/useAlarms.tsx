@@ -6,6 +6,7 @@ import {
   clearAlarmsAtom,
   markAllReadAtom,
   pushAlarmAtom,
+  removeAlarmAtom,
   unreadCountAtom,
 } from '../atoms/alarmAtoms'
 import { CriticalToast } from '../components/alarms/CriticalToast'
@@ -25,6 +26,7 @@ export function useAlarms(onFocusLot: (lotId: string) => void) {
   const push = useSetAtom(pushAlarmAtom)
   const markAllRead = useSetAtom(markAllReadAtom)
   const clearAlarms = useSetAtom(clearAlarmsAtom)
+  const removeAlarm = useSetAtom(removeAlarmAtom)
 
   const handleAlarm = useCallback(
     (item: AlarmItem) => {
@@ -49,5 +51,5 @@ export function useAlarms(onFocusLot: (lotId: string) => void) {
     [push, onFocusLot],
   )
 
-  return { alarms, unread, handleAlarm, markAllRead, clearAlarms }
+  return { alarms, unread, handleAlarm, markAllRead, clearAlarms, removeAlarm }
 }

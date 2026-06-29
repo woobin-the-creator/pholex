@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addAlarm, clearAll, markAllRead, unreadCount } from '../atoms/alarmStore'
+import { addAlarm, clearAll, markAllRead, removeAlarm, unreadCount } from '../atoms/alarmStore'
 import type { AlarmItem } from '../types/alarm'
 
 function makeAlarm(overrides: Partial<AlarmItem> = {}): AlarmItem {
@@ -68,6 +68,27 @@ describe('markAllRead', () => {
     const result = markAllRead(items)
 
     expect(unreadCount(result)).toBe(0)
+  })
+})
+
+describe('removeAlarm', () => {
+  it('removes only the alarm with the matching eventId', () => {
+    const items = [
+      makeAlarm({ eventId: 'evt-1' }),
+      makeAlarm({ eventId: 'evt-2' }),
+      makeAlarm({ eventId: 'evt-3' }),
+    ]
+    const result = removeAlarm(items, 'evt-2')
+    expect(result.map((a) => a.eventId)).toEqual(['evt-1', 'evt-3'])
+  })
+
+  it('returns the list unchanged when the eventId is not found', () => {
+    const items = [makeAlarm({ eventId: 'evt-1' })]
+    expect(removeAlarm(items, 'nope').map((a) => a.eventId)).toEqual(['evt-1'])
+  })
+
+  it('empties a single-item list when that item is removed', () => {
+    expect(removeAlarm([makeAlarm({ eventId: 'evt-1' })], 'evt-1')).toEqual([])
   })
 })
 
