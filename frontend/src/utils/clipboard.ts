@@ -19,9 +19,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     ta.style.pointerEvents = 'none'
     document.body.appendChild(ta)
     ta.select()
-    const ok = document.execCommand('copy')
+    ta.setSelectionRange(0, text.length) // iOS/구형 사파리에서 select()만으론 선택이 안 잡힘
+    // execCommand('copy')의 반환값은 비-secure 환경(이 폴백의 대상)에서 신뢰할 수 없어
+    // — 성공인데 false를 주는 브라우저가 있다 — 예외 없이 실행되면 best-effort 성공으로 본다.
+    document.execCommand('copy')
     document.body.removeChild(ta)
-    return ok
+    return true
   } catch {
     return false
   }

@@ -794,7 +794,7 @@ body[data-theme='dark'] .lot-table__lot-id { padding-left: 12px; }
   flex: none; display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; padding: 0; border: 0; border-radius: 3px;
   background: transparent; color: var(--ink-mute); cursor: pointer;
-  opacity: 0.5; position: relative; z-index: 2; /* 코멧 SVG(pointer-events:none) 위 */
+  opacity: 0.5; position: relative; z-index: 4; /* 포커스 행 코멧 SVG(z-index:3) 위로 — 상시 컨트롤이 가리지 않게 */
   transition: opacity 140ms var(--ease-out), color 140ms var(--ease-out),
     background-color 140ms var(--ease-out);
 }
