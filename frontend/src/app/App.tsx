@@ -5,7 +5,6 @@ import { flushSync } from 'react-dom'
 import { Toaster, toast } from 'sonner'
 import { authAtom } from '../atoms/authAtom'
 import { themeAtom } from '../atoms/themeAtom'
-import { TopNav } from '../components/layout/TopNav'
 import { SideNav } from '../components/layout/SideNav'
 import { DashboardGrid } from '../components/layout/DashboardGrid'
 import { DashHeader, type KpiSpec } from '../components/layout/DashHeader'
@@ -251,13 +250,11 @@ function DashboardApp() {
       />
 
       <div className="main">
-        <TopNav user={user} />
-
         <DashHeader
-          pageLabel="Lot Monitor"
           scope={formatDate()}
           liveAt={lastUpdated}
           kpis={kpis}
+          user={user}
         />
 
         <DashboardGrid hasMaximized={maximized !== null}>

@@ -296,20 +296,6 @@ body[data-theme='dark'] .side-summary__reset:hover { color: var(--accent); }
 }
 
 /* ---------- Top nav ------------------------------------------- */
-.topnav {
-  display: flex; align-items: center; justify-content: space-between; gap: 32px;
-  padding: 14px 56px; position: relative;
-}
-.topnav::after {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-  background: var(--ambient-h);
-  -webkit-mask-image: var(--ambient-h-mask);
-          mask-image: var(--ambient-h-mask);
-  pointer-events: none;
-}
-body[data-theme='dark'] .topnav::after { animation: ambientBreathe 9s ease-in-out infinite; }
-
 .page-link {
   font-size: 13px; color: var(--ink-mute); cursor: pointer;
   padding: 4px 0; position: relative;
@@ -427,10 +413,6 @@ body[data-theme='dark'] .dash-header::after { animation: ambientBreathe 8.4s eas
 .dash-header__context > * { animation: fadeUp 480ms var(--ease-out) 140ms backwards; }
 .dash-header__meta { animation-delay: 200ms; }
 
-.dash-header__page {
-  font-size: 14px; font-weight: 500; letter-spacing: -0.01em;
-  margin: 0; color: var(--ink);
-}
 .dash-header__meta {
   margin: 0; font-size: 11px; color: var(--ink-mute);
   letter-spacing: 0.18em; text-transform: uppercase;
@@ -843,13 +825,13 @@ body[data-theme='dark'] .splash-screen__logo { background-image: url('/logo-dark
 /* ---------- Responsive (graceful) ----------------------------- */
 @media (max-width: 1180px) {
   .shell { grid-template-columns: 200px 1fr; }
-  .topnav, .dash-header, .grid { padding-left: 36px; padding-right: 36px; }
+  .dash-header, .grid { padding-left: 36px; padding-right: 36px; }
   .grid { padding-bottom: 24px; }
 }
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
   .side { position: relative; height: auto; padding-bottom: 12px; }
-  .topnav, .dash-header, .grid { padding-left: 24px; padding-right: 24px; }
+  .dash-header, .grid { padding-left: 24px; padding-right: 24px; }
   body[data-theme='light'] .grid,
   body[data-theme='dark']  .grid { grid-template-columns: 1fr; }
   body[data-theme='light'] .card:nth-child(odd) { background-image: linear-gradient(
