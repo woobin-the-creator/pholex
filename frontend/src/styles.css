@@ -1273,33 +1273,29 @@ body[data-theme='dark'] .alarm-pop__jump:hover { background: var(--d-critical); 
   .alarm-dock, .alarm-pop, .alarm-item { border-color: var(--ink-mute); }
 }
 
-/* 알람 클릭 점프 시 행 하이라이트 — "Rounded Ring" (둥근 box-shadow 링 + opacity/background 1회 페이드)
+/* 알람 클릭 점프 시 행 하이라이트 — 환경에 따라 두 갈래로 자연 분기한다.
  *
- * 행 양끝을 둥글게(border-radius)하고 행 안쪽으로 inset:2px 들여 "카드처럼 숨 쉬는" 여백을
- * 둔 1.5px ring을 td ::after 오버레이에 정적으로 그린 뒤, opacity로만 1회 페이드한다.
- * 배경은 --hold-soft로 부드럽게 차올랐다 빠진다(background 1회 페이드).
+ *  PRIMARY  (기본 / GPU 있는 환경): 코멧 — 행 테두리 경로 위 stroke-dash 세그먼트가 1회전.
+ *  FALLBACK (prefers-reduced-motion: reduce / 사내 GPU 없는 VM 등): GPU 경량 Rounded Ring.
  *
- * GPU 경량: 애니메이트하는 속성은 opacity(링)·background-color(fill 1회)뿐.
- * box-shadow(링)와 border-radius는 정적이며 절대 애니메이트하지 않는다.
- * filter·SVG path·transform·레이아웃 속성 애니메이트는 일절 쓰지 않는다.
- * 사내 VM(소프트웨어 렌더 llvmpipe)에서도 가볍게 돈다.
- *
- * 기본 승격: reduce에서도 유지(GPU 경량, 사내 가시성). prefers-reduced-motion으로 끄지 않는다 —
- * reduce가 자동으로 켜지는 사내 환경에서도 이 강조가 보여야 하는 게 이 방식 채택의 핵심 목적이다. */
+ * 왜 이 구조인가: 사내 폐쇄망은 RDP/VNC로 GPU 없는 VM 위 브라우저를 쓰는 게 표준이라,
+ * 데스크톱(GNOME)이 GPU 부재(llvmpipe)를 감지하면 자동으로 reduce-motion을 켠다. 그 환경에서
+ * 코멧(SVG path + drop-shadow filter)은 무거워 폴백으로 떨어진다. 종전 폴백은 정적 빨간 테두리라
+ * 투박했는데, 이를 다듬어진 Rounded Ring 페이드로 대체한다. → GPU 있으면 코멧, 없으면 Ring.
+ * (배경 soft-fill 페이드는 두 모드 공통이다.) */
 .lot-table tbody tr.is-focused {
   position: relative;
   z-index: 2;
 }
 
-/* .is-focused td의 배경 soft-fill 페이드. background는 --hold-soft로 부드럽게 차올랐다(ease-out) 빠진다. */
+/* 배경 soft-fill 페이드 — 코멧/Ring 두 모드 공통. background는 --hold-soft로 차올랐다 빠진다.
+ * td를 코멧 SVG와 Ring ::after 오버레이의 포지셔닝 기준으로도 삼는다(tr은 이미 relative; z-index:2). */
 .lot-table tbody tr.is-focused td {
   animation: alarmFocusBg 1.6s ease-out 1 both;
-  /* td를 ::after 오버레이의 포지셔닝 기준으로 삼는다. tr은 이미 position:relative; z-index:2. */
   position: relative;
 }
 
-/* Soft Fill: transparent → --hold-soft(차오름) → transparent(빠짐). 한 번만.
- * 링 opacity 페이드와 같은 리듬으로 떠올랐다 가라앉도록 키프레임을 맞춘다. */
+/* Soft Fill: transparent → --hold-soft(차오름) → transparent(빠짐). 한 번만. */
 @keyframes alarmFocusBg {
   0%   { background-color: transparent; }
   22%  { background-color: var(--hold-soft); }   /* 차올라 유지 진입 */
@@ -1307,60 +1303,103 @@ body[data-theme='dark'] .alarm-pop__jump:hover { background: var(--d-critical); 
   100% { background-color: transparent; }        /* 부드럽게 빠짐 */
 }
 
-/* Rounded Ring: 각 td의 ::after 오버레이에 inset box-shadow로 링을 정적으로 그린다.
- *  - inset: 2px → 오버레이를 행 위·아래로 2px 들여 카드형 여백을 만든다.
- *  - border-radius → 양끝 td만 바깥 모서리를 둥글게(아래 first/last child 규칙).
- *  - 두께 1.5px → spread/offset 1.5px.
- *
- * 기본(중간 td)은 상·하 선만 그린다. 좌·우 변은 첫/마지막 td가 닫는다.
- * inset box-shadow라 레이아웃에 영향이 없고, border-radius를 따라 모서리가 둥글게 렌더된다.
- * 강조는 오직 opacity 페이드(0 → 1 ease-out → 유지 → 0 ease-in)로만. */
-.lot-table tbody tr.is-focused td::after {
-  content: "";
+/* ── PRIMARY: 코멧 (GPU 있는 환경) ──────────────────────────────────
+ * 행 테두리 경로 위 stroke-dash 세그먼트가 시계방향 1회전. 경로 위에 그려지므로 모서리에서
+ * 코멧 자체가 곡선으로 휜다. head/mid/tail 3겹 + 시간 지연으로 꼬리(코멧)를 만든다.
+ * SVG는 LotHoldPanel이 행 크기에 맞춰 주입한다. */
+.lot-trace-svg {
   position: absolute;
-  /* 위·아래는 2px 들여 "숨 쉬는" 여백. 좌·우는 0 — 셀 경계에서 끊김 없이 이어져야
-   * 행 전체가 하나의 둥근 카드로 보인다. 좌/우 끝 여백은 first/last td가 따로 준다. */
-  inset: 2px 0;
-  z-index: 1;
+  left: 0;
+  top: 0;
+  overflow: visible;
   pointer-events: none;
-  /* 중간 td: 상·하 선만(정적, 1.5px offset). 모서리 radius 없음(직선 구간). */
-  box-shadow:
-    inset 0  1.5px 0 0 var(--hold),
-    inset 0 -1.5px 0 0 var(--hold);
-  opacity: 0;
-  /* GPU 경량: opacity만 애니메이트. 부드럽게 떴다 잦아드는 1회 페이드(깜빡임 없음). */
-  animation: alarmFocusRing 1.6s ease-out 1 both;
+  z-index: 3;
+  filter: drop-shadow(0 0 4px var(--hold));
+  animation: alarmTraceFade 1.8s linear 1 both;
+}
+.lot-trace-comet {
+  fill: none;
+  stroke-linecap: round;
+  /* 출발은 약간 빠르게, 중간 가속, 도착 감속 — 시계방향 1회전 */
+  animation: alarmTraceDash 1.7s cubic-bezier(0.45, 0.06, 0.24, 1) 1 both;
+}
+.lot-trace-comet--head { stroke: #ff9b82; stroke-width: 3.5; stroke-dasharray: 5 95; }
+.lot-trace-comet--mid {
+  stroke: var(--hold); stroke-width: 3; stroke-dasharray: 5 95; opacity: 0.55;
+  animation-delay: 55ms;
+}
+.lot-trace-comet--tail {
+  stroke: var(--hold); stroke-width: 3; stroke-dasharray: 5 95; opacity: 0.28;
+  animation-delay: 110ms;
+}
+@keyframes alarmTraceDash {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+@keyframes alarmTraceFade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-/* 좌측 끝 td: 좌·상·하 세 변을 spread 1.5px 균일 두께로 한 번에 그려 모서리 이음이
- * 갭 없이 자연스럽다. 바깥(왼쪽) 모서리만 둥글게(6px), 안쪽(오른쪽)은 직각(0). */
-.lot-table tbody tr.is-focused td:first-child::after {
-  inset: 2px 0 2px 2px;
-  border-radius: 6px 0 0 6px;
-  box-shadow:
-    inset 0    1.5px 0 0 var(--hold),   /* 상 */
-    inset 0   -1.5px 0 0 var(--hold),   /* 하 */
-    inset 1.5px 0    0 0 var(--hold);   /* 좌 */
-}
+/* ── FALLBACK: Rounded Ring (prefers-reduced-motion: reduce) ─────────
+ * 사내 GPU 없는 환경에서 코멧 대신. 코멧 SVG는 숨기고, 각 td의 ::after 오버레이에 inset
+ * box-shadow로 둥근 링을 정적으로 그린 뒤 opacity로만 1회 페이드한다(GPU 경량).
+ *
+ * GPU 경량: 애니메이트하는 속성은 opacity(링)·background-color(공통 fill)뿐.
+ * box-shadow(링)·border-radius는 정적이며 절대 애니메이트하지 않는다. filter·SVG·transform·
+ * 레이아웃 속성 애니메이트는 일절 없다 → 소프트웨어 렌더(llvmpipe)에서도 가볍게 돈다.
+ *
+ * 의도된 트레이드오프: reduce는 본래 "모션 최소화" 선호지만, 사내에선 GPU 부재로 자동 발동되는
+ * 신호다. 둘을 CSS만으로 구분할 수 없어, 사내 가시성을 위해 폴백을 '정적'이 아닌 '경량 페이드'로
+ * 둔다. 진짜 vestibular 배려가 필요하면 후속에서 별도 분기한다. */
+@media (prefers-reduced-motion: reduce) {
+  /* 코멧 숨김 — DOM엔 남아있어도(LotHoldPanel이 항상 주입) 렌더하지 않는다. */
+  .lot-trace-svg { display: none; }
 
-/* 우측 끝 td: 우·상·하 세 변을 1.5px 균일 두께로. 바깥(오른쪽) 모서리만 둥글게. */
-.lot-table tbody tr.is-focused td:last-child::after {
-  inset: 2px 2px 2px 0;
-  border-radius: 0 6px 6px 0;
-  box-shadow:
-    inset 0     1.5px 0 0 var(--hold),  /* 상 */
-    inset 0    -1.5px 0 0 var(--hold),  /* 하 */
-    inset -1.5px 0    0 0 var(--hold);  /* 우 */
-}
+  /* 중간 td: 상·하 선만(정적, 1.5px offset). 모서리 radius 없음(직선 구간).
+   * inset box-shadow라 레이아웃 영향 없음. 강조는 오직 opacity 페이드로만. */
+  .lot-table tbody tr.is-focused td::after {
+    content: "";
+    position: absolute;
+    /* 위·아래는 2px 들여 "숨 쉬는" 여백. 좌·우는 0 — 셀 경계에서 끊김 없이 이어져
+     * 행 전체가 하나의 둥근 카드로 보인다. 좌/우 끝 여백은 first/last td가 따로 준다. */
+    inset: 2px 0;
+    z-index: 1;
+    pointer-events: none;
+    box-shadow:
+      inset 0  1.5px 0 0 var(--hold),
+      inset 0 -1.5px 0 0 var(--hold);
+    opacity: 0;
+    animation: alarmFocusRing 1.6s ease-out 1 both;
+  }
 
-/* 부드러운 1회 페이드: 0(off) → 1(on, ease-out으로 차오름) → 유지 → 0(ease-in으로 잦아듦).
- * 구간별 timing-function으로 "차오를 땐 ease-out, 잦아들 땐 ease-in"의 결을 만든다.
- * --hold-soft 배경(alarmFocusBg)과 같은 타이밍에 함께 떴다 가라앉는다. */
-@keyframes alarmFocusRing {
-  0%   { opacity: 0; animation-timing-function: ease-out; }  /* 차오름 시작 */
-  22%  { opacity: 1; animation-timing-function: linear; }    /* 도달 → 유지 진입 */
-  68%  { opacity: 1; animation-timing-function: ease-in; }   /* 유지 끝 → 잦아듦 시작 */
-  100% { opacity: 0; }                                       /* 종료(잔류 없음) */
+  /* 좌측 끝 td: 좌·상·하 세 변을 spread 1.5px 균일 두께로. 바깥(왼쪽) 모서리만 둥글게(6px). */
+  .lot-table tbody tr.is-focused td:first-child::after {
+    inset: 2px 0 2px 2px;
+    border-radius: 6px 0 0 6px;
+    box-shadow:
+      inset 0    1.5px 0 0 var(--hold),   /* 상 */
+      inset 0   -1.5px 0 0 var(--hold),   /* 하 */
+      inset 1.5px 0    0 0 var(--hold);   /* 좌 */
+  }
+
+  /* 우측 끝 td: 우·상·하 세 변을 1.5px 균일 두께로. 바깥(오른쪽) 모서리만 둥글게. */
+  .lot-table tbody tr.is-focused td:last-child::after {
+    inset: 2px 2px 2px 0;
+    border-radius: 0 6px 6px 0;
+    box-shadow:
+      inset 0     1.5px 0 0 var(--hold),  /* 상 */
+      inset 0    -1.5px 0 0 var(--hold),  /* 하 */
+      inset -1.5px 0    0 0 var(--hold);  /* 우 */
+  }
+
+  /* 부드러운 1회 페이드: 0(off) → 1(ease-out 차오름) → 유지 → 0(ease-in 잦아듦). */
+  @keyframes alarmFocusRing {
+    0%   { opacity: 0; animation-timing-function: ease-out; }  /* 차오름 시작 */
+    22%  { opacity: 1; animation-timing-function: linear; }    /* 도달 → 유지 진입 */
+    68%  { opacity: 1; animation-timing-function: ease-in; }   /* 유지 끝 → 잦아듦 시작 */
+    100% { opacity: 0; }                                       /* 종료(잔류 없음) */
+  }
 }
 
 /* ---------- dump 신선도 신호등 + 경과 카운터 -------------------- */
