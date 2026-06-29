@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8');
 
 /**
- * 폰트 정책 가드 — 프론트엔드 전역 폰트는 mono(JetBrains Mono) 하나로 강제한다.
+ * 폰트 정책 가드 — 프론트엔드 전역 폰트는 mono(Monoplex KR) 하나로 강제한다.
  *
  * 규칙:
  *  1. styles.css 의 :root 에 --font-mono 토큰이 정의돼 있어야 한다.
@@ -38,7 +38,7 @@ function familyDeclarations(source: string): { value: string; raw: string }[] {
 describe('폰트 정책: 전역 mono 강제', () => {
   it('--font-mono 토큰이 :root 에 정의돼 있다', () => {
     expect(/:root\s*\{[^}]*--font-mono\s*:/s.test(css)).toBe(true);
-    expect(/--font-mono\s*:\s*'JetBrains Mono'\s*,\s*monospace/i.test(css)).toBe(true);
+    expect(/--font-mono\s*:\s*'Monoplex KR'\s*,\s*monospace/i.test(css)).toBe(true);
   });
 
   it('body 는 --font-mono 를 쓴다', () => {
