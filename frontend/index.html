@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pholex</title>
+    <!-- 파비콘 — 다크/라이트 테마별 타일(손목시계 로고). 레거시 폴백은 .ico,
+         테마 분기는 prefers-color-scheme 미디어쿼리. 자산은 public/ 에 있다. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16.png" media="(prefers-color-scheme: light)" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <!-- 본문 폰트 Monoplex KR 은 자가 호스팅(woff2) — src/fonts.css 의 @font-face,
          파일은 public/fonts/. 아이콘 폰트 Material Symbols 만 구글 폰트에서 받는다. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
