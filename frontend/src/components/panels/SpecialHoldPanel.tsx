@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useState, type MouseEvent } from 'react'
 import { statusPillClass } from '../../utils/statusDisplay'
 import { listKeywordPresets, saveKeywordPreset, searchSpecialHold } from '../../services/api'
+import { LotIdCopyButton } from '../lot/LotIdCopyButton'
 import type { LotRow } from '../../types/lot'
 import type { KeywordConfig, KeywordPreset } from '../../types/keyword'
 
@@ -503,7 +504,12 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
             ) : (
               rows.map((row) => (
                 <tr key={row.lotId} className={row.status === 'Hold' ? 'is-hold' : ''} data-status={row.status}>
-                  <td className="lot-table__lot-id" title={row.lotId}>{row.lotId}</td>
+                  <td className="lot-table__lot-id" title={row.lotId}>
+                    <span className="lot-id-cell">
+                      <span className="lot-id-cell__text">{row.lotId}</span>
+                      <LotIdCopyButton lotId={row.lotId} />
+                    </span>
+                  </td>
                   <td>
                     <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
                   </td>

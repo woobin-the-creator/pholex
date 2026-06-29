@@ -4,6 +4,7 @@ import { lotHoldDumpMetaAtom } from '../../atoms/tableAtoms'
 import { formatDateTime } from '../../utils/format'
 import { HOLD_STATUS, statusPillClass } from '../../utils/statusDisplay'
 import { computeFreshness, formatElapsed } from '../../utils/freshness'
+import { LotIdCopyButton } from '../lot/LotIdCopyButton'
 import type { LotRow } from '../../types/lot'
 
 const DEFAULT_PAGE_SIZE = 15
@@ -180,7 +181,10 @@ export function LotHoldPanel({
                 <path className="lot-trace-comet lot-trace-comet--head" pathLength={100} d={cometGeo.d} />
               </svg>
             ) : null}
-            {row.lotId}
+            <span className="lot-id-cell">
+              <span className="lot-id-cell__text">{row.lotId}</span>
+              <LotIdCopyButton lotId={row.lotId} />
+            </span>
           </td>
           <td>
             <span className={`pill ${statusPillClass(row.status)}`}>
