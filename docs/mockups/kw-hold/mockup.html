@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>키워드 Hold — 리디자인 시안 A/B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+<style>
+  :root{
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --canvas:#fff; --soft:#fafafa; --tint:#f0f0f0;
+    --ink:#111; --ink-soft:#555; --ink-mute:#9a9a9a;
+    --rule:rgba(17,17,17,.08);
+    --hold:#c63927; --hold-soft:#fff2f0;
+    --accent:#111; --save:#5fab3a;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#eceae6;color:var(--ink);font-family:'Inter',system-ui,sans-serif;padding:28px;}
+  .material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;line-height:1;
+    font-variation-settings:'opsz' 20,'wght' 400,'FILL' 0,'GRAD' 0;vertical-align:middle;}
+  .stage{display:flex;gap:26px;align-items:flex-start;}
+  .variant{flex:0 0 480px;}
+  .variant__cap{font-size:13px;font-weight:700;color:#333;margin:0 0 4px;}
+  .variant__sub{font-size:11.5px;color:#777;margin:0 0 10px;}
+
+  /* ── card / panel (실제 styles.css 발췌, light theme) ── */
+  .card{display:flex;flex-direction:column;min-width:0;background:var(--canvas);
+    padding:18px 20px;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);}
+  .card__head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;}
+  .kw-titlewrap{display:flex;align-items:baseline;gap:8px;}
+  .card__index{font-family:var(--font-mono);font-size:10px;color:var(--ink-mute);letter-spacing:.1em;margin:0;}
+  .card__title{margin:0;font-size:16px;font-weight:500;letter-spacing:-.015em;}
+  .card__meta{font-size:10px;color:var(--ink-mute);letter-spacing:.18em;text-transform:uppercase;
+    display:inline-flex;align-items:center;gap:12px;}
+  .kw-count{font-size:13px;color:var(--ink-mute);letter-spacing:0;text-transform:none;}
+  .kw-count strong{color:var(--accent);font-size:15px;}
+  .card__icon{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:transparent;border:0;color:var(--ink-mute);cursor:pointer;}
+  .card__icon .material-symbols-outlined{font-size:16px;}
+
+  /* ── NEW: 상단 컨트롤 바 (칩 위) ── */
+  .kw-topbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:0 0 10px;margin:0 0 12px;border-bottom:1px dashed var(--rule);}
+  .kw-topbar__grow{flex:1 1 auto;}
+
+  .kw-toggle{border:1px solid var(--rule);background:transparent;color:inherit;border-radius:8px;
+    padding:4px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .kw-select{background:var(--soft);color:inherit;border:1px solid var(--rule);border-radius:8px;
+    padding:6px 8px;font-size:13px;font-family:inherit;}
+  .field__input{background:var(--tint);border:0;border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink);font-family:inherit;}
+  .field__input::placeholder{color:var(--ink-mute);}
+  .kw-value{min-width:110px;flex:0 1 150px;}
+
+  .kw-iconbtn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--rule);
+    background:transparent;color:var(--ink-soft);border-radius:8px;min-width:34px;height:32px;padding:0 6px;cursor:pointer;font-family:inherit;}
+  .kw-iconbtn .material-symbols-outlined{font-size:19px;}
+  .kw-iconbtn--save{color:var(--save);border-color:color-mix(in srgb,var(--save) 40%,var(--rule));}
+
+  /* ── 칩 빌더 ── */
+  .kw-edit{margin-bottom:8px;}
+  .kw-builder--chips{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;}
+  .kw-chipbox{display:inline-flex;flex-wrap:wrap;align-items:center;gap:7px;padding:8px 9px;border-radius:12px;border:1px solid var(--rule);background:var(--canvas);}
+  .kw-and-mark{font-size:11px;font-weight:700;color:var(--ink-mute);}
+  .kw-or-chip{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--hold);
+    border:1.5px solid var(--hold);border-radius:8px;padding:3px 10px;background:var(--hold-soft);}
+  .kw-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;border:1px solid var(--rule);background:var(--soft);font-size:12.5px;}
+  .kw-chip__fieldtag{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:999px;background:var(--soft);
+    padding:3px 11px;font-size:12px;font-weight:700;color:var(--ink);}
+  .kw-chip__x{border:0;background:transparent;color:var(--ink-mute);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;}
+  .kw-ghost__op{font-size:10.5px;font-weight:600;color:var(--ink-mute);}
+  .kw-add-chip{border:1px dashed var(--rule);background:transparent;color:var(--ink-soft);border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+
+  /* OR 추가 — 사슬(link) 아이콘 (#2) */
+  .kw-add-or{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:transparent;color:var(--ink-soft);
+    border-radius:8px;min-width:34px;height:32px;padding:0 12px;cursor:pointer;font-family:inherit;}
+  .kw-add-or .material-symbols-outlined{font-size:18px;}
+
+  /* ── 검색 액션 줄 ── */
+  .kw-actions{display:flex;align-items:center;gap:8px;margin:0 0 12px;}
+  .kw-actions__grow{flex:1 1 auto;}
+  .kw-btn{border:1px solid var(--rule);background:transparent;color:inherit;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .kw-btn--primary{background:var(--accent);color:var(--canvas);border-color:transparent;}
+
+  /* ── 스테퍼 (lot hold 동일 모양, 결과 위) (#1) ── */
+  .lot-step{display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;}
+  .lot-step__size{font-size:12px;color:var(--ink-mute);display:inline-flex;align-items:center;gap:5px;}
+  .lot-step__sizeinput{min-width:44px;width:48px;padding:4px 6px;text-align:center;}
+  .lot-step__sep{color:var(--ink-mute);opacity:.5;}
+  .lot-step__range{font-size:12px;color:var(--ink-mute);letter-spacing:.02em;}
+  .lot-step__of{opacity:.5;}
+  .lot-step__btn{border:1px solid var(--rule);background:transparent;color:var(--ink);font:inherit;font-size:14px;line-height:1;
+    width:24px;height:24px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+  .kw-steprow{display:flex;justify-content:flex-end;align-items:center;margin:0 0 6px;}
+
+  /* ── 결과 테이블 ── */
+  .lot-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;table-layout:fixed;}
+  .lot-table thead th{text-align:left;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-mute);font-weight:400;padding:0 0 10px;}
+  .lot-table td{padding:7px 10px 7px 0;font-size:12.5px;line-height:1.35;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--rule);}
+  .lot-table tbody tr:last-child td{border-bottom:0;}
+  .lot-table__lot-id{font-family:var(--font-mono);font-size:12px;}
+  tr.is-hold .lot-table__lot-id{color:var(--hold);}
+  .pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--rule);}
+  .pill--hold{color:var(--hold);background:var(--hold-soft);border-color:color-mix(in srgb,var(--hold) 30%,var(--rule));}
+  .badge-new{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#fff;background:var(--hold);border-radius:6px;padding:2px 7px;letter-spacing:.02em;vertical-align:middle;}
+
+  .tag{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:middle;}
+  .tag--new{color:#fff;background:var(--hold);}
+  .tag--icon{color:var(--ink-soft);background:var(--tint);}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ════════ 시안 A ════════ -->
+  <section class="variant">
+    <p class="variant__cap">시안 A — 초기화🧹를 <u>검색 줄(하단)</u>에 배치</p>
+    <p class="variant__sub">상단 바엔 프리셋 계열만. 저장과 초기화가 떨어져 있음.</p>
+    <article class="card">
+      <header class="card__head">
+        <div class="kw-titlewrap">
+          <p class="card__index">— 05</p>
+          <h2 class="card__title">키워드 Hold</h2>
+        </div>
+        <div class="card__meta">
+          <span class="kw-count"><strong>137</strong>건</span>
+          <button class="card__icon"><span class="material-symbols-outlined">open_in_full</span></button>
+        </div>
+      </header>
+
+      <!-- 상단 컨트롤 바 (NEW) -->
+      <div class="kw-topbar">
+        <button class="kw-toggle">접기 ▴</button>
+        <span class="kw-topbar__grow"></span>
+        <select class="kw-select"><option>필터 선택</option></select>
+        <input class="field__input kw-value" placeholder="프리셋 이름" />
+        <button class="kw-iconbtn kw-iconbtn--save" title="프리셋 저장"><span class="material-symbols-outlined">save</span></button>
+      </div>
+
+      <!-- 칩 빌더 -->
+      <div class="kw-edit">
+        <div class="kw-builder--chips">
+          <div class="kw-chipbox">
+            <span class="kw-chip"><span class="kw-chip__fieldtag">설비</span><span class="kw-ghost__op">포함</span>ETCH<button class="kw-chip__x">×</button></span>
+            <span class="kw-and-mark">그리고</span>
+            <span class="kw-chip"><span class="kw-chip__fieldtag">상태</span><span class="kw-ghost__op">정확히</span>Hold<button class="kw-chip__x">×</button></span>
+            <button class="kw-add-chip">+ AND</button>
+          </div>
+          <span class="kw-or-chip">또는</span>
+          <div class="kw-chipbox">
+            <span class="kw-chip"><span class="kw-chip__fieldtag">공정스텝</span><span class="kw-ghost__op">포함</span>PHOTO<button class="kw-chip__x">×</button></span>
+            <button class="kw-add-chip">+ AND</button>
+          </div>
+          <!-- OR 추가 = 사슬(link) 아이콘 (#2) -->
+          <button class="kw-add-or" title="또는(OR) 그룹 추가"><span class="material-symbols-outlined">link</span></button>
+        </div>
+      </div>
+
+      <!-- 검색 줄 — 초기화🧹가 여기(A) -->
+      <div class="kw-actions">
+        <button class="kw-btn kw-btn--primary">검색</button>
+        <span class="kw-actions__grow"></span>
+        <button class="kw-iconbtn" title="초기화"><span class="material-symbols-outlined">cleaning_services</span></button>
+      </div>
+
+      <!-- 스테퍼 (결과 위) (#1) -->
+      <div class="kw-steprow">
+        <span class="lot-step">
+          <label class="lot-step__size">行 <input class="field__input lot-step__sizeinput" value="15" /></label>
+          <span class="lot-step__sep">·</span>
+          <span class="lot-step__range">1–15 <span class="lot-step__of">/</span> 137</span>
+          <button class="lot-step__btn" disabled>‹</button>
+          <button class="lot-step__btn">›</button>
+        </span>
+      </div>
+
+      <table class="lot-table">
+        <colgroup><col style="width:26%"/><col style="width:10%"/><col style="width:12%"/><col style="width:16%"/><col style="width:22%"/><col style="width:14%"/></colgroup>
+        <thead><tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Updated</th></tr></thead>
+        <tbody>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-A1842</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-03</td><td>PHOTO</td><td>recipe mismatch</td><td>14:22</td></tr>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-B0917</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-01</td><td>CMP</td><td>particle alarm</td><td>14:05</td></tr>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-C2230</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>PHOTO</td><td>overlay OOC</td><td>13:51</td></tr>
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <!-- ════════ 시안 B ════════ -->
+  <section class="variant">
+    <p class="variant__cap">시안 B — 초기화🧹를 <u>상단 바</u>에 배치</p>
+    <p class="variant__sub">모든 프리셋·조작 버튼을 칩 위 한 줄에 모음(저장+초기화 인접).</p>
+    <article class="card">
+      <header class="card__head">
+        <div class="kw-titlewrap">
+          <p class="card__index">— 05</p>
+          <h2 class="card__title">키워드 Hold</h2>
+        </div>
+        <div class="card__meta">
+          <span class="kw-count"><strong>137</strong>건</span>
+          <button class="card__icon"><span class="material-symbols-outlined">open_in_full</span></button>
+        </div>
+      </header>
+
+      <!-- 상단 컨트롤 바 (NEW) — 초기화🧹 포함 -->
+      <div class="kw-topbar">
+        <button class="kw-toggle">접기 ▴</button>
+        <span class="kw-topbar__grow"></span>
+        <select class="kw-select"><option>필터 선택</option></select>
+        <input class="field__input kw-value" placeholder="프리셋 이름" />
+        <button class="kw-iconbtn kw-iconbtn--save" title="프리셋 저장"><span class="material-symbols-outlined">save</span></button>
+        <button class="kw-iconbtn" title="초기화"><span class="material-symbols-outlined">cleaning_services</span></button>
+      </div>
+
+      <!-- 칩 빌더 -->
+      <div class="kw-edit">
+        <div class="kw-builder--chips">
+          <div class="kw-chipbox">
+            <span class="kw-chip"><span class="kw-chip__fieldtag">설비</span><span class="kw-ghost__op">포함</span>ETCH<button class="kw-chip__x">×</button></span>
+            <span class="kw-and-mark">그리고</span>
+            <span class="kw-chip"><span class="kw-chip__fieldtag">상태</span><span class="kw-ghost__op">정확히</span>Hold<button class="kw-chip__x">×</button></span>
+            <button class="kw-add-chip">+ AND</button>
+          </div>
+          <span class="kw-or-chip">또는</span>
+          <div class="kw-chipbox">
+            <span class="kw-chip"><span class="kw-chip__fieldtag">공정스텝</span><span class="kw-ghost__op">포함</span>PHOTO<button class="kw-chip__x">×</button></span>
+            <button class="kw-add-chip">+ AND</button>
+          </div>
+          <button class="kw-add-or" title="또는(OR) 그룹 추가"><span class="material-symbols-outlined">link</span></button>
+        </div>
+      </div>
+
+      <!-- 검색 줄 — 초기화 없음(상단으로 이동) -->
+      <div class="kw-actions">
+        <button class="kw-btn kw-btn--primary">검색</button>
+      </div>
+
+      <!-- 스테퍼 (결과 위) (#1) -->
+      <div class="kw-steprow">
+        <span class="lot-step">
+          <label class="lot-step__size">行 <input class="field__input lot-step__sizeinput" value="15" /></label>
+          <span class="lot-step__sep">·</span>
+          <span class="lot-step__range">1–15 <span class="lot-step__of">/</span> 137</span>
+          <button class="lot-step__btn" disabled>‹</button>
+          <button class="lot-step__btn">›</button>
+        </span>
+      </div>
+
+      <table class="lot-table">
+        <colgroup><col style="width:26%"/><col style="width:10%"/><col style="width:12%"/><col style="width:16%"/><col style="width:22%"/><col style="width:14%"/></colgroup>
+        <thead><tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Updated</th></tr></thead>
+        <tbody>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-A1842</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-03</td><td>PHOTO</td><td>recipe mismatch</td><td>14:22</td></tr>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-B0917</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-01</td><td>CMP</td><td>particle alarm</td><td>14:05</td></tr>
+          <tr class="is-hold"><td class="lot-table__lot-id">LOT-C2230</td><td><span class="pill pill--hold">Hold</span></td><td>ETCH-07</td><td>PHOTO</td><td>overlay OOC</td><td>13:51</td></tr>
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+</div>
+</body>
+</html>
