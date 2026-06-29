@@ -25,9 +25,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Typography — 프론트엔드 전역 폰트는 단일 토큰으로만 지정한다.
-     정책: 전체 mono (JetBrains Mono). 새 요소는 폰트를 직접 박지 말고
-     이 토큰을 쓰거나 inherit 할 것. src/__tests__/fontPolicy.test.ts 가 강제. */
-  --font-mono: 'JetBrains Mono', monospace;
+     정책: 전체 mono (Monoplex KR — 영문·한글 통일 모노). 새 요소는 폰트를
+     직접 박지 말고 이 토큰을 쓰거나 inherit 할 것. src/__tests__/fontPolicy.test.ts 가 강제.
+     @font-face 는 src/fonts.css 에 있다(이 파일에 두면 정책 테스트가 위반으로 잡음). */
+  --font-mono: 'Monoplex KR', monospace;
 }
 
 /* ---------- Theme tokens --------------------------------------- */

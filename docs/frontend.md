@@ -212,12 +212,13 @@ export const tableLoadingAtomFamily = atomFamily((tableId: number) =>
 
 ### 13.2 타이포그래피
 
-**폰트**: `JetBrains Mono, monospace` — 프론트엔드 전역 단일 폰트.
+**폰트**: `Monoplex KR, monospace` — 프론트엔드 전역 단일 폰트. (영문·한글 통일 모노)
 
 - CSS 변수 `--font-mono` 토큰(`:root`)으로만 지정한다. 컴포넌트/셀렉터에 폰트를 직접 박지 말고 `inherit` 하거나 `var(--font-mono)` 를 쓴다.
 - 유일한 예외는 아이콘 폰트 `Material Symbols Outlined`.
 - 이 정책은 `frontend/src/__tests__/fontPolicy.test.ts` 가 강제한다 — 비-mono 폰트를 박으면 `npm test` 가 실패한다.
-- 배경: 랏 데이터(고정폭)와 키워드 Hold 입력 UI(기존 Inter sans)가 한 화면에서 어긋나 보였다. 데이터·입력값 정렬 가독성이 중요한 대시보드라 전역 mono 로 통일했다. (이전 정책은 Inter sans-serif, `history/decisions.html` 참조)
+- **자가 호스팅**: Monoplex KR 은 구글 폰트에 없어 woff2 를 직접 호스팅한다. `@font-face` 는 `frontend/src/fonts.css`(weight 300/400/500/600/700), 파일은 `frontend/public/fonts/MonoplexKR-*.woff2`(총 ~2.2MB). `@font-face` 의 `font-family` 선언을 `styles.css` 에 두면 fontPolicy 테스트가 위반으로 잡으므로 반드시 `fonts.css` 에 둔다. `index.html` 은 아이콘 폰트(Material Symbols)만 구글에서 받는다.
+- 배경: 랏 데이터(고정폭)와 키워드 Hold 입력 UI(기존 Inter sans)가 한 화면에서 어긋나 보여 전역 mono 로 통일했다(이전: Inter sans). 이후 JetBrains Mono 는 한글 글리프가 없어 한글이 OS 시스템 폰트로 폴백돼 영문↔한글이 어긋나는 문제가 있어, 영문·한글이 한 디자인인 Monoplex KR(IBM Plex Mono + IBM Plex Sans KR)로 교체했다. (`history/decisions.html` 참조)
 
 | 역할 | 크기 | 굵기 | 행간 | 자간 | 사용처 |
 |------|------|------|------|------|--------|

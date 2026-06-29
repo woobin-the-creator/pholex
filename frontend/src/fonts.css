@@ -1,0 +1,45 @@
+/* ===========================================================
+   Monoplex KR — 자가 호스팅 웹폰트 (@font-face)
+   IBM Plex Mono + IBM Plex Sans KR 공동 설계 모노. 영문·한글 통일.
+   파일은 frontend/public/fonts/ 에 있어 /fonts/ 로 서빙된다.
+
+   주의: @font-face 의 font-family 선언은 styles.css 에 두지 않는다.
+   fontPolicy.test.ts 가 styles.css 의 모든 font-family 를 검사하므로
+   여기(별도 파일)에 둬야 정책 테스트와 충돌하지 않는다.
+   전역 폰트 토큰(--font-mono)은 styles.css 의 :root 에 있다.
+   =========================================================== */
+@font-face {
+  font-family: 'Monoplex KR';
+  src: url('/fonts/MonoplexKR-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Monoplex KR';
+  src: url('/fonts/MonoplexKR-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Monoplex KR';
+  src: url('/fonts/MonoplexKR-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Monoplex KR';
+  src: url('/fonts/MonoplexKR-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Monoplex KR';
+  src: url('/fonts/MonoplexKR-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

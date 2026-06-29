@@ -767,6 +767,21 @@
       ],
       note: "트레이드오프: reduce는 본래 '모션 최소화' 선호이나 사내선 GPU 부재로 자동 발동되는 신호라, 폴백 Ring을 '정적'이 아닌 '경량 페이드'로 둠(사내 가시성 우선). 진짜 vestibular 배려가 필요하면 후속에서 별도 분기. e2e/highlightDualPath.spec.ts로 두 경로(코멧 표시 / reduce 시 코멧 숨김+Ring box-shadow) 회귀 가드 추가.",
     },
+    {
+      era: "5 · 운영 · 협업 (Ops & Collaboration)",
+      when: "2026-06-29",
+      status: "done",
+      title: "전역 폰트: JetBrains Mono → Monoplex KR (영문·한글 통일 모노)",
+      decision: "프론트엔드 전역 폰트를 JetBrains Mono에서 Monoplex KR(IBM Plex Mono + IBM Plex Sans KR)로 교체했어요. Monoplex KR은 구글 폰트에 없어 woff2 5종(weight 300/400/500/600/700, 총 ~2.2MB)을 자가 호스팅해요 — @font-face는 frontend/src/fonts.css, 파일은 frontend/public/fonts/. --font-mono 토큰('Monoplex KR', monospace)은 styles.css :root 그대로 두고, index.html에서 JetBrains Mono 구글 폰트 링크를 제거(아이콘 폰트 Material Symbols만 구글 잔류). fontPolicy.test.ts의 하드코딩 폰트명도 Monoplex KR로 갱신.",
+      rationale: "JetBrains Mono는 한글 글리프가 없어 한글이 OS 시스템 폰트(monospace 폴백)로 떨어졌어요. 즉 영문은 JetBrains, 한글은 기기마다 다른 폰트로 섞여 나와 '전역 단일 mono' 정책의 취지(데이터·입력값 정렬 일관성)가 한글에서 깨졌어요. Monoplex KR은 IBM Plex 슈퍼패밀리라 영문·한글이 같은 팀의 공동 설계 → 한 화면에서 영문·한글이 한 디자인으로 통일돼요. 후보 3종(JetBrains Mono Hangul / Monoplex KR / Sarasa Mono K)을 실제 다크 UI에 적용해 gh issue #71로 비교 후 채택.",
+      alternatives: [
+        { name: "JetBrains Mono Hangul (JetBrains Mono + D2Coding 한글)", rejected: "영문은 현재 그대로라 변화는 최소지만, 영문(JetBrains)·한글(D2Coding) 출처가 달라 공동 설계만큼의 통일감은 아님." },
+        { name: "Sarasa Mono K (Iosevka + Source Han Sans)", rejected: "진짜 고정폭 CJK·정보밀도 최고지만 영문이 좁은 Iosevka라 기존 톤에서 더 멀어짐." },
+        { name: "D2Coding 등을 폴백 체인에만 추가", rejected: "'영문은 A, 한글은 B' 폴백 불일치가 그대로 남아 '한 디자인으로 통일' 요구를 못 채움." },
+        { name: "구글 폰트 CDN 유지", rejected: "세 후보 모두 구글 폰트에 없음. 자가 호스팅이 불가피." },
+      ],
+      note: "woff2가 weight당 ~450KB(Monoplex 자체가 잘 빌드돼 서브셋 없이도 가벼움)라 5종 전부 채택. CJK Han(한자)은 폰트에 없음(한글 11172자 + Latin) — pholex 도메인상 무관. 시안 이미지는 orphan 브랜치 font-specimens에 보관(코드와 분리).",
+    },
   ];
 
   /* ─── 렌더링 (수정 불필요) ─── */
