@@ -682,6 +682,21 @@ body[data-theme='dark'] .card.is-maximized.is-live::before {
 .card.is-maximized .lot-table td { font-size: 13.5px; padding: 10px 12px; }
 .card.is-maximized .lot-table__lot-id { font-size: 13px; }
 
+/* 최대화 시 컬럼 너비 최적화 (#78) — 짧은 컬럼은 내용 폭에 맞추고(content-fit),
+   남는 폭을 REASON(col-comment)에 몰아주며 한 줄에 안 들어가면 줄바꿈한다.
+   table-layout:auto가 현재 렌더된 페이지 행 기준으로 컬럼 폭을 자동 산정한다. */
+.card.is-maximized .lot-table { table-layout: auto; }
+.card.is-maximized .lot-table colgroup .col-lot-id,
+.card.is-maximized .lot-table colgroup .col-status,
+.card.is-maximized .lot-table colgroup .col-equipment,
+.card.is-maximized .lot-table colgroup .col-process,
+.card.is-maximized .lot-table colgroup .col-updated { width: auto; }
+.card.is-maximized .lot-table colgroup .col-comment { width: 100%; }
+/* fixed 모드용 max-width:0 해제 — 안 그러면 auto 산정이 0으로 짓눌린다. 다른 컬럼은 nowrap 유지.
+   REASON이 여러 줄로 늘어날 때 나머지 셀이 위로 정렬되도록 vertical-align:top. */
+.card.is-maximized .lot-table td { max-width: none; vertical-align: top; }
+.card.is-maximized .lot-table td:nth-child(5) { white-space: normal; }
+
 /* cursor affordance on draggable header */
 .card .card__head:hover { cursor: zoom-in; }
 .card.is-maximized .card__head:hover { cursor: zoom-out; }
@@ -716,11 +731,13 @@ body[data-theme='dark'] .card.is-maximized.is-live::before {
   width: 100%; border-collapse: collapse;
   font-variant-numeric: tabular-nums; table-layout: fixed;
 }
-.lot-table colgroup .col-lot-id { width: 16%; }
+/* lot-id 컬럼은 복사 버튼(#77) 폭을 감안해 넓힌다 — 좁으면 'LOT-…'로 과truncate된다.
+   normal(fixed) 뷰에서 REASON은 어차피 ellipsis라 거기서 폭을 빌려온다(최대화 시엔 REASON이 100%). */
+.lot-table colgroup .col-lot-id { width: 26%; }
 .lot-table colgroup .col-status { width: 10%; }
 .lot-table colgroup .col-equipment { width: 12%; }
-.lot-table colgroup .col-process { width: 18%; }
-.lot-table colgroup .col-comment { width: 30%; }
+.lot-table colgroup .col-process { width: 16%; }
+.lot-table colgroup .col-comment { width: 22%; }
 .lot-table colgroup .col-updated { width: 14%; }
 
 .lot-table thead {
@@ -752,12 +769,39 @@ body[data-theme='dark']  .lot-table tbody tr:hover td { background-color: rgba(2
 }
 body[data-theme='dark'] .lot-table__lot-id { padding-left: 12px; }
 
-body[data-theme='light'] .lot-table tr.is-hold .lot-table__lot-id { color: var(--hold); }
-body[data-theme='light'] .lot-table tr.is-hold .lot-table__lot-id::before {
-  content: '•'; color: var(--hold); margin-right: 6px;
+/* Lot ID + 복사 버튼 (#77). 셀 폭(td)을 꽉 채우는 flex — bullet(::before)·text·button이
+   모두 flex item이라 text만 ellipsis로 줄고 버튼은 flex:none으로 항상 보인다.
+   (bullet을 셀 밖 td::before에 두면 max-width 폭 계산이 어긋나 id가 과truncate된다.) */
+.lot-id-cell {
+  display: flex; align-items: center; gap: 5px;
+  width: 100%; min-width: 0;
 }
-body[data-theme='light'] .lot-table tr.is-recent .lot-table__lot-id::before {
-  content: '•'; color: var(--ink); margin-right: 6px;
+.lot-id-cell__text {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lot-id-copy {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; padding: 0; border: 0; border-radius: 3px;
+  background: transparent; color: var(--ink-mute); cursor: pointer;
+  opacity: 0.5; position: relative; z-index: 4; /* 포커스 행 코멧 SVG(z-index:3) 위로 — 상시 컨트롤이 가리지 않게 */
+  transition: opacity 140ms var(--ease-out), color 140ms var(--ease-out),
+    background-color 140ms var(--ease-out);
+}
+.lot-id-copy:hover { opacity: 1; color: var(--ink); background-color: rgba(127, 127, 127, 0.12); }
+.lot-id-copy:focus-visible { opacity: 1; outline: 1px solid var(--accent); outline-offset: 1px; }
+.lot-id-copy.is-copied { opacity: 1; color: var(--color-success-green, #1aae39); }
+.lot-id-copy .material-symbols-outlined {
+  font-size: 14px; line-height: 1;
+  font-variation-settings: 'wght' 400, 'opsz' 20;
+}
+
+body[data-theme='light'] .lot-table tr.is-hold .lot-table__lot-id { color: var(--hold); }
+/* hold/recent 불릿은 .lot-id-cell 안의 flex item으로 둔다(셀 폭 계산에 포함되도록). */
+body[data-theme='light'] .lot-table tr.is-hold .lot-id-cell::before {
+  content: '•'; color: var(--hold); flex: none;
+}
+body[data-theme='light'] .lot-table tr.is-recent .lot-id-cell::before {
+  content: '•'; color: var(--ink); flex: none;
 }
 body[data-theme='dark'] .lot-table tr.is-hold td:first-child {
   box-shadow: inset 2px 0 0 var(--accent);
