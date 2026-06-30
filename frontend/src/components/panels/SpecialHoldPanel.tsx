@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useState, type MouseEvent } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { statusPillClass } from '../../utils/statusDisplay'
 import { listKeywordPresets, saveKeywordPreset, searchSpecialHold } from '../../services/api'
 import { LotIdCopyButton } from '../lot/LotIdCopyButton'
@@ -74,6 +74,35 @@ function dnfPreview(config: KeywordConfig): string {
   return `다음 중 하나라도 맞는 lot: ${groupSentences.join(' 또는 ')}`
 }
 
+/** groups → KeywordConfig — 빈 조건/그룹은 제거(백엔드 422 방지). */
+function buildConfig(groups: Group[]): KeywordConfig {
+  return {
+    groups: groups
+      .map((g) => ({
+        conditions: g.conditions
+          .filter((c) => c.value.trim().length > 0)
+          .map((c) => ({ field: c.field, value: c.value.trim() })),
+      }))
+      .filter((g) => g.conditions.length > 0),
+  }
+}
+
+function groupsFromConfig(config: KeywordConfig | null): Group[] {
+  const gs: Group[] = (config?.groups ?? []).map((g) => ({
+    id: nextId(),
+    conditions: g.conditions.map((c) => ({
+      id: nextId(),
+      field: (FIELDS.includes(c.field as FieldKey) ? c.field : 'equipment') as FieldKey,
+      value: c.value,
+    })),
+  }))
+  return gs.length > 0 ? gs : [newGroup()]
+}
+
+function countConditions(config: KeywordConfig | null): number {
+  return (config?.groups ?? []).reduce((n, g) => n + g.conditions.length, 0)
+}
+
 interface Props {
   isMaximized?: boolean
   onToggleMaximize?: () => void
@@ -81,123 +110,43 @@ interface Props {
 }
 
 export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName }: Props) {
-  // Always show one ready-to-type ghost chip — never a dead button.
-  const [groups, setGroups] = useState<Group[]>(() => [newGroup()])
-
-  const [collapsed, setCollapsed] = useState(true)
-
+  // ── 섹션(적용된 필터) 상태 ──
+  const [appliedConfig, setAppliedConfig] = useState<KeywordConfig | null>(null)
+  const [appliedLabel, setAppliedLabel] = useState<string | null>(null)
   const [rows, setRows] = useState<LotRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100)
+  const [pageSize] = useState(100)
   const [searched, setSearched] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // ── 모달(편집 초안) 상태 ──
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<Group[]>(() => [newGroup()])
   const [presets, setPresets] = useState<KeywordPreset[]>([])
   const [presetName, setPresetName] = useState('')
-  const [activeLabel, setActiveLabel] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
 
-  // ── 조건 편집 (인라인 고스트 칩) ──
-  const setField = (gid: number, cid: number, field: FieldKey) => {
-    setGroups((gs) =>
-      gs.map((g) =>
-        g.id === gid
-          ? { ...g, conditions: g.conditions.map((c) => (c.id === cid ? { ...c, field } : c)) }
-          : g,
-      ),
-    )
-    setActiveLabel(null)
-  }
+  // ── 라이브 미리보기 상태 ──
+  const [previewTotal, setPreviewTotal] = useState<number | null>(null)
+  const [previewRows, setPreviewRows] = useState<LotRow[]>([])
+  const [previewBusy, setPreviewBusy] = useState(false)
+  const previewSeq = useRef(0)
 
-  const setValue = (gid: number, cid: number, value: string) => {
-    setGroups((gs) =>
-      gs.map((g) =>
-        g.id === gid
-          ? { ...g, conditions: g.conditions.map((c) => (c.id === cid ? { ...c, value } : c)) }
-          : g,
-      ),
-    )
-    setActiveLabel(null)
-  }
-
-  const addGhost = (gid: number) => {
-    setGroups((gs) =>
-      gs.map((g) => (g.id === gid ? { ...g, conditions: [...g.conditions, newCond()] } : g)),
-    )
-    setActiveLabel(null)
-  }
-
-  const removeCond = (gid: number, cid: number) => {
-    setGroups((gs) => {
-      const next = gs
-        .map((g) =>
-          g.id === gid ? { ...g, conditions: g.conditions.filter((c) => c.id !== cid) } : g,
-        )
-        .filter((g) => g.conditions.length > 0)
-      return next.length > 0 ? next : [newGroup()]
-    })
-    setActiveLabel(null)
-  }
-
-  // On blur: if the ghost chip is still empty, discard it (unless it's the only
-  // condition in the only group — then keep one empty ghost so there's always a row).
-  const commitOrDiscard = (gid: number, cid: number) =>
-    setGroups((gs) => {
-      const onlyGroup = gs.length === 1
-      const next = gs
-        .map((g) => {
-          if (g.id !== gid) return g
-          const cond = g.conditions.find((c) => c.id === cid)
-          if (!cond) return g
-          if (cond.value.trim().length > 0) return g // commit (becomes solid chip)
-          const onlyCond = g.conditions.length === 1
-          if (onlyGroup && onlyCond) return g // keep the single empty ghost
-          return { ...g, conditions: g.conditions.filter((c) => c.id !== cid) }
-        })
-        .filter((g) => g.conditions.length > 0)
-      return next.length > 0 ? next : [newGroup()]
-    })
-
-  const addGroup = () => setGroups((gs) => [...gs, newGroup()])
-
-  // ── 설정 빌드 — 빈 조건/그룹은 반드시 제거(백엔드 422 방지) ──
-  const buildConfig = useCallback(
-    (): KeywordConfig => ({
-      groups: groups
-        .map((g) => ({
-          conditions: g.conditions
-            .filter((c) => c.value.trim().length > 0)
-            .map((c) => ({ field: c.field, value: c.value.trim() })),
-        }))
-        .filter((g) => g.conditions.length > 0),
-    }),
-    [groups],
-  )
-
-  const preview = dnfPreview(buildConfig())
-  const hasQuery = groups.some((g) => g.conditions.some((c) => c.value.trim().length > 0))
-
-  const clearAll = () => {
-    setGroups([newGroup()])
-    setRows([])
-    setTotal(0)
-    setSearched(false)
-    setActiveLabel(null)
-  }
+  const draftConfig = buildConfig(draft)
+  const draftHasQuery = draftConfig.groups.length > 0
 
   const runSearch = useCallback(
-    async (toPage = 1, size = pageSize, explicit?: KeywordConfig) => {
-      const config = explicit ?? buildConfig()
+    async (config: KeywordConfig, toPage = 1) => {
       if (config.groups.length === 0) return
       setBusy(true)
       setError(null)
       try {
-        const res = await searchSpecialHold(config, toPage, size)
+        const res = await searchSpecialHold(config, toPage, pageSize)
         setRows(res.rows)
         setTotal(res.total)
         setPage(res.page)
-        setPageSize(res.pageSize)
         setSearched(true)
       } catch (e) {
         setError(e instanceof Error ? e.message : '검색 실패')
@@ -205,7 +154,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
         setBusy(false)
       }
     },
-    [buildConfig, pageSize],
+    [pageSize],
   )
 
   const loadPresets = useCallback(async () => {
@@ -216,15 +165,119 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     }
   }, [])
 
+  // ── 모달 열기/닫기 ──
+  const openModal = () => {
+    setDraft(groupsFromConfig(appliedConfig))
+    setSaved(false)
+    setOpen(true)
+    void loadPresets()
+  }
+  const closeModal = useCallback(() => setOpen(false), [])
+
+  // ESC 닫기
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeModal()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, closeModal])
+
+  // ── 초안 편집 ──
+  const setField = (gid: number, cid: number, field: FieldKey) => {
+    setDraft((gs) =>
+      gs.map((g) =>
+        g.id === gid
+          ? { ...g, conditions: g.conditions.map((c) => (c.id === cid ? { ...c, field } : c)) }
+          : g,
+      ),
+    )
+    setSaved(false)
+  }
+  const setValue = (gid: number, cid: number, value: string) => {
+    setDraft((gs) =>
+      gs.map((g) =>
+        g.id === gid
+          ? { ...g, conditions: g.conditions.map((c) => (c.id === cid ? { ...c, value } : c)) }
+          : g,
+      ),
+    )
+    setSaved(false)
+  }
+  const addCond = (gid: number) => {
+    setDraft((gs) =>
+      gs.map((g) => (g.id === gid ? { ...g, conditions: [...g.conditions, newCond()] } : g)),
+    )
+    setSaved(false)
+  }
+  const removeCond = (gid: number, cid: number) => {
+    setDraft((gs) => {
+      const next = gs
+        .map((g) =>
+          g.id === gid ? { ...g, conditions: g.conditions.filter((c) => c.id !== cid) } : g,
+        )
+        .filter((g) => g.conditions.length > 0)
+      return next.length > 0 ? next : [newGroup()]
+    })
+    setSaved(false)
+  }
+  const addGroup = () => {
+    setDraft((gs) => [...gs, newGroup()])
+    setSaved(false)
+  }
+  const resetDraft = () => {
+    setDraft([newGroup()])
+    setPresetName('')
+    setSaved(false)
+  }
+
+  // ── 라이브 미리보기 (디바운스) ──
+  useEffect(() => {
+    if (!open) return
+    if (!draftHasQuery) {
+      setPreviewTotal(null)
+      setPreviewRows([])
+      setPreviewBusy(false)
+      return
+    }
+    const seq = ++previewSeq.current
+    setPreviewBusy(true)
+    const t = setTimeout(async () => {
+      try {
+        const res = await searchSpecialHold(draftConfig, 1, 6)
+        if (previewSeq.current !== seq) return
+        setPreviewTotal(res.total)
+        setPreviewRows(res.rows)
+      } catch {
+        if (previewSeq.current !== seq) return
+        setPreviewTotal(null)
+        setPreviewRows([])
+      } finally {
+        if (previewSeq.current === seq) setPreviewBusy(false)
+      }
+    }, 350)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(draftConfig)])
+
+  // ── 적용 / 프리셋 ──
+  const apply = () => {
+    if (!draftHasQuery) return
+    const config = draftConfig
+    setAppliedConfig(config)
+    setAppliedLabel(presetName.trim() || null)
+    void runSearch(config, 1)
+    closeModal()
+  }
+
   const savePreset = async () => {
     const name = presetName.trim()
-    const config = buildConfig()
-    if (!name || config.groups.length === 0) return
+    if (!name || !draftHasQuery) return
     setBusy(true)
     try {
-      await saveKeywordPreset(name, config, presets.length === 0)
-      setPresetName('')
-      setActiveLabel(name)
+      await saveKeywordPreset(name, draftConfig, presets.length === 0)
+      setSaved(true)
       await loadPresets()
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패')
@@ -233,18 +286,23 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     }
   }
 
-  const applyPreset = (p: KeywordPreset) => {
-    const gs: Group[] = (p.config?.groups ?? []).map((g) => ({
-      id: nextId(),
-      conditions: g.conditions.map((c) => ({ id: nextId(), field: c.field as FieldKey, value: c.value })),
-    }))
-    setGroups(gs.length > 0 ? gs : [newGroup()])
-    setActiveLabel(p.name)
-    void runSearch(1, pageSize, p.config)
+  const applyPresetById = (id: string) => {
+    const p = presets.find((x) => String(x.id) === id)
+    if (!p) return
+    setDraft(groupsFromConfig(p.config))
+    setPresetName(p.name)
+    setSaved(false)
+  }
+
+  const refetch = () => {
+    if (appliedConfig) void runSearch(appliedConfig, page)
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const summary = activeLabel ?? (hasQuery ? preview : '필터 없음 — 펼쳐서 추가')
+  const appliedCount = countConditions(appliedConfig)
+  const summary = appliedConfig
+    ? appliedLabel ?? dnfPreview(appliedConfig)
+    : '필터 없음 — 필터 설정을 눌러 조건을 추가하세요'
 
   const handleHeadDoubleClick = (e: MouseEvent<HTMLElement>) => {
     if ((e.target as HTMLElement).closest('button')) return
@@ -281,194 +339,27 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
         </div>
       </header>
 
-      {/* 접힘: 활성 필터 요약 한 줄 / 펼침: 인라인 고스트 칩 빌더 */}
-      {collapsed ? (
-        <div className="kw-bar">
-          <span className="kw-bar__label">필터</span>
-          <code className="kw-bar__summary" title={hasQuery ? preview : undefined}>{summary}</code>
-          <button type="button" className="kw-toggle" onClick={() => setCollapsed(false)}>
-            편집 <span aria-hidden>▾</span>
-          </button>
+      {/* 섹션: 필터 버튼 + 활성 필터 요약 한 줄 */}
+      <div className="kw-filterbar">
+        <button type="button" className="kw-filter-btn" onClick={openModal}>
+          <span className="material-symbols-outlined" aria-hidden="true">filter_alt</span>
+          필터 설정
+          {appliedCount > 0 ? <span className="kw-filter-btn__cnt">{appliedCount}</span> : null}
+        </button>
+        <span className="kw-summary" title={appliedConfig ? summary : undefined}>{summary}</span>
+        {appliedConfig ? (
           <button
             type="button"
-            className="kw-toggle kw-toggle--ghost"
-            onClick={() => void runSearch(1, pageSize)}
-            disabled={busy || !hasQuery}
+            className="kw-iconbtn"
+            onClick={refetch}
+            disabled={busy}
             title="다시 조회"
             aria-label="다시 조회"
           >
-            ↻
+            <span className="material-symbols-outlined" aria-hidden="true">refresh</span>
           </button>
-        </div>
-      ) : (
-        <div className="kw-edit">
-          <div className="kw-builder kw-builder--chips">
-            {groups.map((g, gi) => (
-              <Fragment key={g.id}>
-                {gi > 0 ? <span className="kw-or-chip">또는</span> : null}
-                <div className="kw-chipbox">
-                  {g.conditions.map((c, ci) => {
-                    const committed = c.value.trim().length > 0
-                    // 한 조건 = 영속 <input> 하나. ghost↔solid는 엘리먼트 교체가 아니라
-                    // className/접두 span만 바꿔서 표현한다 — 타이핑 중 input이 unmount되어
-                    // 포커스가 튀던 버그(첫 글자만 입력됨)를 막는다.
-                    return (
-                      <Fragment key={c.id}>
-                        {ci > 0 ? <span className="kw-and-mark">그리고</span> : null}
-                        {/* 접두: 미입력=필드 선택 pill / 입력됨=정적 필드 태그 (둘 다 <span> → 노드 재사용) */}
-                        {committed ? (
-                          <span className="kw-chip__fieldtag">{FIELD_LABEL[c.field]}</span>
-                        ) : (
-                          <span className="kw-fieldpill">
-                            <select
-                              className="kw-fieldpill__select"
-                              value={c.field}
-                              data-cond={c.id}
-                              onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
-                              aria-label="필드 선택"
-                            >
-                              {FIELDS.map((f) => (
-                                <option key={f} value={f}>{FIELD_LABEL[f]}</option>
-                              ))}
-                            </select>
-                            <span className="kw-fieldpill__caret material-symbols-outlined" aria-hidden="true">
-                              expand_more
-                            </span>
-                          </span>
-                        )}
-                        <span
-                          className={`kw-chip${committed ? '' : ' kw-chip--ghost'}${c.field === 'status' ? ' is-exact' : ''}`}
-                        >
-                          <span className={`kw-ghost__op${c.field === 'status' ? ' is-exact' : ''}`}>
-                            {opLabel(c.field)}
-                          </span>
-                          <input
-                            className={committed ? 'kw-chip__edit' : 'kw-ghost__input'}
-                            value={c.value}
-                            autoFocus={ci > 0 || gi > 0}
-                            data-cond={c.id}
-                            placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
-                            onChange={(e) => setValue(g.id, c.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                            }}
-                            onBlur={(e) => {
-                              // 같은 조건 내부(자기 필드 드롭다운 등)로 포커스가 옮겨가는 중이면
-                              // 빈 ghost를 버리지 않는다 — 드롭다운 클릭 시 칩이 사라지던 버그 방지.
-                              const rt = e.relatedTarget as HTMLElement | null
-                              if (rt?.getAttribute('data-cond') === String(c.id)) return
-                              commitOrDiscard(g.id, c.id)
-                            }}
-                            aria-label={committed ? '값 수정' : '값'}
-                            size={committed ? Math.max(c.value.length, 2) : 6}
-                          />
-                          <button
-                            type="button"
-                            className="kw-chip__x"
-                            onClick={() => removeCond(g.id, c.id)}
-                            aria-label="삭제"
-                            hidden={!committed}
-                          >
-                            ×
-                          </button>
-                        </span>
-                      </Fragment>
-                    )
-                  })}
-                  <button
-                    type="button"
-                    className="kw-add-chip"
-                    onClick={() => addGhost(g.id)}
-                    title="이 그룹에 AND 조건 추가"
-                  >
-                    + AND
-                  </button>
-                </div>
-              </Fragment>
-            ))}
-            <button
-              type="button"
-              className="kw-add-or"
-              onClick={addGroup}
-              title="또는(OR) 그룹 추가"
-              aria-label="또는(OR) 그룹 추가"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="kw-iconbtn kw-iconbtn--save"
-              onClick={() => void savePreset()}
-              disabled={busy || !presetName.trim() || !hasQuery}
-              title="프리셋 저장"
-              aria-label="프리셋 저장"
-            >
-              <span className="material-symbols-outlined" aria-hidden="true">save</span>
-            </button>
-          </div>
-
-          <div className="kw-editor">
-            <button
-              type="button"
-              className="kw-btn kw-btn--primary"
-              onClick={() => void runSearch(1, pageSize)}
-              disabled={busy || !hasQuery}
-            >
-              {busy ? '검색 중…' : '검색'}
-            </button>
-            <button type="button" className="kw-toggle" onClick={() => setCollapsed(true)}>
-              접기 <span aria-hidden>▴</span>
-            </button>
-            <span className="kw-spacer" />
-            <label className="kw-size">
-              page&nbsp;
-              <input
-                className="field__input kw-value"
-                type="number"
-                min={1}
-                value={pageSize}
-                onChange={(e) => setPageSize(Math.max(1, Number(e.target.value) || 1))}
-                aria-label="페이지 크기"
-              />
-            </label>
-            <input
-              className="field__input kw-value"
-              placeholder="프리셋 이름"
-              value={presetName}
-              onChange={(e) => setPresetName(e.target.value)}
-              aria-label="프리셋 이름"
-            />
-            <select
-              className="kw-select"
-              value=""
-              onFocus={() => void loadPresets()}
-              onChange={(e) => {
-                const p = presets.find((x) => String(x.id) === e.target.value)
-                if (p) applyPreset(p)
-              }}
-              aria-label="프리셋 불러오기"
-            >
-              <option value="">필터 선택</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.isDefault ? ' ★' : ''}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="kw-iconbtn"
-              onClick={clearAll}
-              disabled={!hasQuery}
-              title="초기화"
-              aria-label="초기화"
-            >
-              <span className="material-symbols-outlined" aria-hidden="true">restart_alt</span>
-            </button>
-          </div>
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {error ? <p className="card__error">{error}</p> : null}
 
@@ -495,7 +386,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
           <tbody>
             {!searched ? (
               <tr>
-                <td colSpan={6} className="lot-table__empty">키워드를 추가하고 검색하세요.</td>
+                <td colSpan={6} className="lot-table__empty">필터 설정을 눌러 조건을 추가하세요.</td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
@@ -529,7 +420,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
           <button
             type="button"
             className="page-link"
-            onClick={() => void runSearch(page - 1, pageSize)}
+            onClick={() => appliedConfig && void runSearch(appliedConfig, page - 1)}
             disabled={busy || page <= 1}
           >
             ‹ 이전
@@ -538,12 +429,159 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
           <button
             type="button"
             className="page-link"
-            onClick={() => void runSearch(page + 1, pageSize)}
+            onClick={() => appliedConfig && void runSearch(appliedConfig, page + 1)}
             disabled={busy || page >= totalPages}
           >
             다음 ›
           </button>
         </div>
+      ) : null}
+
+      {/* ── 필터 설정 모달 ── */}
+      {open ? (
+        <>
+          <div className="kw-scrim" onClick={closeModal} />
+          <div className="kw-modal" role="dialog" aria-modal="true" aria-labelledby="kw-modal-title">
+            <div className="kw-modal__head">
+              <h3 id="kw-modal-title" className="kw-modal__title">
+                필터 설정 <span className="kw-modal__sub">실시간 미리보기</span>
+              </h3>
+              <div className="kw-modal__head-right">
+                <span className="kw-presetpick">
+                  <span className="material-symbols-outlined kw-presetpick__ic" aria-hidden="true">bookmark</span>
+                  <select
+                    className="kw-presetpick__select"
+                    value=""
+                    onFocus={() => void loadPresets()}
+                    onChange={(e) => applyPresetById(e.target.value)}
+                    aria-label="프리셋 불러오기"
+                  >
+                    <option value="">프리셋</option>
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.isDefault ? '★ ' : ''}{p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="kw-presetpick__caret material-symbols-outlined" aria-hidden="true">expand_more</span>
+                </span>
+                <button type="button" className="kw-modal__close" onClick={closeModal} aria-label="닫기">×</button>
+              </div>
+            </div>
+
+            <div className="kw-modal__body">
+              <div className="kw-split">
+                {/* 좌: 빌더 */}
+                <div className="kw-build">
+                  {draft.map((g, gi) => (
+                    <Fragment key={g.id}>
+                      {gi > 0 ? <div className="kw-orsep"><span className="kw-orsep__chip">또는</span></div> : null}
+                      <div className="kw-grp">
+                        {g.conditions.map((c, ci) => (
+                          <div className="kw-row" key={c.id}>
+                            <span className="kw-row__and">{ci > 0 ? '그리고' : ''}</span>
+                            <span className="kw-fieldsel">
+                              <select
+                                className="kw-fieldsel__select"
+                                value={c.field}
+                                onChange={(e) => setField(g.id, c.id, e.target.value as FieldKey)}
+                                aria-label="필드"
+                              >
+                                {FIELDS.map((f) => (
+                                  <option key={f} value={f}>{FIELD_LABEL[f]}</option>
+                                ))}
+                              </select>
+                              <span className="kw-fieldsel__caret material-symbols-outlined" aria-hidden="true">expand_more</span>
+                            </span>
+                            <span className={`kw-op${c.field === 'status' ? ' is-exact' : ''}`}>{opLabel(c.field)}</span>
+                            <input
+                              className="kw-valinput"
+                              value={c.value}
+                              placeholder={c.field === 'status' ? 'Hold' : 'ETCH'}
+                              onChange={(e) => setValue(g.id, c.id, e.target.value)}
+                              aria-label="값"
+                            />
+                            <button
+                              type="button"
+                              className="kw-row__x"
+                              onClick={() => removeCond(g.id, c.id)}
+                              aria-label="조건 삭제"
+                            >
+                              <span className="material-symbols-outlined" aria-hidden="true">close</span>
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="kw-addbtn" onClick={() => addCond(g.id)}>
+                          + 조건 추가
+                        </button>
+                      </div>
+                    </Fragment>
+                  ))}
+                  <button type="button" className="kw-addbtn kw-addbtn--or" onClick={addGroup}>
+                    + 또는(OR) 그룹
+                  </button>
+                </div>
+
+                {/* 우: 라이브 미리보기 */}
+                <div className="kw-preview">
+                  <div className="kw-preview__h">미리보기</div>
+                  <p className="kw-preview__nl">{dnfPreview(draftConfig)}</p>
+                  <div className="kw-preview__match">
+                    <strong>{previewBusy ? '…' : previewTotal ?? '—'}</strong> 건 매칭
+                  </div>
+                  <div className="kw-preview__rows">
+                    {previewRows.length === 0 ? (
+                      <p className="kw-preview__empty">{draftHasQuery ? '결과 없음' : '조건을 추가하면 결과가 표시됩니다.'}</p>
+                    ) : (
+                      previewRows.map((r) => (
+                        <div className="kw-preview__row" key={r.lotId}>
+                          <span className="kw-preview__lid">{r.lotId}</span>
+                          <span className={`pill ${statusPillClass(r.status)}`}>{r.status}</span>
+                          <span className="kw-preview__tool">{r.equipment ?? '—'}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="kw-modal__foot">
+              <button type="button" className="kw-btn" onClick={resetDraft}>초기화</button>
+              <span className="kw-spacer" />
+              <button type="button" className="kw-btn" onClick={closeModal}>취소</button>
+              <button
+                type="button"
+                className="kw-btn kw-btn--primary"
+                onClick={apply}
+                disabled={busy || !draftHasQuery}
+              >
+                적용
+              </button>
+              <span className="kw-foot-div" aria-hidden="true" />
+              <input
+                className="kw-foot-name"
+                placeholder="필터 이름"
+                value={presetName}
+                onChange={(e) => {
+                  setPresetName(e.target.value)
+                  setSaved(false)
+                }}
+                aria-label="프리셋 이름"
+              />
+              <button
+                type="button"
+                className={`kw-iconbtn kw-iconbtn--save${saved ? ' is-ok' : ''}`}
+                onClick={() => void savePreset()}
+                disabled={busy || !presetName.trim() || !draftHasQuery}
+                title="프리셋 저장"
+                aria-label="프리셋 저장"
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">{saved ? 'check' : 'save'}</span>
+              </button>
+            </div>
+          </div>
+        </>
       ) : null}
     </article>
   )
