@@ -808,6 +808,19 @@
       ],
       note: "WS 자동 점프(useAlarms→focusLot)는 제거를 타지 않도록 래퍼를 박스 클릭 경로에만 연결. 테스트: alarmStore removeAlarm 단위 3종 + alarmDock '클릭=제거+점프' 통합 1종 추가(유닛 55 통과). 팝(CriticalToast)의 onJump는 이번 범위 밖(박스 항목 한정).",
     },
+    {
+      era: "5 · 운영 · 협업 (Ops & Collaboration)",
+      when: "2026-06-30",
+      status: "done",
+      title: "키워드 Hold: chip 인라인 빌더 → '필터 설정' 버튼 + 모달(라이브 프리뷰)",
+      decision: "키워드 Hold 섹션의 조건 입력을 인라인 고스트 chip 빌더에서 '필터 설정' 버튼 → 중앙 모달로 전환했어요(시안 H 채택, #85). 섹션엔 트리거 버튼 + 활성 필터 요약 + 결과 테이블만 남기고, 조건 편집은 모달 안에서만. 모달은 대시보드 전체 위에 fixed + scrim(ESC 닫기), 좌측 빌더(필드 select + 값, OR 그룹/AND 조건)·우측 라이브 미리보기(디바운스 350ms searchSpecialHold 로 자연어·매칭 건수·샘플 행). 프리셋 불러오기=헤더 select, 저장=풋터([초기화] … [취소][적용] │ [필터 이름][저장], 저장 시 아이콘→check). 연산자(포함/정확히)는 저장 필드가 아니라 field 파생이라 드롭다운이 아닌 라벨로 표시. 데이터 모델(KeywordConfig DNF)·API·서버 페이지네이션은 그대로, draft(편집) vs applied(섹션) 상태만 분리.",
+      rationale: "chip 빌더가 '직관적이지 않다'는 사용자 피드백이 출발점. 인라인 4종(행/순차/popover/표)과 모달 4종(다이얼로그/2-pane/표/라이브 프리뷰)을 GIF 시안으로 비교(#85)한 뒤, 섹션 공간을 결과 테이블에 양보하면서 '적용 전 매칭 결과를 미리 보는' 탐색 흐름이 제조 현장 사용과 맞아 H(라이브 프리뷰 모달)를 택했어요. chip의 '첫 글자만 입력' 포커스 버그(#48)도 빌더 자체가 사라지며 구조적으로 해소.",
+      alternatives: [
+        { name: "인라인 드롭다운 방식(시안 A~D)", rejected: "섹션 안에서 바로 편집하나 조건이 늘면 슬롯 높이를 잠식. 사용자가 '버튼→모달'을 명시 선택." },
+        { name: "chip 빌더 유지·개선(#84 v2)", rejected: "chip이 직관적이지 않다는 피드백의 근본 원인을 안 건드림. #84는 close." },
+      ],
+      note: "구현: SpecialHoldPanel 재작성 + styles.css kw- 스타일 교체. 단위 테스트 4종 추가(초기/모달/라이브 프리뷰/적용/저장), typecheck 통과, VITE_DEMO_MODE 실제 앱에서 light/dark 시각 검증. PR에서 Closes #85.",
+    },
   ];
 
   /* ─── 렌더링 (수정 불필요) ─── */
