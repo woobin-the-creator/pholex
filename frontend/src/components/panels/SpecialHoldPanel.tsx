@@ -1,6 +1,9 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useAtomValue } from 'jotai'
 import { statusPillClass } from '../../utils/statusDisplay'
 import { listKeywordPresets, saveKeywordPreset, searchSpecialHold } from '../../services/api'
+import { clearPinned, getPinnedId, setPinned } from '../../services/presetPin'
+import { authAtom } from '../../atoms/authAtom'
 import { LotIdCopyButton } from '../lot/LotIdCopyButton'
 import type { LotRow } from '../../types/lot'
 import type { KeywordConfig, KeywordPreset } from '../../types/keyword'
@@ -128,6 +131,13 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
   const [presetName, setPresetName] = useState('')
   const [saved, setSaved] = useState(false)
 
+  // ── 프리셋 고정(📌) 상태 ──
+  const user = useAtomValue(authAtom)
+  const sabun = user?.employee_number ?? null
+  const [pinnedId, setPinnedId] = useState<number | null>(null)
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false)
+  const presetRef = useRef<HTMLDivElement | null>(null)
+
   // ── 라이브 미리보기 상태 ──
   const [previewTotal, setPreviewTotal] = useState<number | null>(null)
   const [previewRows, setPreviewRows] = useState<LotRow[]>([])
@@ -172,7 +182,10 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     setOpen(true)
     void loadPresets()
   }
-  const closeModal = useCallback(() => setOpen(false), [])
+  const closeModal = useCallback(() => {
+    setOpen(false)
+    setPresetMenuOpen(false)
+  }, [])
 
   // ESC 닫기
   useEffect(() => {
@@ -183,6 +196,58 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, closeModal])
+
+  // 프리셋 메뉴 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!presetMenuOpen) return
+    const onDown = (e: globalThis.MouseEvent) => {
+      if (presetRef.current && !presetRef.current.contains(e.target as Node)) {
+        setPresetMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [presetMenuOpen])
+
+  // 로드 시: 사번이 고정한 프리셋이 있으면 자동 적용 + 검색 (재접속해도 유지).
+  // 핀(localStorage)을 먼저 확인해, 핀이 없으면 네트워크 호출 자체를 하지 않는다.
+  useEffect(() => {
+    if (!sabun) return
+    let cancelled = false
+    void (async () => {
+      const pid = await getPinnedId(sabun)
+      if (cancelled || pid == null) return // 핀 없음 → 아무 것도 안 함
+      const list = await listKeywordPresets().catch(() => [] as KeywordPreset[])
+      if (cancelled) return
+      setPresets(list)
+      const p = list.find((x) => x.id === pid)
+      if (!p) {
+        void clearPinned(sabun) // 깨진 핀(삭제된 프리셋) — 조용히 해제
+        return
+      }
+      setPinnedId(pid)
+      setAppliedConfig(p.config)
+      setAppliedLabel(p.name)
+      void runSearch(p.config, 1)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // runSearch 는 pageSize(상수)에만 의존해 안정적 — 중복 적용 방지를 위해 sabun 변화에만 반응
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sabun])
+
+  // 고정 토글 (단일 핀 — 새 핀을 누르면 이전 핀 해제, 켜진 핀을 다시 누르면 해제)
+  const togglePin = async (id: number) => {
+    if (!sabun) return
+    if (pinnedId === id) {
+      await clearPinned(sabun)
+      setPinnedId(null)
+    } else {
+      await setPinned(sabun, id)
+      setPinnedId(id)
+    }
+  }
 
   // ── 초안 편집 ──
   const setField = (gid: number, cid: number, field: FieldKey) => {
@@ -276,7 +341,7 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
     if (!name || !draftHasQuery) return
     setBusy(true)
     try {
-      await saveKeywordPreset(name, draftConfig, presets.length === 0)
+      await saveKeywordPreset(name, draftConfig)
       setSaved(true)
       await loadPresets()
     } catch (e) {
@@ -447,24 +512,55 @@ export function SpecialHoldPanel({ isMaximized = false, onToggleMaximize, vtName
                 필터 설정 <span className="kw-modal__sub">실시간 미리보기</span>
               </h3>
               <div className="kw-modal__head-right">
-                <span className="kw-presetpick">
-                  <span className="material-symbols-outlined kw-presetpick__ic" aria-hidden="true">bookmark</span>
-                  <select
-                    className="kw-presetpick__select"
-                    value=""
-                    onFocus={() => void loadPresets()}
-                    onChange={(e) => applyPresetById(e.target.value)}
-                    aria-label="프리셋 불러오기"
+                <div className="kw-presetpick" ref={presetRef}>
+                  <button
+                    type="button"
+                    className="kw-presetpick__btn"
+                    onClick={() => {
+                      void loadPresets()
+                      setPresetMenuOpen((o) => !o)
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={presetMenuOpen}
                   >
-                    <option value="">프리셋</option>
-                    {presets.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.isDefault ? '★ ' : ''}{p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="kw-presetpick__caret material-symbols-outlined" aria-hidden="true">expand_more</span>
-                </span>
+                    <span className="material-symbols-outlined kw-presetpick__ic" aria-hidden="true">bookmark</span>
+                    프리셋
+                    <span className="kw-presetpick__caret material-symbols-outlined" aria-hidden="true">expand_more</span>
+                  </button>
+                  {presetMenuOpen ? (
+                    <div className="kw-presetmenu" role="listbox">
+                      {presets.length === 0 ? (
+                        <div className="kw-presetmenu__empty">저장된 프리셋이 없어요.</div>
+                      ) : (
+                        presets.map((p) => (
+                          <div className="kw-presetmenu__row" key={p.id}>
+                            <button
+                              type="button"
+                              className="kw-presetmenu__name"
+                              onClick={() => {
+                                applyPresetById(String(p.id))
+                                setPresetMenuOpen(false)
+                              }}
+                            >
+                              {p.name}
+                            </button>
+                            <button
+                              type="button"
+                              className={`kw-presetmenu__pin${pinnedId === p.id ? ' is-pinned' : ''}`}
+                              onClick={() => void togglePin(p.id)}
+                              disabled={!sabun}
+                              aria-pressed={pinnedId === p.id}
+                              title={pinnedId === p.id ? '고정 해제 — 재접속 시 자동 적용 끄기' : '고정 — 재접속해도 자동 적용'}
+                              aria-label={pinnedId === p.id ? `${p.name} 고정 해제` : `${p.name} 고정`}
+                            >
+                              <span className="material-symbols-outlined" aria-hidden="true">push_pin</span>
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  ) : null}
+                </div>
                 <button type="button" className="kw-modal__close" onClick={closeModal} aria-label="닫기">×</button>
               </div>
             </div>
