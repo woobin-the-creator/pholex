@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>키워드 Hold 리디자인 — 드롭다운 기반 시안 A/B/C/D</title>
+<style>
+  /* Monoplex KR — 앱과 동일한 자가호스팅 폰트 (상대경로) */
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+
+  /* 앱 styles.css 의 실제 토큰값 (light) */
+  :root {
+    --font-mono: 'Monoplex KR', ui-monospace, monospace;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --canvas:#ffffff; --soft:#fafafa; --tint:#f0f0f0;
+    --ink:#111; --ink-soft:#555; --ink-mute:#9a9a9a;
+    --rule:rgba(17,17,17,0.08);
+    --hold:#c63927; --hold-soft:#fff2f0;
+    --accent:#111; --save:#5fab3a;
+    --shadow-pop:0 1px 2px rgba(17,17,17,.06), 0 8px 24px rgba(17,17,17,.12);
+  }
+  body[data-theme='dark'] {
+    --canvas:#0c0c0e; --soft:#131316; --tint:#1a1a1d;
+    --ink:#eceae6; --ink-soft:#a6a39d; --ink-mute:#6f6c66;
+    --rule:rgba(236,234,230,0.08);
+    --hold:#e87b6d; --hold-soft:rgba(232,123,109,.1);
+    --accent:#d6b870; --save:#9ccc65;
+    --shadow-pop:0 1px 2px rgba(0,0,0,.5), 0 10px 28px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body {
+    font-family:var(--font-mono); background:var(--tint); color:var(--ink);
+    -webkit-font-smoothing:antialiased; padding:28px; line-height:1.45;
+  }
+  body.solo { background:var(--tint); padding:24px; }
+  body.solo .stage { padding:0; }
+  body.solo .grid { display:block; }
+  body.solo .card { display:none; }
+  body.solo .card.solo-show { display:flex; max-width:760px; margin:0 auto; }
+
+  .stage { max-width:1640px; margin:0 auto; }
+  .pagehead { margin:0 0 20px; }
+  .pagehead h1 { font-size:20px; font-weight:700; letter-spacing:-.3px; margin:0 0 4px; }
+  .pagehead p { font-size:13px; color:var(--ink-soft); margin:0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+
+  /* ── 카드 크롬 (kw-card 재현) ── */
+  .card {
+    display:flex; flex-direction:column; background:var(--canvas);
+    border:1px solid var(--rule); border-radius:12px; padding:18px 18px 16px;
+    box-shadow:0 1px 2px rgba(17,17,17,.04), 0 4px 18px rgba(17,17,17,.04);
+  }
+  body[data-theme='dark'] .card { box-shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.36); }
+  .card__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .titlewrap { display:flex; align-items:baseline; gap:8px; }
+  .idx { font-size:12px; color:var(--ink-mute); }
+  .ctitle { font-size:18px; font-weight:700; letter-spacing:-.3px; margin:0; }
+  .vtag { font-size:10.5px; font-weight:700; color:var(--accent); border:1px solid var(--rule);
+          border-radius:6px; padding:1px 7px; margin-left:2px; }
+  .cmeta { display:flex; align-items:center; gap:10px; }
+  .count { font-size:12px; color:var(--ink-mute); }
+  .count strong { color:var(--accent); font-size:14px; }
+  .iconbtn {
+    display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px;
+    border:1px solid var(--rule); background:transparent; color:var(--ink-soft);
+    border-radius:8px; padding:0 7px; cursor:pointer; font-family:inherit; font-size:13px; gap:5px;
+  }
+  .iconbtn:hover { border-color:var(--accent); color:var(--accent); }
+  .caption { font-size:11.5px; color:var(--ink-mute); margin:2px 0 12px; }
+
+  /* ── 커스텀 드롭다운 (네이티브 select 대체, 열림 상태 캡처 가능) ── */
+  .dd { position:relative; display:inline-flex; }
+  .dd__btn {
+    display:inline-flex; align-items:center; gap:6px; justify-content:space-between;
+    background:var(--soft); color:var(--ink); border:1px solid var(--rule); border-radius:8px;
+    padding:6px 9px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer; min-width:64px;
+  }
+  .dd__btn:hover { border-color:var(--accent); }
+  .dd.is-open .dd__btn { border-color:var(--accent); }
+  .dd__btn .car { color:var(--ink-mute); font-size:10px; transition:transform .18s var(--ease-out); }
+  .dd.is-open .dd__btn .car { transform:rotate(180deg); color:var(--accent); }
+  .dd__menu {
+    position:absolute; top:calc(100% + 5px); left:0; z-index:30; min-width:128px;
+    background:var(--canvas); border:1px solid var(--rule); border-radius:10px; padding:5px;
+    box-shadow:var(--shadow-pop); display:none;
+  }
+  .dd.is-open .dd__menu { display:block; animation:pop .14s var(--ease-out); }
+  @keyframes pop { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+  .dd__opt {
+    display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:7px;
+    font-size:12.5px; color:var(--ink-soft); cursor:pointer; white-space:nowrap;
+  }
+  .dd__opt:hover, .dd__opt.is-active { background:var(--tint); color:var(--ink); }
+  .dd__opt.is-sel { color:var(--ink); font-weight:600; }
+  .dd__opt .ck { margin-left:auto; color:var(--accent); font-size:11px; opacity:0; }
+  .dd__opt.is-sel .ck { opacity:1; }
+
+  .txt {
+    background:var(--canvas); color:var(--ink); border:1px solid var(--rule); border-radius:8px;
+    padding:6px 9px; font-family:inherit; font-size:12.5px; min-width:90px;
+  }
+  .txt:focus { outline:none; border-color:var(--accent); }
+  .txt.caret::after { content:''; }
+  .opval { display:inline-flex; gap:6px; align-items:center; }
+  .op { font-size:11px; color:var(--ink-mute); }
+  .op.exact { color:var(--hold); }
+
+  .btn {
+    border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:8px;
+    padding:7px 13px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn--pri { background:var(--accent); color:var(--canvas); border-color:transparent; }
+  .btn--pri:hover { color:var(--canvas); filter:brightness(1.1); }
+  .btn--ghost { border-style:dashed; color:var(--ink-soft); font-weight:600; }
+  .btn--ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .x { border:0; background:transparent; color:var(--ink-mute); cursor:pointer; font-size:15px; line-height:1; padding:2px 4px; }
+  .x:hover { color:var(--hold); }
+  .footer { display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .spacer { flex:1 1 auto; }
+  .or-sep { display:flex; align-items:center; gap:9px; margin:8px 0; }
+  .or-sep::before, .or-sep::after { content:''; flex:1; height:1px; background:var(--rule); }
+  .or-chip { font-size:10.5px; font-weight:800; letter-spacing:.06em; color:var(--hold);
+             border:1.5px solid var(--hold); border-radius:7px; padding:2px 9px; background:var(--hold-soft); }
+
+  /* ── 결과 테이블 (공통, 작게) ── */
+  .res { margin-top:14px; border-top:1px solid var(--rule); padding-top:10px; }
+  table.lot { width:100%; border-collapse:collapse; font-size:11.5px; }
+  table.lot th { text-align:left; color:var(--ink-mute); font-weight:600; font-size:10.5px;
+                 padding:4px 8px; border-bottom:1px solid var(--rule); }
+  table.lot td { padding:5px 8px; border-bottom:1px solid var(--rule); color:var(--ink-soft); }
+  table.lot td:first-child { color:var(--ink); font-weight:500; }
+  .pill { display:inline-block; border-radius:999px; padding:1px 8px; font-size:10px; font-weight:700;
+          background:var(--hold-soft); color:var(--hold); }
+
+  /* ════════ A. 행 폼 빌더 ════════ */
+  .a-group { border:1px solid var(--rule); border-radius:12px; padding:11px; background:var(--soft); }
+  .a-row { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .a-and { font-size:10.5px; font-weight:700; color:var(--ink-mute); width:34px; text-align:right; flex:none; }
+  .a-add { margin-top:2px; }
+
+  /* ════════ B. 순차 드롭다운(마법사) ════════ */
+  .b-compose {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:var(--soft); border:1px solid var(--rule); border-radius:12px; padding:11px 12px;
+  }
+  .b-compose .lead { font-size:11px; color:var(--ink-mute); font-weight:700; margin-right:2px; }
+  .b-big .dd__btn { min-width:138px; font-size:13px; padding:8px 11px; }
+  .b-list { list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:7px; }
+  .b-item { display:flex; align-items:center; gap:10px; padding:8px 11px; border:1px solid var(--rule);
+            border-radius:9px; background:var(--canvas); font-size:12.5px; }
+  .b-item .n { font-size:11px; font-weight:700; color:var(--accent); flex:none; width:16px; }
+  .b-item .phrase { flex:1; }
+  .b-item .phrase b { font-weight:700; }
+  .b-item .conj { font-size:10.5px; color:var(--ink-mute); font-weight:700; margin-right:4px; }
+  .b-tools { display:flex; gap:2px; }
+
+  /* ════════ C. Popover 집약 패널 ════════ */
+  .c-summary { display:flex; align-items:center; gap:9px; background:var(--soft); border:1px solid var(--rule);
+               border-radius:10px; padding:9px 12px; }
+  .c-summary .lbl { font-size:10.5px; color:var(--ink-mute); letter-spacing:.08em; font-weight:700; }
+  .c-summary code { flex:1; font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .c-trigger { position:relative; }
+  .c-pop {
+    position:absolute; top:calc(100% + 8px); right:0; z-index:40; width:430px;
+    background:var(--canvas); border:1px solid var(--rule); border-radius:12px; box-shadow:var(--shadow-pop);
+    display:none; overflow:hidden;
+  }
+  .c-trigger.is-open .c-pop { display:block; animation:pop .16s var(--ease-out); }
+  .c-pop__grid { display:grid; grid-template-columns:128px 1fr; }
+  .c-fields { border-right:1px solid var(--rule); padding:8px; background:var(--soft); }
+  .c-field { display:flex; align-items:center; justify-content:space-between; padding:7px 9px; border-radius:7px;
+             font-size:12.5px; color:var(--ink-soft); cursor:pointer; }
+  .c-field:hover { background:var(--tint); color:var(--ink); }
+  .c-field.is-sel { background:var(--canvas); color:var(--ink); font-weight:700; box-shadow:0 0 0 1px var(--rule); }
+  .c-field .dot { width:5px; height:5px; border-radius:50%; background:var(--accent); opacity:0; }
+  .c-field.has-val .dot { opacity:1; }
+  .c-detail { padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .c-detail .fname { font-size:13px; font-weight:700; }
+  .c-detail .row { display:flex; gap:7px; align-items:center; }
+  .c-conds { display:flex; flex-direction:column; gap:6px; }
+  .c-cond { font-size:11.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .c-cond .pill-s { background:var(--tint); border-radius:6px; padding:1px 7px; color:var(--ink); font-weight:600; }
+  .c-pop__foot { display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--rule); }
+
+  /* ════════ D. 쿼리 표(Grid) ════════ */
+  table.d-grid { width:100%; border-collapse:separate; border-spacing:0; }
+  table.d-grid th { text-align:left; font-size:10px; color:var(--ink-mute); font-weight:700; letter-spacing:.04em;
+                    padding:0 8px 6px; }
+  table.d-grid td { padding:4px 6px; }
+  table.d-grid tbody tr { background:var(--soft); }
+  table.d-grid tbody td { border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+  table.d-grid tbody td:first-child { border-left:1px solid var(--rule); border-radius:9px 0 0 9px; }
+  table.d-grid tbody td:last-child { border-right:1px solid var(--rule); border-radius:0 9px 9px 0; }
+  table.d-grid tbody tr + tr td { /* gap via spacer row */ }
+  .d-grp { font-size:11px; font-weight:700; color:var(--accent); }
+  .d-gap td { height:6px; padding:0; border:0; background:transparent; }
+  .d-add { margin-top:4px; }
+  .d-note { font-size:11px; color:var(--ink-mute); margin-top:10px; }
+  .d-note b { color:var(--ink-soft); }
+</style>
+</head>
+<body data-theme="light">
+<div class="stage">
+  <div class="pagehead">
+    <h1>키워드 Hold 섹션 — 드롭다운 기반 리디자인 시안</h1>
+    <p>chip 빌더를 걷어내고 "기본적인 드롭다운" 중심으로. 데이터 모델(OR 그룹 ↔ AND 조건)과 warm-minimalism 톤은 유지.</p>
+  </div>
+  <div class="grid">
+
+    <!-- ════════════ A ════════════ -->
+    <article class="card solo-A" data-v="A">
+      <div class="card__head">
+        <div class="titlewrap"><span class="idx">— 05</span><h2 class="ctitle">키워드 Hold</h2><span class="vtag">A · 행 폼</span></div>
+        <div class="cmeta"><span class="count"><strong>137</strong>건</span><button class="iconbtn">⤢</button></div>
+      </div>
+      <p class="caption">조건마다 한 줄 — 필드·연산을 드롭다운으로, OR은 그룹 박스로 분리.</p>
+
+      <div class="a-group" id="A-g1">
+        <div class="a-row">
+          <span class="a-and"></span>
+          <div class="dd" data-field><button class="dd__btn"><span class="lab">설비</span><span class="car">▼</span></button></div>
+          <div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+          <input class="txt" value="ETCH" />
+          <button class="x">×</button>
+        </div>
+        <div class="a-row" id="A-r2" style="display:none">
+          <span class="a-and">그리고</span>
+          <div class="dd" data-field><button class="dd__btn"><span class="lab">필드 선택</span><span class="car">▼</span></button></div>
+          <div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+          <input class="txt" placeholder="값" />
+          <button class="x">×</button>
+        </div>
+        <button class="btn btn--ghost a-add" id="A-addcond">+ 조건 추가</button>
+      </div>
+
+      <div class="or-sep" id="A-orsep" style="display:none"><span class="or-chip">또는</span></div>
+      <div class="a-group" id="A-g2" style="display:none">
+        <div class="a-row">
+          <span class="a-and"></span>
+          <div class="dd" data-field><button class="dd__btn"><span class="lab">상태</span><span class="car">▼</span></button></div>
+          <div class="dd" data-op><button class="dd__btn"><span class="lab op exact">정확히</span><span class="car">▼</span></button></div>
+          <input class="txt" value="Hold" />
+          <button class="x">×</button>
+        </div>
+        <button class="btn btn--ghost a-add">+ 조건 추가</button>
+      </div>
+      <button class="btn btn--ghost" id="A-addor" style="margin-top:10px">+ 또는(OR) 그룹</button>
+
+      <div class="footer">
+        <button class="btn btn--pri">검색</button>
+        <span class="spacer"></span>
+        <div class="dd" data-preset><button class="dd__btn"><span class="lab">프리셋</span><span class="car">▼</span></button></div>
+        <button class="iconbtn" title="저장">저장</button>
+        <button class="iconbtn" title="초기화">초기화</button>
+      </div>
+      <div class="res" data-res></div>
+    </article>
+
+    <!-- ════════════ B ════════════ -->
+    <article class="card solo-B" data-v="B">
+      <div class="card__head">
+        <div class="titlewrap"><span class="idx">— 05</span><h2 class="ctitle">키워드 Hold</h2><span class="vtag">B · 순차</span></div>
+        <div class="cmeta"><span class="count"><strong>137</strong>건</span><button class="iconbtn">⤢</button></div>
+      </div>
+      <p class="caption">하나씩 또렷하게 — 큰 드롭다운으로 필드 고르고 값 넣어 "추가", 아래에 문장으로 누적.</p>
+
+      <div class="b-compose">
+        <span class="lead">조건 추가</span>
+        <div class="dd b-big" data-field id="B-field"><button class="dd__btn"><span class="lab">필드 선택</span><span class="car">▼</span></button></div>
+        <div class="dd" data-op id="B-op"><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+        <input class="txt" id="B-val" placeholder="값 입력" />
+        <button class="btn" id="B-addbtn">+ 추가</button>
+      </div>
+
+      <ul class="b-list" id="B-list">
+        <li class="b-item"><span class="n">1</span><span class="phrase"><b>설비</b>에 '<b>ETCH</b>' 포함</span>
+          <span class="b-tools"><button class="iconbtn">편집</button><button class="x">×</button></span></li>
+        <li class="b-item" id="B-i2" style="display:none"><span class="n">2</span><span class="phrase"><span class="conj">그리고</span><b>공정스텝</b>에 '<b>PHOTO</b>' 포함</span>
+          <span class="b-tools"><button class="iconbtn">편집</button><button class="x">×</button></span></li>
+        <li style="list-style:none" id="B-orline" style="display:none"><div class="or-sep"><span class="or-chip">또는</span></div></li>
+        <li class="b-item" id="B-i3" style="display:none"><span class="n">3</span><span class="phrase"><b>상태</b>가 정확히 '<b>Hold</b>'</span>
+          <span class="b-tools"><button class="iconbtn">편집</button><button class="x">×</button></span></li>
+      </ul>
+      <button class="btn btn--ghost" id="B-addor" style="margin-top:10px">+ 또는(OR) 그룹으로 분리</button>
+
+      <div class="footer">
+        <button class="btn btn--pri">검색</button>
+        <span class="spacer"></span>
+        <div class="dd" data-preset><button class="dd__btn"><span class="lab">프리셋</span><span class="car">▼</span></button></div>
+        <button class="iconbtn" title="저장">저장</button>
+      </div>
+      <div class="res" data-res></div>
+    </article>
+
+    <!-- ════════════ C ════════════ -->
+    <article class="card solo-C" data-v="C">
+      <div class="card__head">
+        <div class="titlewrap"><span class="idx">— 05</span><h2 class="ctitle">키워드 Hold</h2><span class="vtag">C · 패널</span></div>
+        <div class="cmeta">
+          <div class="c-trigger" id="C-trigger">
+            <button class="iconbtn" id="C-openbtn">필터 <span style="color:var(--ink-mute)">·3</span> ▾</button>
+            <div class="c-pop">
+              <div class="c-pop__grid">
+                <div class="c-fields" id="C-fields">
+                  <div class="c-field is-sel has-val" data-f="설비"><span>설비</span><span class="dot"></span></div>
+                  <div class="c-field" data-f="공정스텝"><span>공정스텝</span><span class="dot"></span></div>
+                  <div class="c-field" data-f="홀드사유"><span>홀드사유</span><span class="dot"></span></div>
+                  <div class="c-field has-val" data-f="상태"><span>상태</span><span class="dot"></span></div>
+                  <div class="c-field" data-f="Lot ID"><span>Lot ID</span><span class="dot"></span></div>
+                </div>
+                <div class="c-detail">
+                  <div class="fname" id="C-fname">설비</div>
+                  <div class="row">
+                    <div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+                    <input class="txt" id="C-val" value="ETCH" style="flex:1" />
+                  </div>
+                  <div class="c-conds" id="C-conds">
+                    <div class="c-cond"><span class="pill-s">설비 ⊃ ETCH</span></div>
+                    <div class="c-cond"><span class="or-chip" style="font-size:9px">또는</span><span class="pill-s">상태 = Hold</span></div>
+                  </div>
+                  <button class="btn btn--ghost" style="align-self:flex-start" id="C-addcond">+ 이 그룹에 조건 추가</button>
+                </div>
+              </div>
+              <div class="c-pop__foot">
+                <button class="btn btn--ghost" id="C-addor">+ 또는 그룹</button>
+                <span class="spacer"></span>
+                <button class="btn btn--pri" id="C-apply">적용</button>
+              </div>
+            </div>
+          </div>
+          <span class="count"><strong>137</strong>건</span><button class="iconbtn">⤢</button>
+        </div>
+      </div>
+      <p class="caption">평소엔 요약 한 줄. <b>필터 ▾</b>를 누르면 좌(필드)·우(값) 2단 패널에서 한곳에 편집.</p>
+
+      <div class="c-summary">
+        <span class="lbl">필터</span>
+        <code id="C-code">(설비에 'ETCH' 포함) 또는 (상태가 정확히 'Hold')</code>
+        <button class="iconbtn" id="C-openbtn2">편집 ▾</button>
+      </div>
+      <div class="res" data-res></div>
+    </article>
+
+    <!-- ════════════ D ════════════ -->
+    <article class="card solo-D" data-v="D">
+      <div class="card__head">
+        <div class="titlewrap"><span class="idx">— 05</span><h2 class="ctitle">키워드 Hold</h2><span class="vtag">D · 표</span></div>
+        <div class="cmeta"><span class="count"><strong>137</strong>건</span><button class="iconbtn">⤢</button></div>
+      </div>
+      <p class="caption">조건을 표로 — 각 칸이 드롭다운. "그룹" 열에서 OR 묶음을 지정. 조건이 많아도 한눈에.</p>
+
+      <table class="d-grid">
+        <thead><tr><th>필드</th><th>조건</th><th style="width:34%">값</th><th>그룹</th><th></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="dd" data-field><button class="dd__btn"><span class="lab">설비</span><span class="car">▼</span></button></div></td>
+            <td><div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div></td>
+            <td><input class="txt" value="ETCH" style="width:100%" /></td>
+            <td><div class="dd" data-grp><button class="dd__btn"><span class="lab d-grp">G1</span><span class="car">▼</span></button></div></td>
+            <td><button class="x">×</button></td>
+          </tr>
+          <tr class="d-gap"><td colspan="5"></td></tr>
+          <tr>
+            <td><div class="dd" data-field><button class="dd__btn"><span class="lab">공정스텝</span><span class="car">▼</span></button></div></td>
+            <td><div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div></td>
+            <td><input class="txt" value="PHOTO" style="width:100%" /></td>
+            <td><div class="dd" data-grp><button class="dd__btn"><span class="lab d-grp">G1</span><span class="car">▼</span></button></div></td>
+            <td><button class="x">×</button></td>
+          </tr>
+          <tr class="d-gap"><td colspan="5"></td></tr>
+          <tr id="D-r3" style="display:none">
+            <td><div class="dd" data-field><button class="dd__btn"><span class="lab">상태</span><span class="car">▼</span></button></div></td>
+            <td><div class="dd" data-op><button class="dd__btn"><span class="lab op exact">정확히</span><span class="car">▼</span></button></div></td>
+            <td><input class="txt" value="Hold" style="width:100%" /></td>
+            <td><div class="dd" data-grp><button class="dd__btn"><span class="lab d-grp">G2</span><span class="car">▼</span></button></div></td>
+            <td><button class="x">×</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn--ghost d-add" id="D-addrow">+ 행 추가</button>
+      <div class="d-note" id="D-note"><b>G1</b>(설비 ∧ 공정스텝) <b>또는</b> <b>G2</b>(상태)</div>
+
+      <div class="footer">
+        <button class="btn btn--pri">검색</button>
+        <span class="spacer"></span>
+        <div class="dd" data-preset><button class="dd__btn"><span class="lab">프리셋</span><span class="car">▼</span></button></div>
+        <button class="iconbtn" title="저장">저장</button>
+        <button class="iconbtn" title="초기화">초기화</button>
+      </div>
+      <div class="res" data-res></div>
+    </article>
+
+  </div>
+</div>
+
+<script>
+  // ── URL params: ?v=A&theme=dark → solo card for recording ──
+  const params = new URLSearchParams(location.search);
+  const solo = params.get('v');
+  const theme = params.get('theme') || 'light';
+  document.body.dataset.theme = theme;
+
+  // 결과 테이블 (공통) 주입
+  const RESROWS = [
+    ['TXJ4821.03','Hold','ETCH-07','PHOTO-LITHO','레시피 편차 검토','14:21'],
+    ['TXJ4790.11','Hold','ETCH-02','ETCH-MAIN','챔버 파티클 경보','14:08'],
+    ['QPL2207.41','Hold','PHO-11','PHOTO-COAT','오버레이 재측정','13:52'],
+  ];
+  document.querySelectorAll('[data-res]').forEach((el) => {
+    el.innerHTML = `<table class="lot"><thead><tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Upd</th></tr></thead><tbody>${
+      RESROWS.map(r=>`<tr><td>${r[0]}</td><td><span class="pill">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('')
+    }</tbody></table>`;
+  });
+
+  // ── 필드/연산 드롭다운 옵션 채우기 ──
+  const FIELDS = ['설비','공정스텝','홀드사유','Lot ID','상태'];
+  const OPS = ['포함','정확히'];
+  const PRESETS = ['ETCH 라인 경보','PHOTO 재측정','★ 기본 — 전 라인 Hold'];
+  function fillMenu(dd) {
+    const cur = dd.querySelector('.lab').textContent.trim();
+    let opts = FIELDS;
+    if (dd.hasAttribute('data-op')) opts = OPS;
+    else if (dd.hasAttribute('data-preset')) opts = PRESETS;
+    else if (dd.hasAttribute('data-grp')) opts = ['G1','G2','G3'];
+    const menu = document.createElement('div');
+    menu.className = 'dd__menu';
+    menu.innerHTML = opts.map(o=>`<div class="dd__opt${o===cur?' is-sel':''}" data-val="${o}">${o}<span class="ck">✓</span></div>`).join('');
+    dd.appendChild(menu);
+  }
+  document.querySelectorAll('.dd').forEach(fillMenu);
+
+  function closeAll() { document.querySelectorAll('.dd.is-open').forEach(d=>d.classList.remove('is-open')); }
+  document.querySelectorAll('.dd__btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const dd = btn.closest('.dd');
+      const wasOpen = dd.classList.contains('is-open');
+      closeAll();
+      if (!wasOpen) dd.classList.add('is-open');
+    });
+  });
+  document.querySelectorAll('.dd__opt').forEach(opt=>{
+    opt.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const dd = opt.closest('.dd');
+      const lab = dd.querySelector('.lab');
+      lab.textContent = opt.dataset.val;
+      lab.classList.toggle('exact', opt.dataset.val==='정확히');
+      dd.querySelectorAll('.dd__opt').forEach(o=>o.classList.remove('is-sel'));
+      opt.classList.add('is-sel');
+      dd.classList.remove('is-open');
+    });
+  });
+  document.addEventListener('click', closeAll);
+
+  // C: 트리거 open + 필드 전환
+  const cTrig = document.getElementById('C-trigger');
+  if (cTrig) {
+    const open = (e)=>{ e&&e.stopPropagation(); cTrig.classList.add('is-open'); };
+    document.getElementById('C-openbtn').addEventListener('click', open);
+    document.getElementById('C-openbtn2').addEventListener('click', open);
+    cTrig.querySelector('.c-pop').addEventListener('click', e=>e.stopPropagation());
+    document.querySelectorAll('#C-fields .c-field').forEach(f=>{
+      f.addEventListener('click', ()=>{
+        document.querySelectorAll('#C-fields .c-field').forEach(x=>x.classList.remove('is-sel'));
+        f.classList.add('is-sel');
+        document.getElementById('C-fname').textContent = f.dataset.f;
+        const op = cTrig.querySelector('[data-op] .lab');
+        op.textContent = f.dataset.f==='상태' ? '정확히' : '포함';
+        op.classList.toggle('exact', f.dataset.f==='상태');
+      });
+    });
+  }
+
+  // ── 녹화용 결정적 타임라인 ──
+  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+  async function typeInto(el, text, per=70){ el.value=''; el.focus(); for(const ch of text){ el.value+=ch; await sleep(per);} }
+  function openDD(dd){ closeAll(); dd.classList.add('is-open'); }
+  function pick(dd, val){ const o=[...dd.querySelectorAll('.dd__opt')].find(x=>x.dataset.val===val); if(o) o.click(); }
+
+  window.__play = async function(v){
+    await sleep(700);
+    if (v==='A') {
+      const g1 = document.getElementById('A-g1');
+      const fdd = g1.querySelector('.a-row [data-field]');
+      openDD(fdd); await sleep(900); pick(fdd,'설비'); await sleep(500);
+      document.getElementById('A-addcond').click();
+      const r2 = document.getElementById('A-r2'); r2.style.display='flex'; await sleep(500);
+      const f2 = r2.querySelector('[data-field]'); openDD(f2); await sleep(900); pick(f2,'공정스텝'); await sleep(400);
+      await typeInto(r2.querySelector('.txt'),'PHOTO'); await sleep(500);
+      document.getElementById('A-addor').click();
+      document.getElementById('A-orsep').style.display='flex';
+      document.getElementById('A-g2').style.display='block'; await sleep(1100);
+    } else if (v==='B') {
+      const fdd=document.getElementById('B-field');
+      openDD(fdd); await sleep(1000); pick(fdd,'공정스텝'); await sleep(500);
+      await typeInto(document.getElementById('B-val'),'PHOTO'); await sleep(400);
+      document.getElementById('B-addbtn').click();
+      document.getElementById('B-i2').style.display='flex'; await sleep(900);
+      document.getElementById('B-addor').click();
+      document.getElementById('B-orline').style.display='block';
+      document.getElementById('B-i3').style.display='flex'; await sleep(1100);
+    } else if (v==='C') {
+      document.getElementById('C-openbtn').click(); await sleep(1000);
+      document.querySelector('#C-fields [data-f="공정스텝"]').click(); await sleep(700);
+      await typeInto(document.getElementById('C-val'),'PHOTO'); await sleep(500);
+      document.getElementById('C-addcond').click(); await sleep(400);
+      document.querySelector('#C-fields [data-f="상태"]').click(); await sleep(1100);
+    } else if (v==='D') {
+      const r3=document.getElementById('D-r3');
+      document.getElementById('D-addrow').click();
+      r3.style.display='table-row'; await sleep(600);
+      const fdd=r3.querySelector('[data-field]'); openDD(fdd); await sleep(950); pick(fdd,'상태'); await sleep(500);
+      const gdd=r3.querySelector('[data-grp]'); openDD(gdd); await sleep(850); pick(gdd,'G2'); await sleep(900);
+    }
+    await sleep(900);
+    window.__done = true;
+  };
+
+  // solo 모드: 해당 카드만 보이고 자동 재생
+  if (solo) {
+    document.body.classList.add('solo');
+    const card = document.querySelector(`.card[data-v="${solo}"]`);
+    if (card) card.classList.add('solo-show');
+  }
+</script>
+</body>
+</html>
