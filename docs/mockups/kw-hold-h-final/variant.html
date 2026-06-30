@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>키워드 Hold — H 확정안 (풋터 저장 UI)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" />
+<style>
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
+  @font-face { font-family:'Monoplex KR'; src:url('../../../frontend/public/fonts/MonoplexKR-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+
+  :root {
+    --font-mono:'Monoplex KR', ui-monospace, monospace;
+    --ease-out:cubic-bezier(0.16,1,0.3,1);
+    --canvas:#ffffff; --soft:#fafafa; --tint:#f0f0f0;
+    --ink:#111; --ink-soft:#555; --ink-mute:#9a9a9a;
+    --rule:rgba(17,17,17,0.08);
+    --hold:#c63927; --hold-soft:#fff2f0;
+    --accent:#111; --save:#5fab3a;
+    --shadow-pop:0 1px 2px rgba(17,17,17,.06), 0 8px 24px rgba(17,17,17,.12);
+    --shadow-modal:0 12px 48px rgba(17,17,17,.22), 0 2px 8px rgba(17,17,17,.1);
+    --scrim:rgba(17,17,17,.34);
+  }
+  body[data-theme='dark'] {
+    --canvas:#0c0c0e; --soft:#131316; --tint:#1a1a1d;
+    --ink:#eceae6; --ink-soft:#a6a39d; --ink-mute:#6f6c66;
+    --rule:rgba(236,234,230,0.08);
+    --hold:#e87b6d; --hold-soft:rgba(232,123,109,.1);
+    --accent:#d6b870; --save:#9ccc65;
+    --shadow-pop:0 1px 2px rgba(0,0,0,.5), 0 10px 28px rgba(0,0,0,.55);
+    --shadow-modal:0 16px 56px rgba(0,0,0,.66), 0 2px 10px rgba(0,0,0,.5);
+    --scrim:rgba(0,0,0,.58);
+  }
+  .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-size:18px; line-height:1; font-weight:400; }
+
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { font-family:var(--font-mono); background:var(--tint); color:var(--ink); -webkit-font-smoothing:antialiased; padding:24px; line-height:1.45; }
+  .stage { max-width:880px; margin:0 auto; }
+  .pagehead { margin:0 0 16px; }
+  .pagehead h1 { font-size:18px; font-weight:700; letter-spacing:-.3px; margin:0 0 4px; }
+  .pagehead p { font-size:12.5px; color:var(--ink-soft); margin:0; }
+
+  .card { position:relative; display:flex; flex-direction:column; background:var(--canvas); border:1px solid var(--rule);
+          border-radius:12px; padding:18px; min-height:540px; box-shadow:0 1px 2px rgba(17,17,17,.04), 0 4px 18px rgba(17,17,17,.04); overflow:hidden; }
+  body[data-theme='dark'] .card { box-shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.36); }
+  .card__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .titlewrap { display:flex; align-items:baseline; gap:8px; }
+  .idx { font-size:12px; color:var(--ink-mute); }
+  .ctitle { font-size:18px; font-weight:700; letter-spacing:-.3px; margin:0; }
+  .vtag { font-size:10.5px; font-weight:700; color:var(--accent); border:1px solid var(--rule); border-radius:6px; padding:1px 7px; }
+  .cmeta { display:flex; align-items:center; gap:10px; }
+  .count { font-size:12px; color:var(--ink-mute); } .count strong { color:var(--accent); font-size:14px; }
+  .caption { font-size:11.5px; color:var(--ink-mute); margin:2px 0 14px; }
+
+  .iconbtn { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-width:30px; height:30px;
+             border:1px solid var(--rule); background:transparent; color:var(--ink-soft); border-radius:8px; padding:0 8px; cursor:pointer; font-family:inherit; font-size:13px; }
+  .iconbtn:hover { border-color:var(--accent); color:var(--accent); }
+
+  .filterbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .filter-btn { display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:var(--canvas); border:1px solid transparent;
+                border-radius:9px; padding:8px 14px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+  .filter-btn:hover { filter:brightness(1.12); }
+  .filter-btn .cnt { background:var(--canvas); color:var(--accent); border-radius:999px; font-size:10.5px; font-weight:700; padding:0 6px; line-height:16px; }
+  .summary { flex:1; font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .summary .or { color:var(--hold); font-weight:700; }
+
+  table.lot { width:100%; border-collapse:collapse; font-size:11.5px; }
+  table.lot th { text-align:left; color:var(--ink-mute); font-weight:600; font-size:10.5px; padding:4px 8px; border-bottom:1px solid var(--rule); }
+  table.lot td { padding:5px 8px; border-bottom:1px solid var(--rule); color:var(--ink-soft); }
+  table.lot td:first-child { color:var(--ink); font-weight:500; }
+  .pill { display:inline-block; border-radius:999px; padding:1px 8px; font-size:10px; font-weight:700; background:var(--hold-soft); color:var(--hold); }
+
+  /* 드롭다운 */
+  .dd { position:relative; display:inline-flex; }
+  .dd__btn { display:inline-flex; align-items:center; gap:6px; justify-content:space-between; background:var(--soft); color:var(--ink);
+             border:1px solid var(--rule); border-radius:8px; padding:6px 9px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer; min-width:60px; white-space:nowrap; }
+  .dd__btn .lab { white-space:nowrap; }
+  .dd__btn:hover, .dd.is-open .dd__btn { border-color:var(--accent); }
+  .dd__btn .car { color:var(--ink-mute); font-size:10px; transition:transform .18s var(--ease-out); }
+  .dd.is-open .dd__btn .car { transform:rotate(180deg); color:var(--accent); }
+  .dd__menu { position:absolute; top:calc(100% + 5px); left:0; z-index:60; min-width:150px; background:var(--canvas); border:1px solid var(--rule);
+              border-radius:10px; padding:5px; box-shadow:var(--shadow-pop); display:none; }
+  .dd--right .dd__menu { left:auto; right:0; }
+  .dd.is-open .dd__menu { display:block; animation:pop .14s var(--ease-out); }
+  @keyframes pop { from { opacity:0; transform:translateY(-4px);} to { opacity:1; transform:none; } }
+  .dd__opt { display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:7px; font-size:12.5px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+  .dd__opt:hover { background:var(--tint); color:var(--ink); } .dd__opt.is-sel { color:var(--ink); font-weight:600; }
+  .dd__opt .ck { margin-left:auto; color:var(--accent); font-size:11px; opacity:0; } .dd__opt.is-sel .ck { opacity:1; }
+  .dd__opt .star { color:var(--save); }
+
+  .txt { background:var(--canvas); color:var(--ink); border:1px solid var(--rule); border-radius:8px; padding:6px 9px; font-family:inherit; font-size:12.5px; min-width:80px; }
+  .txt:focus { outline:none; border-color:var(--accent); }
+  .op { font-size:11px; color:var(--ink-mute); } .op.exact { color:var(--hold); }
+  .btn { border:1px solid var(--rule); background:transparent; color:var(--ink); border-radius:8px; padding:7px 13px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn--pri { background:var(--accent); color:var(--canvas); border-color:transparent; } .btn--pri:hover { color:var(--canvas); filter:brightness(1.1); }
+  .btn--ghost { border-style:dashed; color:var(--ink-soft); } .btn--ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .x { border:0; background:transparent; color:var(--ink-mute); cursor:pointer; font-size:15px; line-height:1; padding:2px 4px; } .x:hover { color:var(--hold); }
+  .grp { border:1px solid var(--rule); border-radius:11px; padding:11px; background:var(--soft); }
+  .grow { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .grow .and { font-size:10.5px; font-weight:700; color:var(--ink-mute); width:34px; text-align:right; flex:none; }
+  .spacer { flex:1 1 auto; }
+
+  /* 모달 */
+  .scrim { position:absolute; inset:0; background:var(--scrim); z-index:50; display:none; } .scrim.is-open { display:block; animation:fade .18s var(--ease-out); }
+  @keyframes fade { from {opacity:0;} to {opacity:1;} }
+  .modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.97); opacity:0; z-index:55; width:720px;
+           background:var(--canvas); border:1px solid var(--rule); border-radius:14px; box-shadow:var(--shadow-modal); display:none; flex-direction:column; max-height:calc(100% - 24px); overflow:hidden; }
+  .modal.is-open { display:flex; animation:rise .2s var(--ease-out) forwards; }
+  @keyframes rise { to { transform:translate(-50%,-50%) scale(1); opacity:1; } }
+  .modal__head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 16px; border-bottom:1px solid var(--rule); }
+  .modal__head h3 { margin:0; font-size:14px; font-weight:700; } .modal__head .sub { font-size:11px; color:var(--ink-mute); margin-left:8px; font-weight:400; }
+  .head-right { display:flex; align-items:center; gap:8px; }
+  .modal__body { padding:0; overflow:auto; }
+  .modal__foot { display:flex; align-items:center; gap:8px; padding:11px 14px; border-top:1px solid var(--rule); flex-wrap:nowrap; }
+  .foot-div { width:1px; align-self:stretch; background:var(--rule); margin:2px 4px; }
+  .foot-name { min-width:150px; }
+  .iconbtn--save { color:var(--save); border-color:color-mix(in srgb, var(--save) 40%, var(--rule)); }
+  .iconbtn--save:hover { border-color:var(--save); color:var(--save); }
+  .iconbtn--save.ok { background:color-mix(in srgb, var(--save) 14%, var(--canvas)); border-color:var(--save); }
+  .saved-note { font-size:11px; color:var(--save); font-weight:700; display:inline-flex; align-items:center; gap:4px; opacity:0; transition:opacity .2s var(--ease-out); }
+  .saved-note.show { opacity:1; }
+
+  /* H split */
+  .h-grid { display:grid; grid-template-columns:1fr 270px; }
+  .h-build { padding:14px; display:flex; flex-direction:column; gap:9px; border-right:1px solid var(--rule); }
+  .h-preview { padding:14px; background:var(--soft); display:flex; flex-direction:column; gap:10px; }
+  .h-preview .ph { font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--ink-mute); }
+  .h-nl { font-size:11.5px; color:var(--ink-soft); line-height:1.5; } .h-nl b { color:var(--ink); }
+  .h-match { font-size:12px; color:var(--ink-soft); } .h-match strong { color:var(--accent); font-size:16px; }
+  .h-rows { display:flex; flex-direction:column; gap:4px; }
+  .h-row { font-size:10.5px; color:var(--ink-soft); display:flex; gap:7px; align-items:center; padding:4px 7px; background:var(--canvas); border:1px solid var(--rule); border-radius:7px; }
+  .h-row .lid { color:var(--ink); font-weight:600; }
+</style>
+</head>
+<body data-theme="light">
+<div class="stage">
+  <div class="pagehead">
+    <h1>키워드 Hold — H 확정안 · 풋터 저장 UI</h1>
+    <p>불러오기는 헤더 <b>프리셋 ▾</b>, 저장은 풋터 <b>[취소][적용] │ [필터 이름][💾]</b>. 라이브 미리보기 유지.</p>
+  </div>
+
+  <article class="card" data-v="H">
+    <div class="card__head">
+      <div class="titlewrap"><span class="idx">— 05</span><h2 class="ctitle">키워드 Hold</h2><span class="vtag">H · 확정</span></div>
+      <div class="cmeta"><span class="count"><strong>137</strong>건</span><button class="iconbtn">⤢</button></div>
+    </div>
+    <p class="caption">필터 버튼 → 모달. 좌측 빌더 / 우측 실시간 미리보기. 프리셋 불러오기=헤더, 저장=풋터.</p>
+    <div class="filterbar">
+      <button class="filter-btn" data-open>필터 설정 <span class="cnt">1</span></button>
+      <span class="summary">(설비에 'ETCH' 포함)</span>
+    </div>
+    <div class="res" data-res></div>
+
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head">
+        <h3>필터 설정 <span class="sub">실시간 미리보기</span></h3>
+        <div class="head-right">
+          <!-- 불러오기 -->
+          <div class="dd dd--right" data-preset>
+            <button class="dd__btn"><span class="material-symbols-outlined" style="font-size:16px">bookmark</span><span class="lab">프리셋</span><span class="car">▼</span></button>
+          </div>
+          <button class="x" data-close>×</button>
+        </div>
+      </div>
+      <div class="modal__body">
+        <div class="h-grid">
+          <div class="h-build">
+            <div class="grp">
+              <div class="grow"><span class="and"></span>
+                <div class="dd" data-field><button class="dd__btn"><span class="lab">설비</span><span class="car">▼</span></button></div>
+                <div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+                <input class="txt" value="ETCH" style="min-width:64px" /><button class="x">×</button>
+              </div>
+              <div class="grow" id="H-r2" style="display:none"><span class="and">그리고</span>
+                <div class="dd" data-field><button class="dd__btn"><span class="lab">공정스텝</span><span class="car">▼</span></button></div>
+                <div class="dd" data-op><button class="dd__btn"><span class="lab">포함</span><span class="car">▼</span></button></div>
+                <input class="txt" value="PHOTO" style="min-width:64px" /><button class="x">×</button>
+              </div>
+              <button class="btn btn--ghost" id="H-add">+ 조건 추가</button>
+            </div>
+            <button class="btn btn--ghost" style="align-self:flex-start">+ 또는(OR) 그룹</button>
+          </div>
+          <div class="h-preview">
+            <div class="ph">미리보기</div>
+            <div class="h-nl" id="H-nl">다음 중 하나라도 맞는 lot:<br>(<b>설비</b>에 '<b>ETCH</b>' 포함)</div>
+            <div class="h-match"><strong id="H-cnt">137</strong> 건 매칭</div>
+            <div class="h-rows" id="H-rows"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button class="btn">초기화</button>
+        <span class="spacer"></span>
+        <button class="btn" data-close>취소</button>
+        <button class="btn btn--pri" data-close>적용</button>
+        <span class="foot-div"></span>
+        <input class="txt foot-name" id="H-pname" placeholder="필터 이름" />
+        <button class="iconbtn iconbtn--save" id="H-save" title="프리셋 저장" aria-label="프리셋 저장"><span class="material-symbols-outlined">save</span></button>
+        <span class="saved-note" id="H-saved"><span class="material-symbols-outlined" style="font-size:15px">check_circle</span>저장됨</span>
+      </div>
+    </div>
+  </article>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  document.body.dataset.theme = params.get('theme') || 'light';
+  const RESROWS = [
+    ['TXJ4821.03','Hold','ETCH-07','PHOTO-LITHO','레시피 편차 검토','14:21'],
+    ['TXJ4790.11','Hold','ETCH-02','ETCH-MAIN','챔버 파티클 경보','14:08'],
+    ['QPL2207.41','Hold','PHO-11','PHOTO-COAT','오버레이 재측정','13:52'],
+  ];
+  document.querySelector('[data-res]').innerHTML = `<table class="lot"><thead><tr><th>Lot ID</th><th>State</th><th>Tool</th><th>Step</th><th>Reason</th><th>Upd</th></tr></thead><tbody>${
+    RESROWS.map(r=>`<tr><td>${r[0]}</td><td><span class="pill">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('H-rows').innerHTML = RESROWS.map(r=>`<div class="h-row"><span class="lid">${r[0]}</span><span class="pill">${r[1]}</span><span>${r[2]}</span></div>`).join('');
+
+  const FIELDS=['설비','공정스텝','홀드사유','Lot ID','상태'], OPS=['포함','정확히'];
+  const PRESETS=['★ 기본 — 전 라인 Hold','ETCH 라인 경보','PHOTO 재측정'];
+  function fillMenu(dd){
+    const cur=dd.querySelector('.lab').textContent.trim();
+    let opts=FIELDS, preset=false;
+    if(dd.hasAttribute('data-op')) opts=OPS;
+    else if(dd.hasAttribute('data-preset')){ opts=PRESETS; preset=true; }
+    const m=document.createElement('div'); m.className='dd__menu';
+    m.innerHTML=opts.map(o=>{ const star=preset&&o.startsWith('★'); return `<div class="dd__opt${o===cur?' is-sel':''}" data-val="${o}">${star?'<span class="star">★</span>'+o.slice(1).trim():o}<span class="ck">✓</span></div>`; }).join('');
+    dd.appendChild(m);
+  }
+  document.querySelectorAll('.dd').forEach(fillMenu);
+  function closeAll(){ document.querySelectorAll('.dd.is-open').forEach(d=>d.classList.remove('is-open')); }
+  document.querySelectorAll('.dd__btn').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const dd=b.closest('.dd'); const w=dd.classList.contains('is-open'); closeAll(); if(!w)dd.classList.add('is-open'); }));
+  document.querySelectorAll('.dd__opt').forEach(o=>o.addEventListener('click',e=>{ e.stopPropagation(); const dd=o.closest('.dd'); const lab=dd.querySelector('.lab'); if(!dd.hasAttribute('data-preset')){ lab.textContent=o.dataset.val; lab.classList.toggle('exact',o.dataset.val==='정확히'); } dd.querySelectorAll('.dd__opt').forEach(x=>x.classList.remove('is-sel')); o.classList.add('is-sel'); dd.classList.remove('is-open'); }));
+  document.addEventListener('click', closeAll);
+
+  const card=document.querySelector('.card'), scrim=card.querySelector('.scrim'), modal=card.querySelector('.modal');
+  const open=()=>{ scrim.classList.add('is-open'); modal.classList.add('is-open'); };
+  const close=()=>{ scrim.classList.remove('is-open'); modal.classList.remove('is-open'); closeAll(); };
+  card.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',open));
+  card.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
+  scrim.addEventListener('click',close); modal.addEventListener('click',e=>e.stopPropagation());
+
+  const saveBtn=document.getElementById('H-save'), savedNote=document.getElementById('H-saved'), pname=document.getElementById('H-pname');
+  function doSave(){
+    if(!pname.value.trim()) return;
+    saveBtn.classList.add('ok'); saveBtn.querySelector('.material-symbols-outlined').textContent='check';
+    savedNote.classList.add('show');
+  }
+  saveBtn.addEventListener('click',doSave);
+
+  // 녹화 타임라인
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  async function typeInto(el,t,per=70){ el.value=''; el.focus(); for(const c of t){ el.value+=c; await sleep(per); } }
+  window.__play=async function(){
+    await sleep(600);
+    card.querySelector('[data-open]').click(); await sleep(1000);
+    // 조건 추가 → 미리보기 갱신
+    document.getElementById('H-add').click();
+    document.getElementById('H-r2').style.display='flex'; await sleep(500);
+    document.getElementById('H-nl').innerHTML="다음 중 하나라도 맞는 lot:<br>(<b>설비</b>에 'ETCH' 포함 그리고 <b>공정스텝</b>에 'PHOTO' 포함)";
+    document.getElementById('H-cnt').textContent='41'; await sleep(900);
+    // 풋터에서 이름 입력 → 저장
+    await typeInto(pname,'ETCH×PHOTO 동시 Hold', 60); await sleep(500);
+    doSave(); await sleep(1400);
+    window.__done=true;
+  };
+</script>
+</body>
+</html>
