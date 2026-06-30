@@ -22,6 +22,7 @@
 | `socket.gaierror: postgres` / DB 연결 실패 | [#6 postgres 호스트명 해석](#6) |
 | 키워드 Hold가 런타임 에러 / 테이블 없음 | [#7 alembic 미적용](#7) |
 | 알람 박스가 항상 비어 있음 | [#8 알람 스트림 stub(의도된 후속)](#8) |
+| 신호등 "60:00+ 전" 🔴 + 데이터 며칠~수십일 정체인데 dump 로그는 "✅ 성공" | [#9 dump 성공 로그인데 DB 미반영(조용한 트랜잭션 롤백)](#9) |
 
 ---
 
@@ -108,3 +109,23 @@
 - **원인(현재 정상)**: `RealLotSource.subscribe_changes`가 **stub**(무한 대기, 이벤트 미발행) — 합의된 deferred 상태. 사내 lot_status는 30분 dump만 있어 실시간 스트림이 없다.
 - **후속**: 30분 dump diff 기반 이벤트 합성(구현 스펙: `ai-prompts/260615-1325-pr28-29-real-adapters-handoff.md` 파트 A 케이스 B, `event_id` 결정적 키 + try/finally 구독해제). 별도 PR.
 - **주의**: stub은 에러가 아니다 — 박스가 비어 있는 게 현재 정상 동작.
+- **2026-06-30 업데이트**: 후속이 `lot_change_event` outbox로 구현됨(`ai-prompts/260622-1253-alarm-outbox-lot-change-event.md`). 단 그 테이블의 마이그레이션이 운영에 누락돼 [#9](#9) 장애를 유발했으니, outbox 배포 시 #9 재발방지를 함께 확인.
+
+## <a id="9"></a>#9 — dump가 "✅ 성공" 로그를 찍는데 DB는 갱신 안 됨 (조용한 트랜잭션 롤백)
+- **증상**: 메인페이지 신선도 신호등이 🔴 "마지막 갱신 60:00+ 전"이고, lot 데이터가 며칠~수십일 전에서 정체. 그런데 30분 dump 로그는 매 실행 `✅ Dump 잡 완료 status=ok`로 정상 보고. (해결 이력: 2026-06-30, 데이터가 06-09에서 20일 동결)
+- **원인**: 30분 dump가 `lot_status`·`lot_dump_meta`·`lot_change_event`를 **한 트랜잭션**(ALARM-1 원자성, `dump-job-spec.md` §3)으로 쓴다. `lot_change_event` 테이블이 운영 DB에 **없어서**(alembic 마이그레이션 누락 — [#7](#7)과 동류) 그 INSERT가 매 실행 `relation does not exist`로 실패 → 트랜잭션 **전체 롤백** → `lot_status`/`lot_dump_meta`까지 아무것도 커밋 안 됨. 그 예외를 **삼켜** "성공" 로그로 위장해 장기 미탐지. 동반 버그 2개: (a) `dump_run_id`가 DB의 기존 `last_run_at`을 재사용(매 실행 `now()` 미사용) → heartbeat 영구 미갱신 + `event_id` dedup 누락, (b) `wrapper.sh`의 `DB_URL`이 dev DB(`127.0.0.1:5433`)를 가리켜 운영과 다른 DB에 접속.
+- **진단**:
+  ```
+  # dump 생존 신호가 멈춰 있나 (last_run_at이 과거에서 고정)
+  psql "<운영 DATABASE_URL>" -c "SELECT id, last_run_at, row_count, status FROM lot_dump_meta;"
+  # 테이블이 실제로 있나
+  psql "<운영 DATABASE_URL>" -c "\dt"        # lot_change_event 부재 확인
+  # 데이터 자체가 정체인가 (신호등만이 아니라)
+  psql "<운영 DATABASE_URL>" -c "SELECT max(updated_at), count(*) FROM lot_status;"
+  # dump 로그의 "성공"을 믿지 말 것 — DB 실제 값과 대조
+  tail -n 80 /tmp/pholex/lot_status_dump.log
+  # 앱이 읽는 DB == dump가 쓰는 DB 인가 (DB_URL 오설정 확인)
+  docker compose -p pholex exec -T backend env | grep -i DATABASE_URL
+  ```
+- **수정**: ① `lot_change_event` 테이블 생성(`ai-prompts/260622-1253-alarm-outbox-lot-change-event.md` §2 DDL 그대로). ② `dump_run_id`를 매 실행 `datetime.now(timezone.utc)`로 만들고 `last_run_at`도 그 값으로 upsert. ③ 예외 삼킴 제거 — traceback `ERROR` 로그 + 별도 트랜잭션으로 `lot_dump_meta.status='error'`(`last_run_at`은 안 건드려 🔴 유지) + `wrapper.sh` 실패 시 `exit 1` + "성공" 로그는 커밋 확인 후에만. ④ `DB_URL`을 운영 DB로 교정. (커밋 `e20e666`, origin/dev)
+- **재발방지**: (1) dump는 INSERT/커밋 실패 시 **절대 "성공" 로그 금지** — 커밋 성공 확인 후에만 출력하고, 실패는 `status='error'`+`exit 1`로 노출. (2) `lot_dump_meta.last_run_at`은 변경 0건이어도 **매 실행 `now()`**(CONTRACT-4) — 기존 값 재사용 금지. (3) 새 테이블/모델은 [#7](#7)처럼 **운영 DB에 alembic upgrade 필수**(코드 배포만으로 테이블 안 생김). (4) dump가 쓰는 DB는 **앱이 읽는 DB와 동일**해야 한다 — `DB_URL`을 환경에서 역산하지 말고 운영 값을 단일 기준으로([#6](#6) 연계).
