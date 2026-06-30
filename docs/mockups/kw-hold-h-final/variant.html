@@ -200,7 +200,6 @@
         <span class="foot-div"></span>
         <input class="txt foot-name" id="H-pname" placeholder="필터 이름" />
         <button class="iconbtn iconbtn--save" id="H-save" title="프리셋 저장" aria-label="프리셋 저장"><span class="material-symbols-outlined">save</span></button>
-        <span class="saved-note" id="H-saved"><span class="material-symbols-outlined" style="font-size:15px">check_circle</span>저장됨</span>
       </div>
     </div>
   </article>
@@ -242,11 +241,10 @@
   card.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
   scrim.addEventListener('click',close); modal.addEventListener('click',e=>e.stopPropagation());
 
-  const saveBtn=document.getElementById('H-save'), savedNote=document.getElementById('H-saved'), pname=document.getElementById('H-pname');
+  const saveBtn=document.getElementById('H-save'), pname=document.getElementById('H-pname');
   function doSave(){
     if(!pname.value.trim()) return;
     saveBtn.classList.add('ok'); saveBtn.querySelector('.material-symbols-outlined').textContent='check';
-    savedNote.classList.add('show');
   }
   saveBtn.addEventListener('click',doSave);
 
