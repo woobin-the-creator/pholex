@@ -26,7 +26,6 @@ def test_status_is_open_set_at_dto():
         lot_id="L1",
         status="SomeFutureMesValue",
         updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        is_held_by_me=False,
     )
     assert row.status == "SomeFutureMesValue"
 

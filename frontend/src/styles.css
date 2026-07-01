@@ -818,6 +818,83 @@ body[data-theme='light'] .lot-table tr.is-recent {
   padding: 24px 12px; white-space: normal; max-width: none;
 }
 
+/* ---------- [Phase 2] lot당 hold 1:N — REASON 요약 + 펼침 ------ */
+/* REASON 셀: 사유가 여럿이면 개수 태그 + 대표 사유 + chevron 을 한 줄에.
+   태그는 pill(9999px)이 아니라 radius-micro(3px) 사각 태그 — 상태 pill과 시각적으로 구분하고
+   13.9 "무분별한 pill" 금지선을 지킨다. */
+.lot-reason-cell { overflow: hidden; }
+.hold-summary {
+  display: inline-flex; align-items: center; gap: 6px;
+  width: 100%; min-width: 0;
+  font: inherit; color: var(--ink);
+}
+.hold-summary--static { color: inherit; }
+button.hold-summary {
+  padding: 0; border: 0; background: transparent;
+  text-align: left; cursor: pointer;
+  transition: color 140ms var(--ease-out);
+}
+button.hold-summary:hover { color: var(--accent); }
+button.hold-summary:focus-visible {
+  outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 3px;
+}
+.hold-summary__reason {
+  flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hold-count {
+  flex: none; display: inline-flex; align-items: center;
+  padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--rule);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink-mute);
+}
+body[data-theme='light'] tr.is-hold .hold-count { color: var(--hold); border-color: var(--hold); }
+.hold-summary__chevron {
+  flex: none; font-size: 15px; line-height: 1; color: var(--ink-mute);
+  transition: transform 180ms var(--ease-out);
+  font-variation-settings: 'wght' 400, 'opsz' 20;
+}
+tr.is-expanded .hold-summary__chevron { transform: rotate(180deg); }
+
+/* 펼침 상세 행 — lot 1행을 유지하되, 바로 아래 붙는 별도 tr(colSpan=6)에 hold별 상세.
+   불투명 단색 fill(warm neutral)로 접힘/펼침 구분. blur·부유 그림자 없음. */
+.lot-hold-detail-row > td {
+  max-width: none; white-space: normal;
+  padding: 4px 10px 10px 22px;
+  background: var(--bg-inset, rgba(17, 17, 17, 0.02));
+}
+body[data-theme='dark'] .lot-hold-detail-row > td { background: rgba(236, 234, 230, 0.03); }
+.hold-detail-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.hold-detail {
+  border-left: 2px solid var(--rule); padding-left: 10px;
+}
+body[data-theme='light'] tr.is-hold + .lot-hold-detail-row .hold-detail { border-left-color: var(--hold); }
+.hold-detail__head {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px;
+  font-size: 11.5px;
+}
+.hold-detail__operator { font-weight: 600; color: var(--ink); }
+.hold-detail__adid { font-weight: 400; color: var(--ink-mute); }
+.hold-item-type {
+  display: inline-flex; align-items: center;
+  padding: 0 5px; border-radius: 3px;
+  border: 1px solid var(--rule);
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-mute);
+}
+.hold-detail__date {
+  margin-left: auto; font-size: 11px; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+.hold-detail__comment {
+  margin: 3px 0 0; font-size: 12px; line-height: 1.45; color: var(--ink);
+  white-space: normal;
+}
+
 .pill {
   font-size: 10px; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--ink-mute);

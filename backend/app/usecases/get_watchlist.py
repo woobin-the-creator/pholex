@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from app.ports.dto import WatchlistRowDTO
+from app.ports.dto import LotRowDTO, WatchlistRowDTO
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_watchlist_repository import LotWatchlistRepository
+
+
+def _joined_hold_comments(lot: LotRowDTO) -> str | None:
+    parts = [h.comment for h in lot.my_holds if h.comment]
+    return "\n".join(parts) if parts else None
 
 
 class GetWatchlist:
@@ -34,7 +39,10 @@ class GetWatchlist:
                         status=lot.status,
                         equipment=lot.equipment,
                         process_step=lot.process_step,
-                        hold_comment=lot.hold_comment,
+                        # [Phase 2] hold는 1:N — 단일 hold_comment 축이 사라짐. watchlist(슬롯[2])는
+                        # 이번 범위 밖이라 lot의 hold comment들을 합쳐 임시로 채운다(비면 None).
+                        # TODO Phase2 후속: watchlist 행에도 hold 1:N 표현을 정식 반영.
+                        hold_comment=_joined_hold_comments(lot),
                         updated_at=lot.updated_at,
                     )
                 )

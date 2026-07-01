@@ -11,8 +11,9 @@ class InMemoryLotRepository:
     """Fake LotRepository — dict 캐시. 캐시 hit/miss를 None vs []로 정확히 구분."""
 
     def __init__(self) -> None:
+        # lot_status(lot당 1행) + lot_hold(my_holds 리스트)를 한 DTO로 통합 저장(fake 범위).
         self._by_lot: dict[str, LotRowDTO] = {}
-        self._cache_by_employee: dict[str, list[LotRowDTO]] = {}
+        self._cache_by_operator: dict[str, list[LotRowDTO]] = {}  # 캐시 키 = operator_ad_id
         # dump heartbeat. 기본 None = dump 미실행. 테스트가 세터로 주입한다.
         self._dump_last_run_at: datetime | None = None
 
@@ -39,7 +40,8 @@ class InMemoryLotRepository:
                     "status": row.status,
                     "equipment": row.equipment,
                     "process_step": row.process_step,
-                    "hold_comment": row.hold_comment,
+                    # [Phase 2] hold는 1:N — my_holds의 comment들을 합쳐 검색 대상 텍스트로 노출.
+                    "hold_comment": _joined_comments(row),
                 }
             )
         ]
@@ -49,17 +51,17 @@ class InMemoryLotRepository:
         total = len(matched)
         return matched[offset : offset + limit], total
 
-    async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None:
-        cached = self._cache_by_employee.get(employee_number)
+    async def get_my_holds_cached(self, operator_ad_id: str) -> list[LotRowDTO] | None:
+        cached = self._cache_by_operator.get(operator_ad_id)
         if cached is None:
             return None
         return copy.deepcopy(cached)
 
-    async def cache_my_holds(self, employee_number: str, rows: list[LotRowDTO]) -> None:
-        self._cache_by_employee[employee_number] = copy.deepcopy(rows)
+    async def cache_my_holds(self, operator_ad_id: str, rows: list[LotRowDTO]) -> None:
+        self._cache_by_operator[operator_ad_id] = copy.deepcopy(rows)
 
-    async def invalidate_cache(self, employee_number: str) -> None:
-        self._cache_by_employee.pop(employee_number, None)
+    async def invalidate_cache(self, operator_ad_id: str) -> None:
+        self._cache_by_operator.pop(operator_ad_id, None)
 
     def set_dump_last_run_at(self, dt: datetime | None) -> None:
         """테스트 헬퍼 — dump heartbeat 주입 (Port 외 fake 전용)."""
@@ -67,3 +69,9 @@ class InMemoryLotRepository:
 
     async def get_dump_last_run_at(self) -> datetime | None:
         return self._dump_last_run_at
+
+
+def _joined_comments(row: LotRowDTO) -> str | None:
+    """my_holds의 comment들을 개행으로 합친다(키워드 검색 대상). 전부 비면 None."""
+    parts = [h.comment for h in row.my_holds if h.comment]
+    return "\n".join(parts) if parts else None

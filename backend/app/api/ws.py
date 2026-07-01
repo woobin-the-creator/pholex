@@ -19,6 +19,7 @@ from app.api.deps import (
 from app.api.lots import TABLE_ID_MY_HOLD
 from app.api.wire import change_to_wire, slot_payload
 from app.config import settings
+from app.domain.identity import operator_ad_id_of
 from app.ports.clock import Clock
 from app.ports.lot_repository import LotRepository
 from app.ports.lot_source import LotSource
@@ -36,14 +37,14 @@ logger = logging.getLogger(__name__)
 async def _send_full_snapshot(
     ws: WebSocket,
     *,
-    employee_number: str,
+    operator_ad_id: str,
     source: LotSource,
     repo: LotRepository,
     uow: UnitOfWork,
     clock: Clock,
 ) -> None:
     fetch_uc = FetchMyHolds(source=source, repo=repo, uow=uow)
-    result = await fetch_uc.execute(employee_number, force_refresh=True)
+    result = await fetch_uc.execute(operator_ad_id, force_refresh=True)
     payload = slot_payload(
         table_id=TABLE_ID_MY_HOLD,
         rows=result.rows,
@@ -57,14 +58,14 @@ async def _send_full_snapshot(
 async def _stream_changes(
     ws: WebSocket,
     *,
-    employee_number: str,
+    operator_ad_id: str,
     source: LotSource,
     repo: LotRepository,
     uow: UnitOfWork,
     clock: Clock,
 ) -> None:
     stream_uc = StreamHoldChanges(source=source, repo=repo)
-    iterator = stream_uc.execute(employee_number)
+    iterator = stream_uc.execute(operator_ad_id)
     try:
         async for envelope in iterator:
             try:
@@ -75,7 +76,7 @@ async def _stream_changes(
                 try:
                     await _send_full_snapshot(
                         ws,
-                        employee_number=employee_number,
+                        operator_ad_id=operator_ad_id,
                         source=source,
                         repo=repo,
                         uow=uow,
@@ -108,7 +109,8 @@ async def ws_endpoint(
         await ws.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    employee_number = user.employee_number
+    # [Phase 2] "내 hold" 매칭 키 = email 로컬파트(AD id). 사번이 아니다(CONTRACT-1).
+    operator_ad_id = operator_ad_id_of(user)
 
     await ws.accept()
     streamer_task: asyncio.Task[None] | None = None
@@ -124,7 +126,7 @@ async def ws_endpoint(
             if msg_type == "subscribe":
                 await _send_full_snapshot(
                     ws,
-                    employee_number=employee_number,
+                    operator_ad_id=operator_ad_id,
                     source=source,
                     repo=repo,
                     uow=uow,
@@ -134,7 +136,7 @@ async def ws_endpoint(
                     streamer_task = asyncio.create_task(
                         _stream_changes(
                             ws,
-                            employee_number=employee_number,
+                            operator_ad_id=operator_ad_id,
                             source=source,
                             repo=repo,
                             uow=uow,
@@ -144,7 +146,7 @@ async def ws_endpoint(
             elif msg_type == "refresh":
                 await _send_full_snapshot(
                     ws,
-                    employee_number=employee_number,
+                    operator_ad_id=operator_ad_id,
                     source=source,
                     repo=repo,
                     uow=uow,

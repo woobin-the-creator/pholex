@@ -21,20 +21,45 @@ def _require_tz_aware(value: datetime) -> datetime:
     return value
 
 
+class HoldDTO(BaseModel):
+    """[Phase 2] lot에 걸린 hold 한 건 (lot_hold 1행).
+
+    한 lot에 여러 담당자가 각자 사유로 hold를 걸 수 있어 1:N이다(backend.md §4.2 lot_hold).
+    매칭 키는 `operator_ad_id`(AD id) — `opertr_id`의 '(' 앞부분, `users.email` 로컬파트와
+    문자열 매칭된다(CONTRACT-1 개정). `item_type`은 표시용이며 필터 축이 아니다.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    operator_ad_id: str            # AD id — opertr_id의 '(' 앞부분 (예 gd01.hong)
+    operator_name: str | None = None  # 한글 이름 — opertr_id 괄호 안 (없으면 None)
+    item_type: str | None = None   # USER/SPC/DEFECT/L·L 등 (표시용 — 필터 미사용)
+    comment: str | None = None     # hold 사유 (source issue_comment)
+    issue_date: datetime | None = None  # hold 등록 시각 (tz-aware if present)
+
+    @field_validator("issue_date")
+    @classmethod
+    def _tz_aware_if_present(cls, value: datetime | None) -> datetime | None:
+        return _require_tz_aware(value) if value is not None else None
+
+
 class LotRowDTO(BaseModel):
+    """[Phase 2] "내 hold" 뷰의 lot 단위 1행.
+
+    한 lot에 이 조회자가 건 hold가 여러 건일 수 있어(같은 담당자·다른 사유) `my_holds`로 담는다
+    — 이 뷰에 실린 lot은 조회자가 hold를 하나 이상 건 lot이므로 `my_holds`는 비어있지 않다.
+    이전 1:1 필드(hold_comment/hold_operator_id/is_held_by_me)는 lot_hold 분리로 제거됐다.
+    equipment는 hold lot(stocker 적재)에선 None이 정상(결측 아님).
+    """
+
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     lot_id: str
     status: str
     equipment: str | None = None
     process_step: str | None = None
-    hold_comment: str | None = None
     updated_at: datetime
-    is_held_by_me: bool
-    # hold를 건 담당자 사번 (raw 소스의 `lot_hold_user_id`). 캐노니컬 이름은 `hold_operator_id`
-    # (260606 watchlist spec CONTRACT-1/3). hold가 아니거나 담당자 미상이면 None.
-    # is_held_by_me(= hold_operator_id == 조회자 사번)와 공존한다 — 이건 "누가 걸었나"를 노출한다.
-    hold_operator_id: str | None = None
+    my_holds: list[HoldDTO] = []  # 이 조회자가 이 lot에 건 hold들 (1개 이상)
 
     _validate_updated_at = field_validator("updated_at")(_require_tz_aware)
 

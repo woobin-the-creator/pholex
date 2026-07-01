@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import clock_dep, fetch_my_holds_uc, require_session
 from app.api.wire import slot_payload
+from app.domain.identity import operator_ad_id_of
 from app.domain.session import SessionUser
 from app.ports.clock import Clock
 from app.usecases.fetch_my_holds import FetchMyHolds
@@ -23,7 +24,8 @@ async def get_my_hold(
     clock: Annotated[Clock, Depends(clock_dep)],
     force_refresh: bool = False,
 ) -> dict:
-    result = await uc.execute(session.employee_number, force_refresh=force_refresh)
+    # [Phase 2] "내 hold" 매칭 키 = email 로컬파트(AD id). 사번이 아니다(CONTRACT-1).
+    result = await uc.execute(operator_ad_id_of(session), force_refresh=force_refresh)
     return slot_payload(
         table_id=TABLE_ID_MY_HOLD,
         rows=result.rows,

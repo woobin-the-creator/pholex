@@ -18,22 +18,23 @@ class LotSource(Protocol):
     처리 정책(bucket/filter/log)은 어댑터가 결정한다.
     """
 
-    async def fetch_my_holds(self, employee_number: str) -> list[LotRowDTO]:
-        """주어진 사번의 현재 hold lot 전부 반환. 없으면 빈 리스트.
+    async def fetch_my_holds(self, operator_ad_id: str) -> list[LotRowDTO]:
+        """주어진 AD id가 hold를 건 lot 전부 반환. 없으면 빈 리스트.
 
+        [Phase 2] 매칭 키가 사번→AD id(operator_ad_id, `users.email` 로컬파트)로 바뀜(CONTRACT-1).
         Contract:
-        - 반환된 모든 row의 `is_held_by_me`는 True여야 한다.
+        - lot 단위 1행. 한 lot에 조회자 hold가 여러 건이면 `my_holds`에 모두 담긴다(1개 이상).
         - 반환된 모든 row의 `status`는 raw "Hold"이다(매핑 없음).
         - 정렬: lot_id ASC (deterministic).
-        - 동일 사번 반복 호출은 동일 결과(idempotent).
+        - 동일 AD id 반복 호출은 동일 결과(idempotent).
         """
         ...
 
-    def subscribe_changes(self, employee_number: str) -> AsyncIterator[LotChangeEventDTO]:
-        """주어진 사번에 영향을 주는 변경 이벤트를 비동기 스트리밍.
+    def subscribe_changes(self, operator_ad_id: str) -> AsyncIterator[LotChangeEventDTO]:
+        """주어진 AD id에 영향을 주는 변경 이벤트를 비동기 스트리밍.
 
         Contract:
-        - 다중 구독자(같은 사번에 여러 iterator)에게 fan-out으로 동일 이벤트 전달.
+        - 다중 구독자(같은 AD id에 여러 iterator)에게 fan-out으로 동일 이벤트 전달.
         - `event_id`는 동일 source 내에서 unique + 시간 순서 정렬 가능.
         - `previous_status`/`new_status`는 도메인 severity 분류에 사용됨 (어댑터가 채움).
         """

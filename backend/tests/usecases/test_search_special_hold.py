@@ -18,9 +18,8 @@ def _lot(lot_id: str) -> LotRowDTO:
         status="Active",
         equipment="X",
         process_step=None,
-        hold_comment=None,
         updated_at=datetime.now(tz=timezone.utc),
-        is_held_by_me=False,
+        my_holds=[],
     )
 
 

@@ -36,10 +36,15 @@ def test_my_hold_returns_slot_payload(client):
     assert payload["tableId"] == 1
     assert payload["diff"] is False
     assert payload["lastUpdated"]
-    assert len(payload["rows"]) == 3
+    # [Phase 2] gd01.hong(DEV_USER_EMAIL 로컬파트) → 2 lot / 3 hold.
+    assert len(payload["rows"]) == 2
     first = payload["rows"][0]
-    assert set(first.keys()) == {"lotId", "status", "equipment", "processStep", "holdComment", "updatedAt"}
+    assert set(first.keys()) == {"lotId", "status", "equipment", "processStep", "updatedAt", "myHolds"}
     assert all(row["status"] == "Hold" for row in payload["rows"])  # raw 값 그대로
+    # LOT-A2948은 같은 담당자가 2건 hold → myHolds 2개. 모두 조회자 소유.
+    total_holds = sum(len(row["myHolds"]) for row in payload["rows"])
+    assert total_holds == 3
+    assert all(h["operatorAdId"] == "gd01.hong" for row in payload["rows"] for h in row["myHolds"])
     # 신선도 dumpMeta — dump 미실행 시 lastRunAt=None, 임계값 기본 30/60.
     dump_meta = payload["dumpMeta"]
     assert set(dump_meta.keys()) == {"lastRunAt", "freshMaxMinutes", "staleMinMinutes"}
@@ -51,7 +56,7 @@ def test_my_hold_returns_slot_payload(client):
 def test_my_hold_force_refresh(client):
     r = _authed(client).get("/api/lots/my-hold?force_refresh=true")
     assert r.status_code == 200
-    assert len(r.json()["rows"]) == 3
+    assert len(r.json()["rows"]) == 2  # [Phase 2] lot 단위 2행
 
 
 def test_session_unauthenticated(client):
@@ -85,7 +90,7 @@ def test_ws_table_update_full_snapshot(client):
         payload = message["payload"]
         assert payload["tableId"] == 1
         assert payload["diff"] is False
-        assert len(payload["rows"]) == 3
+        assert len(payload["rows"]) == 2  # [Phase 2] lot 단위 2행
         # WS 경로도 slot_payload를 쓰므로 dumpMeta가 일관되게 실린다.
         assert set(payload["dumpMeta"].keys()) == {"lastRunAt", "freshMaxMinutes", "staleMinMinutes"}
 
@@ -98,7 +103,7 @@ def test_ws_refresh_returns_snapshot(client):
         ws.send_json({"type": "refresh", "payload": {"tableId": 1}})
         message = ws.receive_json()
         assert message["type"] == "table_update"
-        assert len(message["payload"]["rows"]) == 3
+        assert len(message["payload"]["rows"]) == 2  # [Phase 2] lot 단위 2행
 
 
 def test_ws_rejects_unauthenticated():

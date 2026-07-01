@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.domain.keyword import KeywordCondition, KeywordGroup, KeywordQuery
-from app.ports.dto import LotRowDTO
+from app.ports.dto import HoldDTO, LotRowDTO
 
 _BASE = datetime(2026, 6, 13, tzinfo=timezone.utc)
 
@@ -19,14 +19,20 @@ def _lot(
     hold_comment: str | None = None,
     minutes: int = 0,
 ) -> LotRowDTO:
+    # [Phase 2] hold_comment는 이제 my_holds의 hold comment에서 온다(1:N). 검색 대상 유지를
+    # 위해 comment가 있으면 hold 한 건을 붙인다.
+    my_holds = (
+        [HoldDTO(operator_ad_id="op", comment=hold_comment)]
+        if hold_comment is not None
+        else []
+    )
     return LotRowDTO(
         lot_id=lot_id,
         status=status,
         equipment=equipment,
         process_step=process_step,
-        hold_comment=hold_comment,
         updated_at=_BASE + timedelta(minutes=minutes),
-        is_held_by_me=False,
+        my_holds=my_holds,
     )
 
 

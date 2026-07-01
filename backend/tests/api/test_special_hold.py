@@ -33,9 +33,8 @@ def _seed_lot(lot_id: str, *, equipment: str | None = None, status: str = "Activ
         status=status,
         equipment=equipment,
         process_step=None,
-        hold_comment=None,
         updated_at=datetime.now(tz=timezone.utc),
-        is_held_by_me=False,
+        my_holds=[],
     )
     asyncio.run(repo.upsert_lot(row))
 

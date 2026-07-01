@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from app.ports.dto import LotRowDTO
+from app.ports.dto import HoldDTO, LotRowDTO
 
 
 def _sample(lot_id: str = "L001", status: str = "hold") -> LotRowDTO:
@@ -13,22 +13,21 @@ def _sample(lot_id: str = "L001", status: str = "hold") -> LotRowDTO:
         status=status,
         equipment="EQ-X",
         process_step="step",
-        hold_comment="c",
         updated_at=datetime.now(tz=timezone.utc),
-        is_held_by_me=True,
+        my_holds=[HoldDTO(operator_ad_id="gd01.hong", comment="c")],
     )
 
 
 @pytest.mark.asyncio
 async def test_get_my_holds_cached_miss_returns_none(lot_repository):
-    assert await lot_repository.get_my_holds_cached("99999") is None
+    assert await lot_repository.get_my_holds_cached("gd01.hong") is None
 
 
 @pytest.mark.asyncio
 async def test_cache_and_get(lot_repository):
     rows = [_sample("L001"), _sample("L002")]
-    await lot_repository.cache_my_holds("99999", rows)
-    cached = await lot_repository.get_my_holds_cached("99999")
+    await lot_repository.cache_my_holds("gd01.hong", rows)
+    cached = await lot_repository.get_my_holds_cached("gd01.hong")
     assert cached is not None
     assert len(cached) == 2
     assert {r.lot_id for r in cached} == {"L001", "L002"}
@@ -36,16 +35,16 @@ async def test_cache_and_get(lot_repository):
 
 @pytest.mark.asyncio
 async def test_invalidate_cache_makes_get_return_none(lot_repository):
-    await lot_repository.cache_my_holds("99999", [_sample("L001")])
-    await lot_repository.invalidate_cache("99999")
-    assert await lot_repository.get_my_holds_cached("99999") is None
+    await lot_repository.cache_my_holds("gd01.hong", [_sample("L001")])
+    await lot_repository.invalidate_cache("gd01.hong")
+    assert await lot_repository.get_my_holds_cached("gd01.hong") is None
 
 
 @pytest.mark.asyncio
 async def test_empty_cache_distinguishable_from_miss(lot_repository):
     """빈 리스트는 *정상 빈 결과*, None은 *cache miss*. 둘은 구분되어야 함."""
-    await lot_repository.cache_my_holds("99999", [])
-    cached = await lot_repository.get_my_holds_cached("99999")
+    await lot_repository.cache_my_holds("gd01.hong", [])
+    cached = await lot_repository.get_my_holds_cached("gd01.hong")
     assert cached == []  # not None
     assert cached is not None
 
