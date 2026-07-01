@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useAtomValue } from 'jotai'
 import { lotHoldDumpMetaAtom } from '../../atoms/tableAtoms'
 import { formatDateTime } from '../../utils/format'
@@ -32,6 +32,26 @@ function shortClock(iso: string | null): string {
   })
 }
 
+// 펼침 상세용 — 날짜+시:분 (issue_date). 값이 없으면 em dash.
+function issueStamp(iso: string | null): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString('ko-KR', {
+    hour12: false,
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// 대표 사유 — myHolds가 있으면 첫 comment, 없으면 backward-compat holdComment.
+function primaryReason(row: LotRow): string | null {
+  const first = row.myHolds.find((h) => h.comment && h.comment.trim().length > 0)
+  return first?.comment ?? row.holdComment ?? null
+}
+
 export function LotHoldPanel({
   rows,
   loading,
@@ -46,6 +66,15 @@ export function LotHoldPanel({
   const [spinning, setSpinning] = useState(false)
   const [cometGeo, setCometGeo] = useState<{ w: number; h: number; d: string } | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
+  // [Phase 2] lot당 hold 1:N — 어느 lot 행이 상세로 펼쳐졌는지. 여러 개 동시 펼침 허용.
+  const [expandedLots, setExpandedLots] = useState<Set<string>>(() => new Set())
+  const toggleExpanded = (lotId: string) =>
+    setExpandedLots((prev) => {
+      const next = new Set(prev)
+      if (next.has(lotId)) next.delete(lotId)
+      else next.add(lotId)
+      return next
+    })
 
   // ── dump 신선도 신호등 + 매초 경과 카운터 ──
   const dumpMeta = useAtomValue(lotHoldDumpMetaAtom)
@@ -156,46 +185,101 @@ export function LotHoldPanel({
     }
     return pagedRows.map((row) => {
       const isHold = row.status === HOLD_STATUS
+      const holdCount = row.myHolds.length
+      const reason = primaryReason(row)
+      const isExpanded = expandedLots.has(row.lotId)
+      // 사유가 여럿(1:N)일 때만 펼침 토글을 노출한다. 단일 hold면 그냥 사유만 보여준다.
+      const expandable = holdCount > 1
+      const reasonLabel = reason ?? '—'
+
       return (
-        <tr
-          key={row.lotId}
-          ref={(el) => {
-            if (el) rowRefs.current.set(row.lotId, el)
-            else rowRefs.current.delete(row.lotId)
-          }}
-          className={`${isHold ? 'is-hold' : ''}${focusLotId === row.lotId ? ' is-focused' : ''}`.trim()}
-          data-status={row.status}
-        >
-          <td className="lot-table__lot-id" title={row.lotId}>
-            {focusLotId === row.lotId && cometGeo ? (
-              <svg
-                className="lot-trace-svg"
-                width={cometGeo.w}
-                height={cometGeo.h}
-                viewBox={`0 0 ${cometGeo.w} ${cometGeo.h}`}
-                fill="none"
-                aria-hidden="true"
-              >
-                <path className="lot-trace-comet lot-trace-comet--tail" pathLength={100} d={cometGeo.d} />
-                <path className="lot-trace-comet lot-trace-comet--mid" pathLength={100} d={cometGeo.d} />
-                <path className="lot-trace-comet lot-trace-comet--head" pathLength={100} d={cometGeo.d} />
-              </svg>
-            ) : null}
-            <span className="lot-id-cell">
-              <span className="lot-id-cell__text">{row.lotId}</span>
-              <LotIdCopyButton lotId={row.lotId} />
-            </span>
-          </td>
-          <td>
-            <span className={`pill ${statusPillClass(row.status)}`}>
-              {row.status}
-            </span>
-          </td>
-          <td title={row.equipment ?? undefined}>{row.equipment ?? '—'}</td>
-          <td title={row.processStep ?? undefined}>{row.processStep ?? '—'}</td>
-          <td title={row.holdComment ?? undefined}>{row.holdComment ?? '—'}</td>
-          <td title={row.updatedAt ?? undefined}>{shortClock(row.updatedAt)}</td>
-        </tr>
+        <Fragment key={row.lotId}>
+          <tr
+            ref={(el) => {
+              if (el) rowRefs.current.set(row.lotId, el)
+              else rowRefs.current.delete(row.lotId)
+            }}
+            className={`${isHold ? 'is-hold' : ''}${focusLotId === row.lotId ? ' is-focused' : ''}${
+              isExpanded ? ' is-expanded' : ''
+            }`.trim()}
+            data-status={row.status}
+          >
+            <td className="lot-table__lot-id" title={row.lotId}>
+              {focusLotId === row.lotId && cometGeo ? (
+                <svg
+                  className="lot-trace-svg"
+                  width={cometGeo.w}
+                  height={cometGeo.h}
+                  viewBox={`0 0 ${cometGeo.w} ${cometGeo.h}`}
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path className="lot-trace-comet lot-trace-comet--tail" pathLength={100} d={cometGeo.d} />
+                  <path className="lot-trace-comet lot-trace-comet--mid" pathLength={100} d={cometGeo.d} />
+                  <path className="lot-trace-comet lot-trace-comet--head" pathLength={100} d={cometGeo.d} />
+                </svg>
+              ) : null}
+              <span className="lot-id-cell">
+                <span className="lot-id-cell__text">{row.lotId}</span>
+                <LotIdCopyButton lotId={row.lotId} />
+              </span>
+            </td>
+            <td>
+              <span className={`pill ${statusPillClass(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+            <td title={row.equipment ?? undefined}>{row.equipment ?? '—'}</td>
+            <td title={row.processStep ?? undefined}>{row.processStep ?? '—'}</td>
+            <td className="lot-reason-cell" title={reasonLabel}>
+              {expandable ? (
+                <button
+                  type="button"
+                  className="hold-summary"
+                  onClick={() => toggleExpanded(row.lotId)}
+                  aria-expanded={isExpanded}
+                  aria-label={`내 hold ${holdCount}건 ${isExpanded ? '접기' : '펼치기'}`}
+                >
+                  <span className="hold-count" aria-hidden="true">
+                    {holdCount}건
+                  </span>
+                  <span className="hold-summary__reason">{reasonLabel}</span>
+                  <span className="material-symbols-outlined hold-summary__chevron" aria-hidden="true">
+                    expand_more
+                  </span>
+                </button>
+              ) : (
+                <span className="hold-summary hold-summary--static">
+                  <span className="hold-summary__reason">{reasonLabel}</span>
+                </span>
+              )}
+            </td>
+            <td title={row.updatedAt ?? undefined}>{shortClock(row.updatedAt)}</td>
+          </tr>
+          {isExpanded ? (
+            <tr className="lot-hold-detail-row" data-status={row.status}>
+              <td colSpan={6}>
+                <ul className="hold-detail-list">
+                  {row.myHolds.map((hold, i) => (
+                    <li className="hold-detail" key={`${row.lotId}-${i}`}>
+                      <div className="hold-detail__head">
+                        <span className="hold-detail__operator">
+                          {hold.operatorName ?? hold.operatorAdId ?? '—'}
+                          {hold.operatorName && hold.operatorAdId ? (
+                            <span className="hold-detail__adid"> ({hold.operatorAdId})</span>
+                          ) : null}
+                        </span>
+                        {hold.itemType ? <span className="hold-item-type">{hold.itemType}</span> : null}
+                        <span className="hold-detail__date">{issueStamp(hold.issueDate)}</span>
+                      </div>
+                      <p className="hold-detail__comment">{hold.comment ?? '—'}</p>
+                    </li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          ) : null}
+        </Fragment>
       )
     })
   }

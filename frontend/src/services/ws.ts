@@ -1,4 +1,5 @@
 import type { SlotPayload } from '../types/lot'
+import { normalizeHolds, representativeComment } from '../utils/holds'
 import type { AlarmChangeType, AlarmItem } from '../types/alarm'
 
 interface TableSocketHandlers {
@@ -22,23 +23,19 @@ function normalizeSocketPayload(payload: Record<string, unknown>): SlotPayload {
 
   return {
     tableId: Number(payload.tableId ?? payload.table_id ?? 1),
-    rows: rows.map((row) => ({
-      lotId: String((row as Record<string, unknown>).lotId ?? (row as Record<string, unknown>).lot_id ?? ''),
-      status: String((row as Record<string, unknown>).status ?? ''),
-      equipment: ((row as Record<string, unknown>).equipment as string | null) ?? null,
-      processStep:
-        ((row as Record<string, unknown>).processStep as string | null) ??
-        ((row as Record<string, unknown>).process_step as string | null) ??
-        null,
-      holdComment:
-        ((row as Record<string, unknown>).holdComment as string | null) ??
-        ((row as Record<string, unknown>).hold_comment as string | null) ??
-        null,
-      updatedAt:
-        ((row as Record<string, unknown>).updatedAt as string | null) ??
-        ((row as Record<string, unknown>).updated_at as string | null) ??
-        null,
-    })),
+    rows: rows.map((raw) => {
+      const row = raw as Record<string, unknown>
+      const myHolds = normalizeHolds(row.myHolds ?? row.my_holds)
+      return {
+        lotId: String(row.lotId ?? row.lot_id ?? ''),
+        status: String(row.status ?? ''),
+        equipment: (row.equipment as string | null) ?? null,
+        processStep: (row.processStep as string | null) ?? (row.process_step as string | null) ?? null,
+        myHolds,
+        holdComment: representativeComment(myHolds, row.holdComment ?? row.hold_comment),
+        updatedAt: (row.updatedAt as string | null) ?? (row.updated_at as string | null) ?? null,
+      }
+    }),
     lastUpdated:
       (payload.lastUpdated as string | null) ?? (payload.last_updated as string | null) ?? new Date().toISOString(),
   }

@@ -7,8 +7,11 @@ import pytest
 from app.adapters.fake.lot_repository import InMemoryLotRepository
 from app.adapters.fake.lot_source import InMemoryLotSource
 from app.adapters.fake.unit_of_work import InMemoryUnitOfWork
-from app.ports.dto import LotRowDTO
+from app.ports.dto import HoldDTO, LotRowDTO
 from app.usecases.fetch_my_holds import FetchMyHolds
+
+# [Phase 2] 매칭 키 = AD id. gd01.hong은 2 lot / 3 hold (golden dataset).
+_VIEWER = "gd01.hong"
 
 
 def _make_uc() -> tuple[FetchMyHolds, InMemoryLotSource, InMemoryLotRepository]:
@@ -21,19 +24,20 @@ def _make_uc() -> tuple[FetchMyHolds, InMemoryLotSource, InMemoryLotRepository]:
 @pytest.mark.asyncio
 async def test_first_call_fetches_from_source():
     uc, _, _ = _make_uc()
-    result = await uc.execute("99999")
-    assert len(result.rows) == 3
+    result = await uc.execute(_VIEWER)
+    assert len(result.rows) == 2  # lot 단위 2행
+    assert sum(len(r.my_holds) for r in result.rows) == 3  # hold 3건
 
 
 @pytest.mark.asyncio
 async def test_second_call_hits_cache():
     uc, _, repo = _make_uc()
-    await uc.execute("99999")  # primes cache
-    cached_before = await repo.get_my_holds_cached("99999")
-    assert cached_before is not None and len(cached_before) == 3
+    await uc.execute(_VIEWER)  # primes cache
+    cached_before = await repo.get_my_holds_cached(_VIEWER)
+    assert cached_before is not None and len(cached_before) == 2
     # second call returns from cache (no source roundtrip needed)
-    result2 = await uc.execute("99999")
-    assert len(result2.rows) == 3
+    result2 = await uc.execute(_VIEWER)
+    assert len(result2.rows) == 2
 
 
 @pytest.mark.asyncio
@@ -46,28 +50,27 @@ async def test_force_refresh_bypasses_cache():
             status="hold",
             equipment=None,
             process_step=None,
-            hold_comment=None,
             updated_at=datetime.now(tz=timezone.utc),
-            is_held_by_me=True,
+            my_holds=[HoldDTO(operator_ad_id=_VIEWER)],
         )
     ]
-    await repo.cache_my_holds("99999", stale)
+    await repo.cache_my_holds(_VIEWER, stale)
     # force_refresh should NOT return the stale value
-    result = await uc.execute("99999", force_refresh=True)
+    result = await uc.execute(_VIEWER, force_refresh=True)
     assert "STALE" not in {r.lot_id for r in result.rows}
 
 
 @pytest.mark.asyncio
-async def test_unknown_employee_returns_empty():
+async def test_unknown_operator_returns_empty():
     uc, _, _ = _make_uc()
-    result = await uc.execute("00000")
+    result = await uc.execute("nobody.here")
     assert result.rows == []
 
 
 @pytest.mark.asyncio
 async def test_last_run_at_none_when_dump_never_ran():
     uc, _, _ = _make_uc()
-    result = await uc.execute("99999")
+    result = await uc.execute(_VIEWER)
     assert result.last_run_at is None
 
 
@@ -78,13 +81,13 @@ async def test_last_run_at_returned_on_cache_hit_and_miss():
     ts = datetime(2026, 6, 17, 9, 0, 0, tzinfo=timezone.utc)
     repo.set_dump_last_run_at(ts)
 
-    miss = await uc.execute("99999")  # cache miss → source
+    miss = await uc.execute(_VIEWER)  # cache miss → source
     assert miss.last_run_at == ts
 
-    hit = await uc.execute("99999")  # cache hit
+    hit = await uc.execute(_VIEWER)  # cache hit
     assert hit.last_run_at == ts
 
-    forced = await uc.execute("99999", force_refresh=True)
+    forced = await uc.execute(_VIEWER, force_refresh=True)
     assert forced.last_run_at == ts
 
 

@@ -18,12 +18,30 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 // status는 열린 집합 — raw lot_status_seg 값(예: "Hold")을 변환 없이 그대로 쓴다.
 // DEMO_ROWS는 backend Fake adapter golden dataset(backend/app/adapters/fake/golden_dataset.py)과
 // 일치해야 VITE_DEMO_MODE=true/false가 동일 화면을 내준다(AC 7). 슬롯[1]은 전부 "Hold".
+// [Phase 2] 한 lot에 내 hold가 여러 건일 수 있다 — myHolds가 source of truth이고
+// holdComment는 대표(첫) 사유 파생값이다. LOT-A2948은 2건으로 1:N 요약/펼침을 보여준다.
 const DEMO_ROWS: SlotPayload['rows'] = [
   {
     lotId: 'LOT-A2948',
     status: 'Hold',
     equipment: 'CMP-03',
     processStep: 'CMP / 슬러리 모니터',
+    myHolds: [
+      {
+        operatorAdId: 'gd01.hong',
+        operatorName: '홍길동',
+        itemType: 'USER',
+        comment: 'Pad life 초과 의심 — 측정값 확인 필요',
+        issueDate: '2026-04-28T07:42:11+09:00',
+      },
+      {
+        operatorAdId: 'gd01.hong',
+        operatorName: '홍길동',
+        itemType: 'SPC',
+        comment: 'CMP thickness SPC OOC — 재측정 요청',
+        issueDate: '2026-04-28T05:10:03+09:00',
+      },
+    ],
     holdComment: 'Pad life 초과 의심 — 측정값 확인 필요',
     updatedAt: '2026-04-28T07:42:11+09:00',
   },
@@ -32,6 +50,15 @@ const DEMO_ROWS: SlotPayload['rows'] = [
     status: 'Hold',
     equipment: 'ETCH-11',
     processStep: 'Dry Etch / Poly',
+    myHolds: [
+      {
+        operatorAdId: 'gd01.hong',
+        operatorName: '홍길동',
+        itemType: 'DEFECT',
+        comment: 'OES 신호 이상, eng review 대기',
+        issueDate: '2026-04-28T07:31:54+09:00',
+      },
+    ],
     holdComment: 'OES 신호 이상, eng review 대기',
     updatedAt: '2026-04-28T07:31:54+09:00',
   },
@@ -40,6 +67,15 @@ const DEMO_ROWS: SlotPayload['rows'] = [
     status: 'Hold',
     equipment: 'IMP-02',
     processStep: 'Implant / NWell',
+    myHolds: [
+      {
+        operatorAdId: 'gd01.hong',
+        operatorName: '홍길동',
+        itemType: 'USER',
+        comment: 'Dose 검증 재측정 요청',
+        issueDate: '2026-04-28T06:58:02+09:00',
+      },
+    ],
     holdComment: 'Dose 검증 재측정 요청',
     updatedAt: '2026-04-28T06:58:02+09:00',
   },

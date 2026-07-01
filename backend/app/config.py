@@ -28,7 +28,9 @@ class Settings(BaseSettings):
 
     DEV_USER_EMPLOYEE_NUMBER: str = "99999"
     DEV_USER_NAME: str = "테스트 엔지니어"
-    DEV_USER_EMAIL: str = "test@pholex.local"
+    # [Phase 2] email 로컬파트(split '@')가 "내 hold" 매칭 AD id다(operator_ad_id). golden
+    # dataset의 뷰어 AD id(gd01.hong)와 일치시켜야 통합테스트가 3건을 집계한다(CONTRACT-1).
+    DEV_USER_EMAIL: str = "gd01.hong@pholex.local"
     DEV_USER_AUTH_LEVEL: Literal["ENGINEER", "ADMIN"] = "ENGINEER"
 
     # ── SSO (real adapter) — IdP/세션. 값은 .env(.prod)로 주입(커밋 금지) ──

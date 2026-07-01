@@ -15,6 +15,15 @@ function makeRows(n: number): LotRow[] {
     status: i % 2 === 0 ? 'Hold' : 'Active',
     equipment: `EQ-${i}`,
     processStep: `STEP-${i}`,
+    myHolds: [
+      {
+        operatorAdId: 'gd01.hong',
+        operatorName: '홍길동',
+        itemType: 'USER',
+        comment: `c${i}`,
+        issueDate: '2026-06-17T09:00:00+09:00',
+      },
+    ],
     holdComment: `c${i}`,
     updatedAt: '2026-06-17T09:00:00+09:00',
   }))

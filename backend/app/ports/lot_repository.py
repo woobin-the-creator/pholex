@@ -41,15 +41,18 @@ class LotRepository(Protocol):
         """
         ...
 
-    async def get_my_holds_cached(self, employee_number: str) -> list[LotRowDTO] | None:
-        """캐시된 결과 반환. None은 *cache miss* (key 부재). 빈 리스트는 *정상 빈 결과*."""
+    async def get_my_holds_cached(self, operator_ad_id: str) -> list[LotRowDTO] | None:
+        """캐시된 결과 반환. None은 *cache miss* (key 부재). 빈 리스트는 *정상 빈 결과*.
+
+        [Phase 2] 캐시 키가 사번→AD id(operator_ad_id)로 바뀜.
+        """
         ...
 
-    async def cache_my_holds(self, employee_number: str, rows: list[LotRowDTO]) -> None:
-        """사번별 hold 결과 캐시 적재. 후속 `get_my_holds_cached`에서 hit."""
+    async def cache_my_holds(self, operator_ad_id: str, rows: list[LotRowDTO]) -> None:
+        """AD id별 hold 결과 캐시 적재. 후속 `get_my_holds_cached`에서 hit."""
         ...
 
-    async def invalidate_cache(self, employee_number: str) -> None: ...
+    async def invalidate_cache(self, operator_ad_id: str) -> None: ...
 
     async def get_dump_last_run_at(self) -> datetime | None:
         """lot_dump_meta.last_run_at (dump가 마지막에 돈 시각, tz-aware UTC).

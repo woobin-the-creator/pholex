@@ -2,37 +2,69 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from app.api.wire import change_to_wire, lot_row_to_wire, slot_payload
-from app.ports.dto import ChangeWithSeverity, LotChangeEventDTO, LotRowDTO
+from app.api.wire import change_to_wire, hold_to_wire, lot_row_to_wire, slot_payload
+from app.ports.dto import ChangeWithSeverity, HoldDTO, LotChangeEventDTO, LotRowDTO
 
 
 _DT = datetime(2026, 4, 28, 7, 42, 11, tzinfo=timezone.utc)
 
 
 def _row(lot_id: str = "LOT-A2948") -> LotRowDTO:
+    # [Phase 2] hold 1:N — my_holds에 hold 한 건 담는다.
     return LotRowDTO(
         lot_id=lot_id,
         status="hold",
         equipment="CMP-03",
         process_step="CMP / 슬러리 모니터",
-        hold_comment="Pad life 초과 의심",
         updated_at=_DT,
-        is_held_by_me=True,
+        my_holds=[
+            HoldDTO(
+                operator_ad_id="gd01.hong",
+                operator_name="홍길동",
+                item_type="USER",
+                comment="Pad life 초과 의심",
+                issue_date=_DT,
+            )
+        ],
     )
 
 
 def test_lot_row_uses_camelcase_keys():
     """Frontend types (services/api.ts, types/lot.ts)와 동치 키만 보낸다."""
     wire = lot_row_to_wire(_row())
-    assert set(wire.keys()) == {"lotId", "status", "equipment", "processStep", "holdComment", "updatedAt"}
+    assert set(wire.keys()) == {"lotId", "status", "equipment", "processStep", "updatedAt", "myHolds"}
     assert wire["lotId"] == "LOT-A2948"
     assert wire["status"] == "hold"
     assert wire["processStep"] == "CMP / 슬러리 모니터"
-    assert wire["holdComment"] == "Pad life 초과 의심"
     assert wire["updatedAt"] == "2026-04-28T07:42:11+00:00"
-    # is_held_by_me는 wire에 노출 안 함 (frontend types에 없음)
+    # [Phase 2] 단일 holdComment는 제거, myHolds 배열로 대체.
+    assert "holdComment" not in wire
+    assert len(wire["myHolds"]) == 1
     assert "is_held_by_me" not in wire
     assert "isHeldByMe" not in wire
+
+
+def test_hold_to_wire_camelcase_keys():
+    hold = HoldDTO(
+        operator_ad_id="gd01.hong",
+        operator_name="홍길동",
+        item_type="SPC",
+        comment="SPC 한계 재검토",
+        issue_date=_DT,
+    )
+    wire = hold_to_wire(hold)
+    assert set(wire.keys()) == {"operatorAdId", "operatorName", "itemType", "comment", "issueDate"}
+    assert wire["operatorAdId"] == "gd01.hong"
+    assert wire["operatorName"] == "홍길동"
+    assert wire["itemType"] == "SPC"
+    assert wire["comment"] == "SPC 한계 재검토"
+    assert wire["issueDate"] == "2026-04-28T07:42:11+00:00"
+
+
+def test_hold_to_wire_null_issue_date():
+    wire = hold_to_wire(HoldDTO(operator_ad_id="gd01.hong"))
+    assert wire["issueDate"] is None
+    assert wire["operatorName"] is None
 
 
 def test_slot_payload_camelcase():

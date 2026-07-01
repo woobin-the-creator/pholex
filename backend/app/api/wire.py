@@ -11,7 +11,13 @@ from datetime import datetime
 from typing import Any
 
 from app.domain.lot import LotStatus
-from app.ports.dto import ChangeWithSeverity, KeywordPresetDTO, LotRowDTO, WatchlistRowDTO
+from app.ports.dto import (
+    ChangeWithSeverity,
+    HoldDTO,
+    KeywordPresetDTO,
+    LotRowDTO,
+    WatchlistRowDTO,
+)
 
 
 # 신선도 임계값 (분). 프론트가 last_run_at + 이 값으로 색·카운터를 계산한다.
@@ -24,14 +30,26 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat()
 
 
+def hold_to_wire(hold: HoldDTO) -> dict[str, Any]:
+    # [Phase 2] hold 한 건 → 프론트 JSON. operator_ad_id/이름/item_type/comment/issue_date.
+    return {
+        "operatorAdId": hold.operator_ad_id,
+        "operatorName": hold.operator_name,
+        "itemType": hold.item_type,
+        "comment": hold.comment,
+        "issueDate": _iso(hold.issue_date) if hold.issue_date is not None else None,
+    }
+
+
 def lot_row_to_wire(row: LotRowDTO) -> dict[str, Any]:
+    # [Phase 2] hold는 1:N — 단일 holdComment 대신 myHolds 배열을 싣는다.
     return {
         "lotId": row.lot_id,
         "status": row.status,
         "equipment": row.equipment,
         "processStep": row.process_step,
-        "holdComment": row.hold_comment,
         "updatedAt": _iso(row.updated_at),
+        "myHolds": [hold_to_wire(h) for h in row.my_holds],
     }
 
 

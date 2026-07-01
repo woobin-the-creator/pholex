@@ -24,9 +24,10 @@ class StreamHoldChanges:
         self._source = source
         self._repo = repo
 
-    async def execute(self, employee_number: str) -> AsyncIterator[ChangeWithSeverity]:
-        async for event in self._source.subscribe_changes(employee_number):
-            await self._repo.invalidate_cache(employee_number)
+    async def execute(self, operator_ad_id: str) -> AsyncIterator[ChangeWithSeverity]:
+        # [Phase 2] subscribe/invalidate 키가 사번→AD id로 바뀜 (port 시그니처 일치).
+        async for event in self._source.subscribe_changes(operator_ad_id):
+            await self._repo.invalidate_cache(operator_ad_id)
             severity = self._classify_severity(event)
             yield ChangeWithSeverity(event=event, severity=severity)
 

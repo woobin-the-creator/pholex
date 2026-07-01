@@ -5,18 +5,18 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.ports.dto import LotChangeEventDTO, LotRowDTO
+from app.ports.dto import HoldDTO, LotChangeEventDTO, LotRowDTO
 
 
 def _base_row(**overrides):
+    # [Phase 2] hold 1:N — hold_comment/is_held_by_me/hold_operator_id 제거, my_holds 추가.
     payload = dict(
         lot_id="L001",
         status="Hold",
         equipment=None,
         process_step=None,
-        hold_comment=None,
         updated_at=datetime.now(tz=timezone.utc),
-        is_held_by_me=True,
+        my_holds=[],
     )
     payload.update(overrides)
     return payload
@@ -59,6 +59,29 @@ def test_change_event_dto_rejects_naive_datetime():
             occurred_at=datetime.now(),  # tz-naive
             event_id="01ABC",
         )
+
+
+def test_hold_dto_rejects_extra_field():
+    with pytest.raises(ValidationError):
+        HoldDTO(operator_ad_id="gd01.hong", bogus="x")  # type: ignore[call-arg]
+
+
+def test_hold_dto_minimal_defaults_none():
+    # operator_ad_id만 필수, 나머지 nullable.
+    h = HoldDTO(operator_ad_id="gd01.hong")
+    assert h.operator_ad_id == "gd01.hong"
+    assert h.operator_name is None and h.item_type is None
+    assert h.comment is None and h.issue_date is None
+
+
+def test_hold_dto_rejects_naive_issue_date():
+    with pytest.raises(ValidationError):
+        HoldDTO(operator_ad_id="gd01.hong", issue_date=datetime.now())  # tz-naive
+
+
+def test_hold_dto_accepts_tz_aware_issue_date():
+    ts = datetime.now(tz=timezone.utc)
+    assert HoldDTO(operator_ad_id="gd01.hong", issue_date=ts).issue_date == ts
 
 
 def test_change_event_dto_rejects_invalid_change_type():

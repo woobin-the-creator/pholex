@@ -32,20 +32,32 @@ CREATE TABLE user_lots (
 CREATE INDEX idx_user_lots_employee_number ON user_lots(employee_number);  -- 내 관심 랏 목록 조회
 
 -- 랏 상태 (수집된 데이터) — lot_id가 유니크하므로 PK로 직접 사용
+-- [Phase 2] hold는 1:N(한 lot에 여러 담당자·사유)이라 lot_hold로 분리. lot_status는 lot당 1행(상태)만 소유.
 CREATE TABLE lot_status (
     lot_id VARCHAR(100) PRIMARY KEY,
     status VARCHAR(32) NOT NULL,      -- raw lot_status_seg 값 그대로(Active/Hold/PreActive + 미래 값). 열린 집합이라 CHECK 제약 없음 — 매핑·변환 시 unknown 값이 위조됨(decisions 2026-06-09)
-    equipment VARCHAR(100),
-    process_step VARCHAR(100),
-    hold_comment TEXT,                -- hold 상태일 때 홀드 사유
-    hold_operator_id VARCHAR(50),     -- hold 담당자 사번 [CONTRACT-1 확정] 사내 dump 컬럼 = lot_hold_user_id(VARCHAR 문자열 사번). users.employee_number(VARCHAR(50))와 동일 타입 — fallback 필터가 문자열 비교라 BIGINT 금지(leading zero 손실·타입 불일치). 캐스팅 없이 사번 문자열 그대로 적재.
+    equipment VARCHAR(100),           -- [Phase 2] hold lot은 stocker 적재 → 장비에 없어 NULL이 정상(결측 아님)
+    process_step VARCHAR(100),        -- 공정 스텝(step_desc). hold lot에서도 유효 → 채운다
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'
 );
+-- [Phase 2] hold_comment·hold_operator_id는 lot_hold(1:N)로 이동 → lot_status에서 제거.
 -- 수집 시: INSERT ... ON CONFLICT (lot_id) DO UPDATE SET ...  [CONTRACT-3] dump 컬럼셋 = 위 lot_status 컬럼 전체
 CREATE INDEX idx_lot_status_updated_at ON lot_status(updated_at);
 CREATE INDEX idx_lot_status_status ON lot_status(status);
-CREATE INDEX idx_lot_status_hold_operator ON lot_status(hold_operator_id) WHERE status = 'Hold';  -- 슬롯[1] "내 lot hold" fallback 필터 (hold 앵커 = raw 'Hold')
+
+-- [Phase 2] lot별 hold 목록 (1:N) — 한 lot에 여러 담당자가 각자 사유로 hold를 건다(최대 30명 관측)
+CREATE TABLE lot_hold (
+    id BIGSERIAL PRIMARY KEY,              -- surrogate. (lot_id, operator_ad_id)가 비유일(같은 담당자·다른 사유)이라 자연키 불가
+    lot_id VARCHAR(100) NOT NULL REFERENCES lot_status(lot_id) ON DELETE CASCADE,
+    operator_ad_id VARCHAR(100) NOT NULL,  -- [CONTRACT-1 개정] AD id (소스 opertr_id의 '(' 앞부분, 예 gd01.hong). users.email 로컬파트(split_part(email,'@',1))와 문자열 매칭 → "내 hold"
+    operator_name VARCHAR(100),            -- 한글 이름 (opertr_id 괄호 안). 디스플레이용
+    item_type VARCHAR(50),                 -- USER/SPC/DEFECT/L·L 등. 표시용 — 필터엔 미사용(operator 매칭이 필터축)
+    issue_comment TEXT,                    -- hold 사유
+    issue_date TIMESTAMPTZ                 -- hold 등록 시각 (tz-aware)
+);
+CREATE INDEX idx_lot_hold_operator ON lot_hold(operator_ad_id);  -- 슬롯[1] "내 lot hold" 필터 (operator_ad_id = 조회자 email 로컬파트)
+CREATE INDEX idx_lot_hold_lot ON lot_hold(lot_id);               -- lot_status ⨝ lot_hold 조인
 
 -- dump 생존 heartbeat — 행 1개 고정(id=1). "내 lot hold" 신선도(🟡/🔴) + "내 관심 랏" 갱신 판정의 단일 소스
 -- ⚠ lot_status 행의 updated_at으로 dump 생존을 추론하지 말 것: 변동 없는 lot은 updated_at이 정상적으로 오래됨 → 거짓 stale
@@ -102,10 +114,11 @@ CREATE TABLE table_configs (
 
 | ID | 내용 |
 |----|------|
-| CONTRACT-1 ✅확정 | `lot_status.hold_operator_id` ← 사내 dump 컬럼 `lot_hold_user_id`(VARCHAR 문자열 사번, 예 `'23053056'`, NULL 35%). 타입 **VARCHAR(50)**(BIGINT 아님 — `users.employee_number`와 동일, 캐스팅 없이 적재) |
+| CONTRACT-1 🔄Phase2 | **[개정]** hold 담당자 매칭 키가 사번→**AD id**. `lot_hold.operator_ad_id` ← 소스 `opertr_id`의 `(` 앞부분(예 `gd01.hong`). `users.email` 로컬파트(`split_part(email,'@',1)`)와 문자열 매칭 → 슬롯[1] "내 hold". ⚠️전제(미검증): email 로컬파트 == AD id (`decisions` era 6 revisit). 이전 사번(`lot_hold_user_id`) 매칭은 폐기 |
 | CONTRACT-2 | `lot_id` 형식(자릿수/접두어 패턴) — 슬롯[2] 클라이언트 형식 검증용 |
-| CONTRACT-3 | `lot_status` dump 컬럼셋 = lot_id, status, equipment, process_step, hold_comment, hold_operator_id, updated_at |
+| CONTRACT-3 🔄Phase2 | **[개정]** dump가 **두 테이블** 적재. `lot_status` 컬럼셋 = lot_id, status, equipment(NULL 정상), process_step, updated_at. `lot_hold` 컬럼셋 = lot_id, operator_ad_id, operator_name, item_type, issue_comment, issue_date |
 | CONTRACT-4 | `lot_dump_meta.last_run_at` 매 dump 실행마다 upsert (lot 변경 무관) — 신선도 판정 소스 |
+| CONTRACT-5 🆕Phase2 | 소스 `T_ISSUE_LOT`(가명)에서 active hold = `complt_date IS NULL AND catg_type='HOLD'`만 적재. `opertr_id` 파싱: `split(',')`→`strip()`→`split('(')`→`[operator_ad_id, operator_name]`. 콤마 operator는 행으로 explode. `lot_id`는 이미 행 분리(콤마 없음). equipment(`eqp_id_list`)는 100% NULL이라 미적재 |
 
 > **dump 소유**: bigdataquery → `lot_status` + `lot_dump_meta` 적재 잡은 **사내 AI 소유·레포 바깥**, 사내 스케줄러 30분 주기. pholex는 push 없이 읽기만. 신선도는 `lot_dump_meta`로 추론(콜백 결합 없음). 단, 30분 dump cadence는 §7의 기존 5~30초 스케줄러 모델과 상충 → §7 후속 갱신 필요.
 

@@ -1,5 +1,6 @@
 import type { SessionResponse } from '../types/auth'
-import type { DumpMeta, LotRow, SlotPayload } from '../types/lot'
+import type { DumpMeta, HoldItem, LotRow, SlotPayload } from '../types/lot'
+import { normalizeHolds, representativeComment } from '../utils/holds'
 import type { KeywordConfig, KeywordPreset, SpecialHoldResult } from '../types/keyword'
 
 export class UnauthorizedError extends Error {
@@ -30,12 +31,14 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function normalizeLotRow(row: Record<string, unknown>): LotRow {
+  const myHolds: HoldItem[] = normalizeHolds(row.myHolds ?? row.my_holds)
   return {
     lotId: String(row.lotId ?? row.lot_id ?? ''),
     status: String(row.status ?? ''),
     equipment: row.equipment ? String(row.equipment) : null,
     processStep: row.processStep ? String(row.processStep) : row.process_step ? String(row.process_step) : null,
-    holdComment: row.holdComment ? String(row.holdComment) : row.hold_comment ? String(row.hold_comment) : null,
+    myHolds,
+    holdComment: representativeComment(myHolds, row.holdComment ?? row.hold_comment),
     updatedAt: row.updatedAt ? String(row.updatedAt) : row.updated_at ? String(row.updated_at) : null,
   }
 }
